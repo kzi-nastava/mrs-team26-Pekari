@@ -1,19 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
-:root {
-  --bg: #0f0f0f;
-  --card: #1a1a1a;
-  --primary: #ffffff;
-  --secondary: #a1a1a1;
-  --accent: #22c55e;
-  --danger: #ef4444;
-  --warning: #f59e0b;
-  --radius: 16px;
-  --input-bg: #111;
-  --border: #100606;
-}
-* { box-sizing: border-box; font-family: 'Poppins', sans-serif; }
-body { margin: 0; background: var(--bg); color: var(--primary); min-height: 100vh; }
-.main-container { max-width: 1200px; margin: 112px auto 40px auto; padding: 0 24px; }
+.main-container { max-width: 1200px; margin: 0 auto; padding: 112px 24px 40px 24px; }
 .card { background: var(--card); border-radius: var(--radius); padding: 32px; border: 1px solid var(--border); }
 .form-group { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
 label { font-size: 11px; color: var(--secondary); text-transform: uppercase; font-weight: 600; }

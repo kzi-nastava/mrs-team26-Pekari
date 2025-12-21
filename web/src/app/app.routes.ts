@@ -1,14 +1,25 @@
 import { Routes } from '@angular/router';
-import { HomeComponent } from './features/home/home.component';
+import { LandingComponent } from './features/landing/landing.component';
 import { LoginComponent } from './features/auth/login/login.component';
 import { RegisterComponent } from './features/auth/register/register.component';
 import { ForgotPasswordComponent } from './features/auth/forgot-password/forgot-password.component';
-import {RideHistoryComponent} from './features/driver/ride-history/ride-history.component'
+import { DriverHistoryComponent } from './features/driver/driver-history/driver-history.component';
+import { PassengerHomeComponent } from './features/passenger/passenger-home/passenger-home.component';
+import { authGuard, roleGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
-  { path: '', component: HomeComponent },
-  { path: 'login', component: LoginComponent },
-  { path: 'register', component: RegisterComponent },
+  { path: '', component: LandingComponent, canActivate: [authGuard] },
+  { path: 'login', component: LoginComponent, canActivate: [authGuard] },
+  { path: 'register', component: RegisterComponent, canActivate: [authGuard] },
   { path: 'forgot-password', component: ForgotPasswordComponent },
-  { path: 'history', component: RideHistoryComponent}
+  {
+    path: 'driver-history',
+    component: DriverHistoryComponent,
+    canActivate: [roleGuard(['driver'])]
+  },
+  {
+    path: 'passenger-home',
+    component: PassengerHomeComponent,
+    canActivate: [roleGuard(['passenger'])]
+  }
 ];

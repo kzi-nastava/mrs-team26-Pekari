@@ -34,7 +34,7 @@ export class AuthService {
           id: '1',
           email: credentials.email || 'user@example.com',
           username: 'testuser',
-          role: 'driver'
+          role: 'passenger'
         };
 
         this.currentUserSignal.set(mockUser);
@@ -53,7 +53,7 @@ export class AuthService {
           username: userData.username || `${userData.firstName}${userData.lastName}`.toLowerCase(),
           firstName: userData.firstName,
           lastName: userData.lastName,
-          role: 'user'
+          role: 'passenger'
         };
 
         // Note: We don't set the user signal here anymore because

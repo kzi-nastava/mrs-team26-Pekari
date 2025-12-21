@@ -2,13 +2,13 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 @Component({
-  selector: 'app-ride-history',
+  selector: 'app-driver-history',
   standalone: true,
   imports: [CommonModule],
-  templateUrl: './ride-history.component.html',
-  styleUrls: ['./ride-history.component.css']
+  templateUrl: './driver-history.component.html',
+  styleUrls: ['./driver-history.component.css']
 })
-export class RideHistoryComponent {
+export class DriverHistoryComponent {
   rides = [
     {
       date: '15 December 2024',

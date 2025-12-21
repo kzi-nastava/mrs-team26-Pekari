@@ -1,5 +1,5 @@
 import { Component, inject, computed } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { RouterOutlet, Router } from '@angular/router';
 import { AuthService } from './core/services/auth.service';
 import { HeaderComponent, type NavLink } from './shared/components/header/header.component';
 
@@ -11,6 +11,8 @@ import { HeaderComponent, type NavLink } from './shared/components/header/header
 })
 export class App {
   private authService = inject(AuthService);
+  private router = inject(Router);
+  title = 'BlackCar';
 
   navLinksLeft = computed(() => {
     return [] as NavLink[];
@@ -23,18 +25,25 @@ export class App {
     if (!user) {
       links.push(
         { label: 'Login', path: '/login' },
-        { label: 'Sign Up', path: '/signup' }
+        { label: 'Register', path: '/register' }
       );
-    } else {
-      if (user.role === 'driver') {
-        links.push({ label: 'History', path: '/history' });
-      }
+    } else if (user.role === 'driver') {
       links.push(
-        { label: 'Profile', path: '/profile' },
-        { label: 'Logout', onClick: () => this.authService.logout() }
+        { label: 'History', path: '/driver-history' },
+        { label: 'Logout', onClick: () => this.handleLogout() }
+      );
+    } else if (user.role === 'passenger') {
+      links.push(
+        { label: 'Home', path: '/passenger-home' },
+        { label: 'Logout', onClick: () => this.handleLogout() }
       );
     }
 
     return links;
   });
+
+  handleLogout() {
+    this.authService.logout();
+    this.router.navigate(['/']);
+  }
 }
