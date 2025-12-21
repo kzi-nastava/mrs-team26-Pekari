@@ -15,19 +15,8 @@
 * { box-sizing: border-box; font-family: 'Poppins', sans-serif; }
 body { margin: 0; background: var(--bg); color: var(--primary); min-height: 100vh; }
 
-/* Navigation */
-.nav {
-  height: 72px; border-bottom: 1px solid var(--border);
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 0 40px; background: rgba(15, 15, 15, 0.8); backdrop-filter: blur(12px);
-  position: sticky; top: 0; z-index: 1000;
-}
-.nav-links { display: flex; gap: 32px; }
-.nav-links a { color: var(--secondary); text-decoration: none; font-size: 14px; transition: 0.2s; }
-.nav-links a:hover { color: var(--primary); }
-
 /* Layout Containers */
-.main-container { max-width: 1200px; margin: 40px auto; padding: 0 24px; }
+.main-container { max-width: 1200px; margin: 0 auto; padding: 112px 24px 40px 24px; }
 
 /* FIX: Specific Horizontal Layout for Ride Ordering */
 .ride-split-layout {

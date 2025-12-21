@@ -4,5 +4,5 @@ export interface User {
   username: string;
   firstName?: string;
   lastName?: string;
-  role: 'admin' | 'user' | 'driver';
+  role: 'admin' | 'passenger' | 'driver';
 }
