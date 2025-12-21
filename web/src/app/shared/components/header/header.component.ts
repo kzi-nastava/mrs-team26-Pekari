@@ -1,30 +1,29 @@
-import { Component, inject, input } from '@angular/core';
-import { RouterLink } from '@angular/router';
-import { AuthService } from '../../../core/services/auth.service';
 import { Component, input } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
+import { CommonModule } from '@angular/common';
+
+export interface NavLink {
+  label: string;
+  path?: string;
+  onClick?: () => void;
+}
 
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [RouterLink, RouterLinkActive],
+  imports: [CommonModule, RouterLink, RouterLinkActive],
   templateUrl: './header.component.html',
   styleUrls: ['./header.component.css']
 })
 export class HeaderComponent {
   title = input<string>('My App');
-  authService = inject(AuthService);
-  currentUser = this.authService.currentUser;
+  navLinksLeft = input<NavLink[]>([]);
+  navLinksRight = input<NavLink[]>([]);
 
-  logout() {
-    this.authService.logout();
+  handleLinkClick(link: NavLink, event: Event) {
+    if (link.onClick) {
+      event.preventDefault();
+      link.onClick();
+    }
   }
-  navLinksLeft = [
-    { label: 'Pregled', path: '/pregled' },
-    { label: 'Istorija', path: '/istorija' },
-    { label: 'Profil', path: '/profil' }
-  ];
-  navLinksRight = [
-    { label: 'Odjavi se', path: '/logout' }
-  ];
 }
