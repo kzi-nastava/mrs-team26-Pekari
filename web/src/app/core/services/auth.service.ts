@@ -34,7 +34,7 @@ export class AuthService {
           id: '1',
           email: credentials.email || 'user@example.com',
           username: 'testuser',
-          role: 'user'
+          role: 'driver'
         };
 
         this.currentUserSignal.set(mockUser);
