@@ -9,5 +9,12 @@
       <a routerLink="/login">Login</a>
       <a routerLink="/register">Register</a>
     }
+  <nav class="nav">
+    <div class="nav-links">
+      <a *ngFor="let link of navLinksLeft" routerLink="{{ link.path }}" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">{{ link.label }}</a>
+    </div>
+    <div class="nav-links">
+      <a *ngFor="let link of navLinksRight" routerLink="{{ link.path }}">{{ link.label }}</a>
+    </div>
   </nav>
 </header>
