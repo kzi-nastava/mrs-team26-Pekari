@@ -2,5 +2,12 @@
   <h1>{{ title() }}</h1>
   <nav>
     <a routerLink="/">Home</a>
+    @if (currentUser()) {
+      <span>Welcome, {{ currentUser()?.username }}</span>
+      <button (click)="logout()">Logout</button>
+    } @else {
+      <a routerLink="/login">Login</a>
+      <a routerLink="/register">Register</a>
+    }
   </nav>
 </header>
