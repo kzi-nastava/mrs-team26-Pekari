@@ -178,11 +178,10 @@ export class ProfileComponent {
 
       this.profileService.updateProfile(updateData).subscribe({
         next: (response) => {
-          this.successMessage.set(
-            this.isDriver
-              ? 'Profile update request sent for admin approval'
-              : 'Profile updated successfully'
-          );
+          const message = this.isDriver
+            ? 'Profile update request sent for admin approval'
+            : 'Profile updated successfully';
+          this.showSuccessMessage(message);
           this.isEditing.set(false);
           this.loadProfile();
           this.isLoading.set(false);
@@ -238,6 +237,16 @@ export class ProfileComponent {
         }
       });
     }
+  }
+
+  /**
+   * Show success message and auto-dismiss after 2 seconds
+   */
+  private showSuccessMessage(message: string): void {
+    this.successMessage.set(message);
+    setTimeout(() => {
+      this.successMessage.set(null);
+    }, 2000);
   }
 
   /**

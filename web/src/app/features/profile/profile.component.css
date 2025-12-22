@@ -66,23 +66,23 @@
 /* ==================== PROFILE HEADER ==================== */
 .profile-header {
   text-align: center;
-  margin-bottom: 40px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 20px;
-}
-
-.profile-picture-section {
+  margin-bottom: 30px;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 15px;
 }
 
+.profile-picture-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
 .profile-picture-container {
-  width: 120px;
-  height: 120px;
+  width: 100px;
+  height: 100px;
   border-radius: 50%;
   border: 3px solid var(--accent);
   overflow: hidden;
@@ -137,19 +137,19 @@
 .profile-form {
   display: flex;
   flex-direction: column;
-  gap: 30px;
+  gap: 20px;
 }
 
 .form-section {
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 30px;
+  padding: 20px;
   transition: all 0.3s ease;
 }
 
 .form-section:hover {
-  border-color: rgba(34, 197, 94, 0.4);
+  border-color: var(--border);
   background: rgba(26, 26, 26, 0.8);
 }
 
@@ -159,19 +159,19 @@
   color: var(--secondary);
   text-transform: uppercase;
   letter-spacing: 1px;
-  margin: 0 0 20px 0;
+  margin: 0 0 12px 0;
 }
 
 .form-grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 20px;
+  gap: 12px;
 }
 
 .form-row-three {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
+  gap: 12px;
 }
 
 .form-group {
@@ -228,13 +228,13 @@
 
 /* ==================== DRIVER SECTION ==================== */
 .driver-section {
-  border-color: rgba(34, 197, 94, 0.3);
+  border-color: var(--border);
 }
 
 .readonly-value {
   background-color: rgba(0, 0, 0, 0.5) !important;
-  border-color: var(--accent) !important;
-  color: var(--accent) !important;
+  border-color: var(--border) !important;
+  color: var(--secondary) !important;
   font-weight: 600;
   display: flex;
   align-items: center;
@@ -296,15 +296,15 @@
 }
 
 .btn-primary {
-  background: var(--accent);
+  background: var(--primary);
   color: #000;
-  border: none;
+  border: 1px solid var(--border);
   width: 100%;
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: rgba(34, 197, 94, 0.8);
-  box-shadow: 0 4px 15px rgba(34, 197, 94, 0.3);
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 4px 15px rgba(255, 255, 255, 0.2);
   transform: translateY(-2px);
 }
 
