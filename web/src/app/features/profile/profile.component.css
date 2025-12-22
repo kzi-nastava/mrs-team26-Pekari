@@ -1,9 +1,8 @@
 /* ==================== PROFILE CONTAINER ==================== */
 .profile-container {
   min-height: 100vh;
-  background: linear-gradient(135deg, #1a1a1a 0%, #0d0d0d 100%);
+  background: var(--bg);
   padding: 100px 20px 40px 20px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
 .profile-content {
@@ -16,7 +15,6 @@
 .error-banner {
   padding: 12px 20px;
   border-radius: 8px;
-  margin-bottom: 20px;
   font-weight: 500;
   text-align: center;
   animation: slideIn 0.3s ease-out;
@@ -43,13 +41,13 @@
 
 .error-message {
   text-align: center;
-  color: #f44336;
+  color: var(--danger);
   padding: 40px 20px;
 }
 
 .loading-spinner {
   text-align: center;
-  color: #aaa;
+  color: var(--secondary);
   padding: 80px 20px;
   font-size: 16px;
 }
@@ -86,18 +84,18 @@
   width: 120px;
   height: 120px;
   border-radius: 50%;
-  border: 3px solid rgba(76, 175, 80, 0.5);
+  border: 3px solid var(--accent);
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
   background-color: rgba(0, 0, 0, 0.3);
-  box-shadow: 0 0 20px rgba(76, 175, 80, 0.3);
+  box-shadow: 0 0 20px rgba(34, 197, 94, 0.3);
   transition: all 0.3s ease;
 }
 
 .profile-picture-container:hover {
-  box-shadow: 0 0 30px rgba(76, 175, 80, 0.5);
+  box-shadow: 0 0 30px var(--accent);
 }
 
 .profile-picture {
@@ -112,9 +110,9 @@
 
 .btn-change-picture {
   padding: 8px 16px;
-  background-color: rgba(76, 175, 80, 0.2);
-  color: #4caf50;
-  border: 1px solid rgba(76, 175, 80, 0.5);
+  background-color: rgba(34, 197, 94, 0.2);
+  color: var(--accent);
+  border: 1px solid rgba(34, 197, 94, 0.5);
   border-radius: 6px;
   cursor: pointer;
   font-size: 14px;
@@ -123,16 +121,16 @@
 }
 
 .btn-change-picture:hover {
-  background-color: rgba(76, 175, 80, 0.3);
-  border-color: #4caf50;
+  background-color: rgba(34, 197, 94, 0.3);
+  border-color: var(--accent);
 }
 
 .profile-title {
-  font-size: 32px;
-  font-weight: 500;
-  color: #fff;
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--primary);
   margin: 0;
-  letter-spacing: 1px;
+  letter-spacing: 0;
 }
 
 /* ==================== PROFILE FORM ==================== */
@@ -143,22 +141,22 @@
 }
 
 .form-section {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
-  border: 1px solid rgba(76, 175, 80, 0.2);
-  border-radius: 12px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
   padding: 30px;
-  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
 }
 
 .form-section:hover {
-  border-color: rgba(76, 175, 80, 0.4);
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.03) 100%);
+  border-color: rgba(34, 197, 94, 0.4);
+  background: rgba(26, 26, 26, 0.8);
 }
 
 .section-title {
   font-size: 14px;
   font-weight: 600;
-  color: #aaa;
+  color: var(--secondary);
   text-transform: uppercase;
   letter-spacing: 1px;
   margin: 0 0 20px 0;
@@ -183,34 +181,33 @@
 }
 
 .form-group label {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
-  color: #aaa;
+  color: var(--secondary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
 .form-input {
   padding: 12px 15px;
-  background-color: rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(76, 175, 80, 0.2);
+  background-color: var(--input-bg);
+  border: 1px solid var(--border);
   border-radius: 6px;
-  color: #fff;
+  color: var(--primary);
   font-size: 14px;
   transition: all 0.3s ease;
-  font-family: inherit;
 }
 
 .form-input:focus {
   outline: none;
-  border-color: rgba(76, 175, 80, 0.5);
+  border-color: var(--accent);
   background-color: rgba(0, 0, 0, 0.5);
-  box-shadow: 0 0 12px rgba(76, 175, 80, 0.2);
+  box-shadow: 0 0 12px rgba(34, 197, 94, 0.2);
 }
 
 .form-input:readonly {
   background-color: rgba(0, 0, 0, 0.5);
-  border-color: rgba(76, 175, 80, 0.1);
+  border-color: rgba(34, 197, 94, 0.1);
   color: #ddd;
   cursor: default;
 }
@@ -225,19 +222,19 @@
 
 .helper-text {
   font-size: 12px;
-  color: #888;
+  color: var(--secondary);
   font-style: italic;
 }
 
 /* ==================== DRIVER SECTION ==================== */
 .driver-section {
-  border-color: rgba(76, 175, 80, 0.3);
+  border-color: rgba(34, 197, 94, 0.3);
 }
 
 .readonly-value {
   background-color: rgba(0, 0, 0, 0.5) !important;
-  border-color: rgba(76, 175, 80, 0.1) !important;
-  color: #4caf50 !important;
+  border-color: var(--accent) !important;
+  color: var(--accent) !important;
   font-weight: 600;
   display: flex;
   align-items: center;
@@ -247,7 +244,7 @@
 
 .vehicle-info {
   background-color: rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(76, 175, 80, 0.2);
+  border: 1px solid var(--border);
   border-radius: 6px;
   padding: 20px;
   margin-top: 10px;
@@ -268,14 +265,14 @@
 .vehicle-label {
   font-size: 11px;
   font-weight: 600;
-  color: #888;
+  color: var(--secondary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
 .vehicle-value {
   font-size: 14px;
-  color: #fff;
+  color: var(--primary);
   font-weight: 500;
 }
 
@@ -291,7 +288,6 @@
   text-transform: uppercase;
   letter-spacing: 0.5px;
   min-height: 44px;
-  font-family: inherit;
 }
 
 .btn:disabled {
@@ -300,42 +296,42 @@
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
-  color: #fff;
-  border: 1px solid rgba(76, 175, 80, 0.5);
+  background: var(--accent);
+  color: #000;
+  border: none;
   width: 100%;
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: linear-gradient(135deg, #45a049 0%, #3d8b40 100%);
-  box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+  background: rgba(34, 197, 94, 0.8);
+  box-shadow: 0 4px 15px rgba(34, 197, 94, 0.3);
   transform: translateY(-2px);
 }
 
 .btn-secondary {
   background-color: transparent;
-  color: #aaa;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: var(--secondary);
+  border: 1px solid var(--border);
   width: 100%;
 }
 
 .btn-secondary:hover:not(:disabled) {
   background-color: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.4);
-  color: #fff;
+  border-color: var(--primary);
+  color: var(--primary);
 }
 
 .btn-danger {
   background-color: transparent;
-  color: #ff6b6b;
-  border: 1px solid rgba(255, 107, 107, 0.5);
+  color: var(--danger);
+  border: 1px solid var(--danger);
   width: 100%;
 }
 
 .btn-danger:hover:not(:disabled) {
-  background-color: rgba(255, 107, 107, 0.1);
-  border-color: rgba(255, 107, 107, 0.8);
-  color: #ff8888;
+  background-color: rgba(239, 68, 68, 0.1);
+  border-color: var(--danger);
+  color: var(--danger);
 }
 
 .form-actions {
@@ -356,7 +352,7 @@
 /* ==================== ERROR VALIDATION ==================== */
 .error-text {
   font-size: 12px;
-  color: #f44336;
+  color: var(--danger);
   margin-top: -4px;
 }
 
@@ -386,14 +382,13 @@
 }
 
 .modal-content {
-  background: linear-gradient(135deg, rgba(30, 30, 30, 0.95) 0%, rgba(15, 15, 15, 0.95) 100%);
-  border: 1px solid rgba(76, 175, 80, 0.3);
-  border-radius: 12px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
   padding: 30px;
   width: 90%;
   max-width: 450px;
   position: relative;
-  backdrop-filter: blur(10px);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
   animation: slideUp 0.3s ease-out;
 }
@@ -415,7 +410,7 @@
   right: 15px;
   background: none;
   border: none;
-  color: #aaa;
+  color: var(--secondary);
   font-size: 28px;
   cursor: pointer;
   padding: 0;
@@ -428,15 +423,15 @@
 }
 
 .modal-close:hover {
-  color: #fff;
+  color: var(--primary);
   transform: rotate(90deg);
 }
 
 .modal-content h2 {
-  color: #fff;
+  color: var(--primary);
   font-size: 20px;
   margin: 0 0 20px 0;
-  font-weight: 300;
+  font-weight: 600;
   letter-spacing: 0.5px;
 }
 
