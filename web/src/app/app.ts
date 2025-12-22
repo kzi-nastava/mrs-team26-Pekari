@@ -4,6 +4,7 @@ import { RouterOutlet, Router } from '@angular/router';
 import { AuthService } from './core/services/auth.service';
 import { HeaderComponent, type NavLink } from './shared/components/header/header.component';
 import { DevLoginHelperComponent } from './core/components/dev-login-helper.component';
+import { environment } from '../environments/environment';
 
 @Component({
   selector: 'app-root',
@@ -56,6 +57,6 @@ export class App {
     this.router.navigate(['/']);
   }
 
-  // Development helper - toggle for quick testing
-  isDevelopment = true;
+  // Show development helper based on environment configuration
+  isDevelopment = environment.development;
 }
