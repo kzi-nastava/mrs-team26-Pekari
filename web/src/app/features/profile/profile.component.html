@@ -1,0 +1,291 @@
+<div class="profile-container">
+  <!-- Loading State -->
+  <div *ngIf="isLoading()" class="loading-spinner">
+    <p>Loading profile...</p>
+  </div>
+
+  <!-- Profile Not Found -->
+  <div *ngIf="!isLoading() && !profile()" class="error-message">
+    <p>Unable to load profile. Please try again later.</p>
+  </div>
+
+  <!-- Main Profile Content -->
+  <div *ngIf="!isLoading() && profile()" class="profile-content">
+    <!-- Success Message -->
+    <div *ngIf="successMessage()" class="success-banner">
+      {{ successMessage() }}
+    </div>
+
+    <!-- Error Message -->
+    <div *ngIf="errorMessage()" class="error-banner">
+      {{ errorMessage() }}
+    </div>
+
+    <!-- Profile Header -->
+    <div class="profile-header">
+      <div class="profile-picture-section">
+        <div class="profile-picture-container">
+          <img [src]="profilePicture()" alt="Profile Picture" class="profile-picture" />
+        </div>
+        <div *ngIf="isEditing()" class="picture-upload">
+          <input
+            #fileInput
+            type="file"
+            accept="image/*"
+            (change)="onProfilePictureChange($event)"
+            hidden
+          />
+          <button
+            type="button"
+            class="btn-change-picture"
+            (click)="fileInput.click()"
+          >
+            Change Picture
+          </button>
+        </div>
+      </div>
+      <h1 class="profile-title">Profile Information</h1>
+    </div>
+
+    <!-- Profile Information Form -->
+    <form [formGroup]="profileForm" class="profile-form">
+      <!-- Basic Information -->
+      <div class="form-section">
+        <h3 class="section-title">Basic Information</h3>
+        <div class="form-grid">
+          <!-- Name, Phone, Email Row -->
+          <div class="form-row-three">
+            <!-- Name -->
+            <div class="form-group">
+              <label for="name">Name</label>
+              <input
+                id="name"
+                type="text"
+                formControlName="name"
+                [readonly]="!isEditing()"
+                class="form-input"
+                placeholder="Enter full name"
+              />
+            </div>
+
+            <!-- Phone -->
+            <div class="form-group">
+              <label for="phone">Phone</label>
+              <input
+                id="phone"
+                type="tel"
+                formControlName="phoneNumber"
+                [readonly]="!isEditing()"
+                class="form-input"
+                placeholder="Phone number"
+              />
+            </div>
+
+            <!-- Email -->
+            <div class="form-group">
+              <label for="email">Email</label>
+              <input
+                id="email"
+                type="email"
+                formControlName="email"
+                readonly
+                class="form-input"
+                placeholder="Email address"
+              />
+              <small class="helper-text">Email cannot be changed</small>
+            </div>
+          </div>
+
+          <!-- Address -->
+          <div class="form-group form-full">
+            <label for="address">Address</label>
+            <input
+              id="address"
+              type="text"
+              formControlName="address"
+              [readonly]="!isEditing()"
+              class="form-input"
+              placeholder="Street address"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- Driver Information (only for drivers) -->
+      <div *ngIf="isDriver && driverInfo()" class="form-section driver-section">
+        <h3 class="section-title">Driver Information</h3>
+        <div class="form-grid">
+          <!-- Hours Active -->
+          <div class="form-group">
+            <label for="hoursActive">Hours Active (Last 24H)</label>
+            <div class="form-input readonly-value">
+              {{ formatHours(driverInfo()!.hoursActiveLast24h) }}
+            </div>
+          </div>
+
+          <!-- Vehicle -->
+          <div class="form-group form-full">
+            <label>Vehicle Information</label>
+            <div class="vehicle-info">
+              <div class="vehicle-grid">
+                <div class="vehicle-field">
+                  <span class="vehicle-label">Make</span>
+                  <span class="vehicle-value">{{ driverInfo()!.vehicle.make }}</span>
+                </div>
+                <div class="vehicle-field">
+                  <span class="vehicle-label">Model</span>
+                  <span class="vehicle-value">{{ driverInfo()!.vehicle.model }}</span>
+                </div>
+                <div class="vehicle-field">
+                  <span class="vehicle-label">Year</span>
+                  <span class="vehicle-value">{{ driverInfo()!.vehicle.year }}</span>
+                </div>
+                <div class="vehicle-field">
+                  <span class="vehicle-label">License Plate</span>
+                  <span class="vehicle-value">{{ driverInfo()!.vehicle.licensePlate }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="form-actions">
+        <button
+          *ngIf="!isEditing()"
+          type="button"
+          class="btn btn-primary"
+          (click)="toggleEditMode()"
+        >
+          Edit Profile
+        </button>
+
+        <div *ngIf="isEditing()" class="edit-buttons">
+          <button
+            type="button"
+            class="btn btn-primary"
+            (click)="onSubmitProfile()"
+            [disabled]="profileForm.invalid || isLoading()"
+          >
+            {{ isDriver ? 'Request Changes' : 'Update Profile' }}
+          </button>
+          <button
+            type="button"
+            class="btn btn-secondary"
+            (click)="toggleEditMode()"
+            [disabled]="isLoading()"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+
+      <!-- Password Change Button -->
+      <button
+        type="button"
+        class="btn btn-danger"
+        (click)="openPasswordModal()"
+      >
+        Change Password
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- Password Change Modal -->
+<div *ngIf="showPasswordModal()" class="modal-overlay" (click)="closePasswordModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <button type="button" class="modal-close" (click)="closePasswordModal()">×</button>
+    <h2>Change Password</h2>
+
+    <form [formGroup]="passwordForm" (ngSubmit)="onSubmitPasswordChange()">
+      <div class="form-group">
+        <label for="currentPassword">Current Password</label>
+        <input
+          id="currentPassword"
+          type="password"
+          formControlName="currentPassword"
+          class="form-input"
+          placeholder="Enter current password"
+        />
+        <span
+          *ngIf="
+            passwordForm.get('currentPassword')?.invalid &&
+            passwordForm.get('currentPassword')?.touched
+          "
+          class="error-text"
+        >
+          Current password is required (min 6 characters)
+        </span>
+      </div>
+
+      <div class="form-group">
+        <label for="newPassword">New Password</label>
+        <input
+          id="newPassword"
+          type="password"
+          formControlName="newPassword"
+          class="form-input"
+          placeholder="Enter new password"
+        />
+        <span
+          *ngIf="
+            passwordForm.get('newPassword')?.invalid &&
+            passwordForm.get('newPassword')?.touched
+          "
+          class="error-text"
+        >
+          New password is required (min 6 characters)
+        </span>
+      </div>
+
+      <div class="form-group">
+        <label for="confirmPassword">Confirm Password</label>
+        <input
+          id="confirmPassword"
+          type="password"
+          formControlName="confirmPassword"
+          class="form-input"
+          placeholder="Confirm new password"
+        />
+        <span
+          *ngIf="
+            passwordForm.get('confirmPassword')?.invalid &&
+            passwordForm.get('confirmPassword')?.touched
+          "
+          class="error-text"
+        >
+          Please confirm your password
+        </span>
+        <span
+          *ngIf="
+            passwordForm.hasError('passwordMismatch') &&
+            passwordForm.get('confirmPassword')?.touched
+          "
+          class="error-text"
+        >
+          Passwords do not match
+        </span>
+      </div>
+
+      <div class="modal-actions">
+        <button
+          type="submit"
+          class="btn btn-primary"
+          [disabled]="passwordForm.invalid || isLoading()"
+        >
+          Change Password
+        </button>
+        <button
+          type="button"
+          class="btn btn-secondary"
+          (click)="closePasswordModal()"
+          [disabled]="isLoading()"
+        >
+          Cancel
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
