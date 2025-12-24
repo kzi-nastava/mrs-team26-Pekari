@@ -17,7 +17,6 @@ export class ProfileComponent {
   private authService = inject(AuthService);
   private fb = inject(FormBuilder);
 
-  // Signals
   profile = signal<ProfileData | null>(null);
   driverInfo = signal<DriverInfo | null>(null);
   profilePicture = signal<string>('');
@@ -28,7 +27,6 @@ export class ProfileComponent {
   errorMessage = signal<string | null>(null);
   selectedFile = signal<File | null>(null);
 
-  // Forms
   profileForm = this.fb.group({
     name: ['', [Validators.required]],
     email: [{ value: '', disabled: true }],
@@ -61,20 +59,15 @@ export class ProfileComponent {
   constructor() {
     this.loadProfile();
 
-    // Load driver info if user is a driver
     effect(() => {
       if (this.isDriver) {
         this.loadDriverInfo();
       }
     });
 
-    // Set default profile picture
     this.profilePicture.set(this.profileService.getDefaultProfilePicture());
   }
 
-  /**
-   * Load user profile
-   */
   private loadProfile(): void {
     this.isLoading.set(true);
     this.profileService.getProfile().subscribe({
@@ -99,9 +92,6 @@ export class ProfileComponent {
     });
   }
 
-  /**
-   * Load driver information
-   */
   private loadDriverInfo(): void {
     this.profileService.getDriverInfo().subscribe({
       next: (info) => {
