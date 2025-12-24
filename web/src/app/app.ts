@@ -1,17 +1,21 @@
 import { Component, inject, computed } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { RouterOutlet, Router } from '@angular/router';
 import { AuthService } from './core/services/auth.service';
+import { EnvironmentService } from './core/services/environment.service';
 import { HeaderComponent, type NavLink } from './shared/components/header/header.component';
+import { DevLoginHelperComponent } from './core/components/dev-login-helper.component';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, HeaderComponent],
+  imports: [CommonModule, RouterOutlet, HeaderComponent, DevLoginHelperComponent],
   templateUrl: './app.html',
   styleUrl: './app.css'
 })
 export class App {
   private authService = inject(AuthService);
   private router = inject(Router);
+  private environmentService = inject(EnvironmentService);
   title = 'BlackCar';
 
   navLinksLeft = computed(() => {
@@ -29,12 +33,19 @@ export class App {
       );
     } else if (user.role === 'driver') {
       links.push(
+        { label: 'Profile', path: '/profile' },
         { label: 'History', path: '/driver-history' },
         { label: 'Logout', onClick: () => this.handleLogout() }
       );
     } else if (user.role === 'passenger') {
       links.push(
+        { label: 'Profile', path: '/profile' },
         { label: 'Home', path: '/passenger-home' },
+        { label: 'Logout', onClick: () => this.handleLogout() }
+      );
+    } else if (user.role === 'admin') {
+      links.push(
+        { label: 'Profile', path: '/profile' },
         { label: 'Logout', onClick: () => this.handleLogout() }
       );
     }
@@ -46,4 +57,7 @@ export class App {
     this.authService.logout();
     this.router.navigate(['/']);
   }
+
+  // Show development helper based on environment configuration
+  isDevelopment = !this.environmentService.isProduction();
 }

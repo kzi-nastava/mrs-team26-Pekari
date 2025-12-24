@@ -55,9 +55,7 @@ export class AuthService {
           lastName: userData.lastName,
           role: 'passenger'
         };
-
-        // Note: We don't set the user signal here anymore because
-        // the user needs to activate their account first.
+        // No signal used, user has to activate account via email
         return newUser;
       })
     );
