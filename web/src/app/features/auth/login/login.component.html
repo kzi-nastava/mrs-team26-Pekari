@@ -1,0 +1,62 @@
+<div class="login-container">
+  <div class="login-card">
+    <div class="login-header">
+      <h1>BlackCar</h1>
+      <p>Sign in to continue</p>
+    </div>
+
+    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+      @if (errorMessage()) {
+        <div class="error-message">
+          {{ errorMessage() }}
+        </div>
+      }
+
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input
+          type="email"
+          id="email"
+          formControlName="email"
+          placeholder="you@email.com"
+          [class.invalid]="loginForm.get('email')?.invalid && loginForm.get('email')?.touched"
+        >
+        @if (loginForm.get('email')?.invalid && loginForm.get('email')?.touched) {
+          <div class="field-error">
+            @if (loginForm.get('email')?.errors?.['required']) { Email is required }
+            @if (loginForm.get('email')?.errors?.['email']) { Invalid email format }
+          </div>
+        }
+      </div>
+
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input
+          type="password"
+          id="password"
+          formControlName="password"
+          placeholder="••••••••"
+          [class.invalid]="loginForm.get('password')?.invalid && loginForm.get('password')?.touched"
+        >
+        @if (loginForm.get('password')?.invalid && loginForm.get('password')?.touched) {
+          <div class="field-error">
+            @if (loginForm.get('password')?.errors?.['required']) { Password is required }
+            @if (loginForm.get('password')?.errors?.['minlength']) { Password must be at least 6 characters }
+          </div>
+        }
+      </div>
+
+      <button type="submit" class="btn-login" [disabled]="loginForm.invalid">
+        Log in
+      </button>
+
+      <button type="button" class="btn-forgot" routerLink="/forgot-password">
+        Forgot password
+      </button>
+
+      <div class="register-link">
+        Don't have an account? <a routerLink="/register">Register</a>
+      </div>
+    </form>
+  </div>
+</div>
