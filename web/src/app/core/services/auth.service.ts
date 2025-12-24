@@ -20,21 +20,6 @@ export class AuthService {
   private checkSession(): void {
     // This will be replaced with a call to a "Who Am I" endpoint
     // to fetch the user based on the session cookie/token.
-
-    // DEVELOPMENT: Auto-login for testing (remove in production)
-    // Set to false to disable auto-login
-    const DEV_AUTO_LOGIN = false;
-    if (DEV_AUTO_LOGIN) {
-      const mockUser: User = {
-        id: '1',
-        email: 'driver@example.com',
-        username: 'driveruser',
-        firstName: 'John',
-        lastName: 'Doe',
-        role: 'driver'
-      };
-      this.currentUserSignal.set(mockUser);
-    }
   }
 
   login(credentials: any): Observable<User> {
@@ -70,9 +55,7 @@ export class AuthService {
           lastName: userData.lastName,
           role: 'passenger'
         };
-
-        // Note: We don't set the user signal here anymore because
-        // the user needs to activate their account first.
+        // No signal used, user has to activate account via email
         return newUser;
       })
     );
