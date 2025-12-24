@@ -2,9 +2,9 @@ import { Component, inject, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet, Router } from '@angular/router';
 import { AuthService } from './core/services/auth.service';
+import { EnvironmentService } from './core/services/environment.service';
 import { HeaderComponent, type NavLink } from './shared/components/header/header.component';
 import { DevLoginHelperComponent } from './core/components/dev-login-helper.component';
-import { environment } from '../environments/environment';
 
 @Component({
   selector: 'app-root',
@@ -15,6 +15,7 @@ import { environment } from '../environments/environment';
 export class App {
   private authService = inject(AuthService);
   private router = inject(Router);
+  private environmentService = inject(EnvironmentService);
   title = 'BlackCar';
 
   navLinksLeft = computed(() => {
@@ -58,5 +59,5 @@ export class App {
   }
 
   // Show development helper based on environment configuration
-  isDevelopment = environment.development;
+  isDevelopment = !this.environmentService.isProduction();
 }
