@@ -39,6 +39,38 @@ The project is divided into three main Maven modules:
 ### Prerequisites
 - Java 17 or higher
 - Maven 3.6+
+- PostgreSQL database (or any other database you configure)
+
+### Environment Setup
+
+1. **Copy the example environment file:**
+   ```bash
+   cp .env.example .env
+   ```
+
+2. **Configure your environment variables in `.env`:**
+   ```properties
+   # Database Configuration
+   DB_URL=jdbc:postgresql://localhost:5432/blackcar
+   DB_USERNAME=postgres
+   DB_PASSWORD=your_password
+
+   # JWT Configuration
+   JWT_SECRET=your_jwt_secret_key_at_least_256_bits
+   JWT_EXPIRATION=86400000
+
+   # Server Configuration
+   SERVER_PORT=8080
+
+   # CORS Configuration
+   CORS_ALLOWED_ORIGINS=http://localhost:4200
+   ```
+
+3. **Important Notes:**
+   - The `.env` file is **gitignored** and should **never be committed** to version control
+   - Each developer should have their own local `.env` file
+   - For production, use environment variables set at the OS/container level instead of `.env` file
+   - The application uses `spring-dotenv` library to automatically load variables from `.env` on startup
 
 ### Build the Project
 To build all modules and install them to your local repository, run the following command from the `backend` directory:
