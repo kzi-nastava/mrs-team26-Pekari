@@ -1,4 +1,4 @@
-package com.example.blackcar.presentation.views;
+package com.example.blackcar.presentation.home;
 
 import android.os.Bundle;
 
