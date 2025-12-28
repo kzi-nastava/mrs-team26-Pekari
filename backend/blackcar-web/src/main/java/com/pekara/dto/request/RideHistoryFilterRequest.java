@@ -13,6 +13,6 @@ public class RideHistoryFilterRequest {
 
     private LocalDateTime startDate;
     private LocalDateTime endDate;
-    private String sortBy;
-    private String sortDirection;
+    private String sortBy; // e.g., "startTime", "endTime", "price"
+    private String sortDirection; // "ASC" or "DESC"
 }
