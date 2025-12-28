@@ -5,6 +5,7 @@ import com.pekara.dto.request.EstimateRideRequest;
 import com.pekara.dto.request.InconsistencyReportRequest;
 import com.pekara.dto.request.OrderRideRequest;
 import com.pekara.dto.request.RideHistoryFilterRequest;
+import com.pekara.dto.request.RideRatingRequest;
 import com.pekara.dto.response.MessageResponse;
 import com.pekara.dto.response.OrderRideResponse;
 import com.pekara.dto.response.RideDetailResponse;
@@ -217,6 +218,28 @@ public class RideController {
 
         log.info("Inconsistency reported for ride {}", rideId);
         return ResponseEntity.ok(new MessageResponse("Inconsistency reported successfully."));
+    }
+
+    @Operation(summary = "Rate ride", description = "Rate a completed ride (vehicle and driver) - Protected endpoint (Passengers only)")
+    @PreAuthorize("hasRole('PASSENGER')")
+    @PostMapping("/{rideId}/rate")
+    public ResponseEntity<MessageResponse> rateRide(
+            @PathVariable Long rideId,
+            @Valid @RequestBody RideRatingRequest request) {
+
+        log.debug("Rating ride {} - Vehicle: {}/5, Driver: {}/5", rideId, request.getVehicleRating(), request.getDriverRating());
+
+        // TODO: Implement ride rating via RideService
+        // - Verify user is a passenger on this ride
+        // - Verify ride is COMPLETED
+        // - Verify ride was completed within last 3 days (rating deadline)
+        // - Verify user hasn't already rated this ride
+        // - Store rating (vehicle rating, driver rating, comment)
+        // - Update driver's average rating
+        // - Send email/notification to passenger confirming rating submission
+
+        log.info("Ride {} rated successfully", rideId);
+        return ResponseEntity.ok(new MessageResponse("Ride rated successfully."));
     }
 
     @Operation(summary = "Get user ride history", description = "View ride history for a user with filtering. Users can view their own history, admins can view any user's history.")
