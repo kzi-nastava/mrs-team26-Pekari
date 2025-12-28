@@ -32,6 +32,7 @@ public class SecurityConfig {
                         // Auth endpoints - public
                         .requestMatchers("/api/v1/auth/login").permitAll()
                         .requestMatchers("/api/v1/auth/register/user").permitAll()
+                        .requestMatchers("/api/v1/auth/register/driver").permitAll()
                         .requestMatchers("/api/v1/auth/activate").permitAll()
                         .requestMatchers("/api/v1/auth/reset-password").permitAll()
                         .requestMatchers("/api/v1/auth/new-password").permitAll()

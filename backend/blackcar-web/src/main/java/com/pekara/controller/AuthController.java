@@ -2,10 +2,12 @@ package com.pekara.controller;
 
 import com.pekara.dto.request.LoginRequest;
 import com.pekara.dto.request.NewPasswordRequest;
+import com.pekara.dto.request.RegisterDriverRequest;
 import com.pekara.dto.request.RegisterUserRequest;
 import com.pekara.dto.request.ResetPasswordRequest;
 import com.pekara.dto.response.AuthResponse;
 import com.pekara.dto.response.MessageResponse;
+import com.pekara.dto.response.RegisterDriverResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -54,6 +56,29 @@ public class AuthController {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new MessageResponse("User registration successful. Please check your email to activate your account."));
     }
+
+        @Operation(summary = "Register driver", description = "Create a new driver account (typically pending admin approval)")
+        @PostMapping("/register/driver")
+        public ResponseEntity<RegisterDriverResponse> registerDriver(@Valid @RequestBody RegisterDriverRequest request) {
+        log.debug("Driver registration attempt for email: {}", request.getEmail());
+
+        // TODO: Implement driver registration logic via AuthService
+        // - Validate all required fields
+        // - Check if passwords match
+        // - Check if email is already registered
+        // - Validate vehicle fields (make/model/year/licensePlate/vin)
+        // - Create driver account (inactive / pending approval)
+        // - Notify admins or create approval workflow entry
+        // - Send activation email when approved or when account is created
+
+        log.info("Driver registered successfully (pending approval): {}", request.getEmail());
+        return ResponseEntity.status(HttpStatus.CREATED)
+            .body(new RegisterDriverResponse(
+                "Driver registration submitted successfully. Your account may require admin approval.",
+                request.getEmail(),
+                "PENDING_APPROVAL"
+            ));
+        }
 
     @GetMapping("/activate")
     public ResponseEntity<MessageResponse> activateAccount(@RequestParam("token") String token) {
