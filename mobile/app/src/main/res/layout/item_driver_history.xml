@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginStart="12dp"
+    android:layout_marginEnd="12dp"
+    android:layout_marginTop="6dp"
+    android:layout_marginBottom="6dp"
+    app:cardBackgroundColor="@color/card_surface"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="2dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="12dp">
+
+        <!-- Route Section -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:id="@+id/txtRoute"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textColor="@color/text_primary"
+                android:textStyle="bold"
+                android:textSize="16sp"
+                android:text="Airport → Downtown"
+                android:ellipsize="end"
+                android:maxLines="2" />
+
+            <TextView
+                android:id="@+id/txtPrice"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:textColor="@color/accent_success"
+                android:textStyle="bold"
+                android:textSize="16sp"
+                android:text="1500.00 RSD" />
+        </LinearLayout>
+
+        <!-- Time Section -->
+        <TextView
+            android:id="@+id/txtTime"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="7dp"
+            android:textColor="@color/text_tertiary"
+            android:textSize="13sp"
+            android:gravity="center_vertical"
+            android:drawableStart="@android:drawable/ic_menu_recent_history"
+            android:drawablePadding="6dp"
+            android:text="10:00 - 10:30" />
+
+        <!-- Passengers Section -->
+        <TextView
+            android:id="@+id/txtPassengers"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="5dp"
+            android:textColor="@color/text_tertiary"
+            android:textSize="13sp"
+            android:gravity="center_vertical"
+            android:drawableStart="@android:drawable/ic_menu_my_calendar"
+            android:drawablePadding="6dp"
+            android:text="Passengers: ..." />
+
+        <!-- Status Indicators Section -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginTop="9dp">
+
+            <!-- Canceled Indicator -->
+            <TextView
+                android:id="@+id/txtCanceled"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:visibility="gone"
+                android:textColor="@color/accent_danger"
+                android:textStyle="bold"
+                android:textSize="13sp"
+                android:gravity="center_vertical"
+                android:drawableStart="@android:drawable/ic_delete"
+                android:drawablePadding="6dp"
+                android:text="Canceled by passenger" />
+
+            <!-- Panic Indicator -->
+            <TextView
+                android:id="@+id/txtPanic"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="3dp"
+                android:visibility="gone"
+                android:textColor="@color/accent_danger"
+                android:textStyle="bold"
+                android:textSize="13sp"
+                android:gravity="center_vertical"
+                android:drawableStart="@android:drawable/ic_dialog_alert"
+                android:drawablePadding="6dp"
+                android:text="⚠ PANIC triggered" />
+        </LinearLayout>
+
+    </LinearLayout>
+
+</com.google.android.material.card.MaterialCardView>

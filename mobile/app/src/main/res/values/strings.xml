@@ -1,11 +1,27 @@
 <resources>
     <string name="app_name">BlackCar</string>
+    <string name="app_tagline">Premium Ride Services</string>
     <string name="action_settings">Settings</string>
+    <string name="title_home">Home</string>
+    <string name="title_driver_history">Ride History</string>
     <!-- Strings used for fragments for navigation -->
     <string name="first_fragment_label">First Fragment</string>
     <string name="second_fragment_label">Second Fragment</string>
     <string name="next">Next</string>
     <string name="previous">Previous</string>
+
+    <!-- Driver History Feature -->
+    <string name="driver_history_title">Ride History</string>
+    <string name="driver_history_filter_by_date">Filter by date</string>
+    <string name="driver_history_clear_filter">Clear Filter</string>
+    <string name="driver_history_empty_state_title">No rides found</string>
+    <string name="driver_history_empty_state_subtitle">Try adjusting your date filter</string>
+    <string name="driver_history_error_loading">Failed to load ride history</string>
+    <string name="driver_history_passengers_label">Passengers: %s</string>
+    <string name="driver_history_canceled_by">Canceled by %s</string>
+    <string name="driver_history_panic_triggered">⚠ PANIC triggered</string>
+    <string name="driver_history_price_format">%.2f RSD</string>
+    <string name="driver_history_date_picker_title">Filter by date</string>
 
     <string name="lorem_ipsum">
         Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam in scelerisque sem. Mauris
