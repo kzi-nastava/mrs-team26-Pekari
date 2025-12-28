@@ -2,4 +2,24 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+
+    <!-- Design System Colors -->
+    <!-- Primary Background -->
+    <color name="bg_primary">#0f0f0f</color>
+    <!-- Card Surface -->
+    <color name="card_surface">#1a1a1a</color>
+    <!-- Primary Text -->
+    <color name="text_primary">#ffffff</color>
+    <!-- Secondary Text -->
+    <color name="text_secondary">#a1a1a1</color>
+    <!-- Accent (Success) -->
+    <color name="accent_success">#22c55e</color>
+    <!-- Danger (Panic) -->
+    <color name="accent_danger">#ef4444</color>
+    <!-- Tertiary Text -->
+    <color name="text_tertiary">#999999</color>
+    <!-- Divider -->
+    <color name="divider">#333333</color>
+    <!-- Subtle Text -->
+    <color name="text_subtle">#888888</color>
 </resources>

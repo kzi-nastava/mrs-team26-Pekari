@@ -2,6 +2,30 @@
 <navigation xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/nav_graph">
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/homeFragment">
+
+    <!-- Home Fragment - Landing Page -->
+    <fragment
+        android:id="@+id/homeFragment"
+        android:name="com.example.blackcar.presentation.home.views.HomeFragment"
+        android:label="@string/title_home"
+        tools:layout="@layout/fragment_home">
+
+        <action
+            android:id="@+id/action_home_to_driver_history"
+            app:destination="@id/driverHistoryFragment"
+            app:enterAnim="@android:anim/slide_in_left"
+            app:exitAnim="@android:anim/slide_out_right"
+            app:popEnterAnim="@android:anim/slide_in_left"
+            app:popExitAnim="@android:anim/slide_out_right" />
+    </fragment>
+
+    <!-- Driver History Fragment -->
+    <fragment
+        android:id="@+id/driverHistoryFragment"
+        android:name="com.example.blackcar.presentation.history.views.DriverHistoryFragment"
+        android:label="@string/title_driver_history"
+        tools:layout="@layout/fragment_driver_history" />
 
 </navigation>

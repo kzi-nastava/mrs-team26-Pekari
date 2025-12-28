@@ -12,7 +12,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.BlackCar">
         <activity
-            android:name=".presentation.views.MainActivity"
+            android:name=".presentation.home.MainActivity"
             android:exported="true"
             android:theme="@style/Theme.BlackCar">
             <intent-filter>

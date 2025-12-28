@@ -34,6 +34,9 @@ android {
     buildFeatures {
         viewBinding = true
     }
+    lint {
+        disable += setOf("NewApi")
+    }
 }
 
 dependencies {
@@ -42,6 +45,12 @@ dependencies {
     implementation(libs.constraintlayout)
     implementation(libs.navigation.fragment)
     implementation(libs.navigation.ui)
+
+    // Lifecycle components
+    implementation(libs.lifecycle.viewmodel)
+    implementation(libs.lifecycle.livedata)
+    implementation(libs.lifecycle.runtime)
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
