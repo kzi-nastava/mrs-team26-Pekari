@@ -6,6 +6,7 @@ import com.pekara.dto.request.RegisterRequest;
 import com.pekara.dto.request.ResetPasswordRequest;
 import com.pekara.dto.response.AuthResponse;
 import com.pekara.dto.response.MessageResponse;
+import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,7 +19,7 @@ public class AuthController {
 
 
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest request) {
+    public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
         log.debug("Login attempt for email: {}", request.getEmail());
 
         // TODO: Implement login logic via AuthService
@@ -32,7 +33,7 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<MessageResponse> register(@RequestBody RegisterRequest request) {
+    public ResponseEntity<MessageResponse> register(@Valid @RequestBody RegisterRequest request) {
         log.debug("Registration attempt for email: {}", request.getEmail());
 
         // TODO: Implement registration logic via AuthService
@@ -63,7 +64,7 @@ public class AuthController {
     }
 
     @PostMapping("/reset-password")
-    public ResponseEntity<MessageResponse> resetPassword(@RequestBody ResetPasswordRequest request) {
+    public ResponseEntity<MessageResponse> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
         log.debug("Password reset requested for email: {}", request.getEmail());
 
         // TODO: Implement password reset request logic via AuthService
@@ -76,7 +77,7 @@ public class AuthController {
     }
 
     @PostMapping("/new-password")
-    public ResponseEntity<MessageResponse> setNewPassword(@RequestBody NewPasswordRequest request) {
+    public ResponseEntity<MessageResponse> setNewPassword(@Valid @RequestBody NewPasswordRequest request) {
         log.debug("New password submission attempt");
 
         // TODO: Implement new password logic via AuthService
