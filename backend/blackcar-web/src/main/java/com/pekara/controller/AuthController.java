@@ -2,7 +2,7 @@ package com.pekara.controller;
 
 import com.pekara.dto.request.LoginRequest;
 import com.pekara.dto.request.NewPasswordRequest;
-import com.pekara.dto.request.RegisterRequest;
+import com.pekara.dto.request.RegisterUserRequest;
 import com.pekara.dto.request.ResetPasswordRequest;
 import com.pekara.dto.response.AuthResponse;
 import com.pekara.dto.response.MessageResponse;
@@ -32,11 +32,11 @@ public class AuthController {
         return ResponseEntity.ok(new AuthResponse("dummy-token", request.getEmail(), "USER"));
     }
 
-    @PostMapping("/register")
-    public ResponseEntity<MessageResponse> register(@Valid @RequestBody RegisterRequest request) {
-        log.debug("Registration attempt for email: {}", request.getEmail());
+    @PostMapping("/register/user")
+    public ResponseEntity<MessageResponse> registerUser(@Valid @RequestBody RegisterUserRequest request) {
+        log.debug("User registration attempt for email: {}", request.getEmail());
 
-        // TODO: Implement registration logic via AuthService
+        // TODO: Implement user registration logic via AuthService
         // - Validate all required fields
         // - Check if passwords match
         // - Check if email is already registered
@@ -47,7 +47,7 @@ public class AuthController {
 
         log.info("User registered successfully: {}", request.getEmail());
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(new MessageResponse("Registration successful. Please check your email to activate your account."));
+                .body(new MessageResponse("User registration successful. Please check your email to activate your account."));
     }
 
     @GetMapping("/activate")
