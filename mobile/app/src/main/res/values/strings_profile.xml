@@ -1,0 +1,41 @@
+<resources>
+    <string name="nav_profile">Profile</string>
+    <string name="nav_approvals">Approvals</string>
+
+    <string name="profile_title">Profile Information</string>
+    <string name="basic_information">Basic Information</string>
+    <string name="driver_information">Driver Information</string>
+    <string name="hours_active_last_24h">Hours Active (Last 24H)</string>
+    <string name="vehicle_information">Vehicle Information</string>
+
+    <string name="first_name">First name</string>
+    <string name="last_name">Last name</string>
+    <string name="email">Email</string>
+    <string name="email_cannot_change">Email cannot be changed</string>
+    <string name="phone">Phone</string>
+    <string name="address">Address</string>
+
+    <string name="edit_profile">Edit Profile</string>
+    <string name="update_profile">Update Profile</string>
+    <string name="request_changes">Request Changes</string>
+    <string name="cancel">Cancel</string>
+    <string name="change_password">Change Password</string>
+    <string name="change_picture">Change Picture</string>
+
+    <string name="password_dialog_title">Change Password</string>
+    <string name="current_password">Current password</string>
+    <string name="new_password">New password</string>
+    <string name="confirm_password">Confirm password</string>
+    <string name="submit">Submit</string>
+
+    <string name="approvals_title">Pending Profile Change Requests</string>
+    <string name="approve">Approve</string>
+    <string name="reject">Reject</string>
+    <string name="rejection_reason">Rejection reason</string>
+    <string name="optional">Optional</string>
+
+    <string name="dev_role">Dev role</string>
+    <string name="role_passenger">Passenger</string>
+    <string name="role_driver">Driver</string>
+    <string name="role_admin">Admin</string>
+</resources>

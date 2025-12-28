@@ -2,6 +2,18 @@
 <navigation xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/nav_graph">
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/profileFragment">
 
+    <fragment
+        android:id="@+id/profileFragment"
+        android:name="com.example.blackcar.presentation.views.profile.ProfileFragment"
+        android:label="@string/nav_profile"
+        tools:layout="@layout/fragment_profile" />
+
+    <fragment
+        android:id="@+id/approvalsFragment"
+        android:name="com.example.blackcar.presentation.views.profile.ApprovalsFragment"
+        android:label="@string/nav_approvals"
+        tools:layout="@layout/fragment_approvals" />
 </navigation>

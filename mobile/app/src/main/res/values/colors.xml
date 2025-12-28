@@ -2,4 +2,17 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+
+    <!-- Web-like palette -->
+    <color name="bc_bg">#0F0F0F</color>
+    <color name="bc_card">#1A1A1A</color>
+    <color name="bc_input_bg">#111111</color>
+    <color name="bc_border">#100606</color>
+    <color name="bc_primary_text">#FFFFFF</color>
+    <color name="bc_secondary_text">#A1A1A1</color>
+    <color name="bc_accent">#22C55E</color>
+    <color name="bc_danger">#EF4444</color>
+
+    <color name="bc_success_tint">#264C2F</color>
+    <color name="bc_error_tint">#4A1E1E</color>
 </resources>

@@ -1,9 +1,80 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme. -->
     <style name="Base.Theme.BlackCar" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your light theme here. -->
-        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+        <item name="android:statusBarColor">@color/bc_bg</item>
+        <item name="android:navigationBarColor">@color/bc_bg</item>
+
+        <item name="colorPrimary">@color/bc_accent</item>
+        <item name="colorOnPrimary">@color/black</item>
+        <item name="colorSecondary">@color/bc_secondary_text</item>
+        <item name="colorOnSecondary">@color/bc_primary_text</item>
+        <item name="colorError">@color/bc_danger</item>
+        <item name="colorOnError">@color/bc_primary_text</item>
+
+        <item name="colorSurface">@color/bc_bg</item>
+        <item name="colorOnSurface">@color/bc_primary_text</item>
+        <item name="colorSurfaceContainer">@color/bc_card</item>
+
+        <item name="android:windowBackground">@color/bc_bg</item>
+
+        <item name="materialCardViewStyle">@style/Widget.BlackCar.Card</item>
+        <item name="textInputStyle">@style/Widget.BlackCar.TextInputLayout</item>
     </style>
 
     <style name="Theme.BlackCar" parent="Base.Theme.BlackCar" />
+
+    <style name="Widget.BlackCar.Card" parent="Widget.Material3.MaterialCardView.Filled">
+        <item name="cardBackgroundColor">@color/bc_card</item>
+        <item name="strokeColor">@color/bc_border</item>
+        <item name="strokeWidth">1dp</item>
+        <item name="shapeAppearance">@style/Shape.BlackCar.Rounded16</item>
+    </style>
+
+    <style name="Shape.BlackCar.Rounded16" parent="ShapeAppearance.Material3.MediumComponent">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">16dp</item>
+    </style>
+
+    <style name="Widget.BlackCar.TextInputLayout" parent="Widget.Material3.TextInputLayout.OutlinedBox">
+        <item name="boxBackgroundColor">@color/bc_input_bg</item>
+        <item name="boxStrokeColor">@color/bc_border</item>
+        <item name="boxStrokeColorFocused">@color/bc_accent</item>
+        <item name="hintTextColor">@color/bc_secondary_text</item>
+        <item name="android:textColorHint">@color/bc_secondary_text</item>
+        <item name="android:textColor">@color/bc_primary_text</item>
+    </style>
+
+    <style name="TextAppearance.BlackCar.SectionTitle" parent="TextAppearance.Material3.LabelLarge">
+        <item name="android:textAllCaps">true</item>
+        <item name="android:textColor">@color/bc_secondary_text</item>
+        <item name="android:letterSpacing">0.08</item>
+    </style>
+
+    <style name="TextAppearance.BlackCar.Helper" parent="TextAppearance.Material3.BodySmall">
+        <item name="android:textColor">@color/bc_secondary_text</item>
+    </style>
+
+    <style name="Widget.BlackCar.PrimaryButton" parent="Widget.Material3.Button">
+        <item name="android:minHeight">44dp</item>
+        <item name="android:textAllCaps">true</item>
+        <item name="android:letterSpacing">0.08</item>
+        <item name="backgroundTint">@color/bc_primary_text</item>
+        <item name="android:textColor">@color/black</item>
+    </style>
+
+    <style name="Widget.BlackCar.SecondaryButton" parent="Widget.Material3.Button.OutlinedButton">
+        <item name="android:minHeight">44dp</item>
+        <item name="android:textAllCaps">true</item>
+        <item name="android:letterSpacing">0.08</item>
+        <item name="strokeColor">@color/bc_border</item>
+        <item name="android:textColor">@color/bc_secondary_text</item>
+    </style>
+
+    <style name="Widget.BlackCar.DangerButton" parent="Widget.Material3.Button.OutlinedButton">
+        <item name="android:minHeight">44dp</item>
+        <item name="android:textAllCaps">true</item>
+        <item name="android:letterSpacing">0.08</item>
+        <item name="strokeColor">@color/bc_danger</item>
+        <item name="android:textColor">@color/bc_danger</item>
+    </style>
 </resources>
