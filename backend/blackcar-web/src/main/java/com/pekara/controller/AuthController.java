@@ -6,6 +6,8 @@ import com.pekara.dto.request.RegisterUserRequest;
 import com.pekara.dto.request.ResetPasswordRequest;
 import com.pekara.dto.response.AuthResponse;
 import com.pekara.dto.response.MessageResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -15,9 +17,11 @@ import org.springframework.web.bind.annotation.*;
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/auth")
+@Tag(name = "Authentication", description = "User authentication and registration endpoints")
 public class AuthController {
 
 
+    @Operation(summary = "User login", description = "Authenticate user with email and password")
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
         log.debug("Login attempt for email: {}", request.getEmail());
@@ -32,6 +36,7 @@ public class AuthController {
         return ResponseEntity.ok(new AuthResponse("dummy-token", request.getEmail(), "USER"));
     }
 
+    @Operation(summary = "Register user", description = "Create a new user account")
     @PostMapping("/register/user")
     public ResponseEntity<MessageResponse> registerUser(@Valid @RequestBody RegisterUserRequest request) {
         log.debug("User registration attempt for email: {}", request.getEmail());

@@ -4,6 +4,8 @@ import com.pekara.dto.request.CancelRideRequest;
 import com.pekara.dto.request.EstimateRideRequest;
 import com.pekara.dto.response.MessageResponse;
 import com.pekara.dto.response.RideEstimateResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -14,9 +16,10 @@ import java.math.BigDecimal;
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/rides")
+@Tag(name = "Rides", description = "Ride management endpoints")
 public class RideController {
 
-
+    @Operation(summary = "Estimate ride", description = "Calculate ride estimation (price, duration, distance) - Public endpoint")
     @PostMapping("/estimate")
     public ResponseEntity<RideEstimateResponse> estimateRide(@Valid @RequestBody EstimateRideRequest request) {
         log.debug("Ride estimation requested from {} to {}", request.getPickupLocation(), request.getDropoffLocation());
@@ -40,6 +43,7 @@ public class RideController {
     }
 
 
+    @Operation(summary = "Cancel ride", description = "Cancel a scheduled or active ride - Protected endpoint")
     @PostMapping("/{rideId}/cancel")
     public ResponseEntity<MessageResponse> cancelRide(
             @PathVariable Long rideId,
@@ -65,6 +69,7 @@ public class RideController {
      * 2.6.5 Stop Ride in Progress
      * Protected endpoint - drivers only
      */
+    @Operation(summary = "Stop ride", description = "Stop a ride in progress - Protected endpoint (Drivers only)")
     @PostMapping("/{rideId}/stop")
     public ResponseEntity<MessageResponse> stopRide(@PathVariable Long rideId) {
         log.debug("Stop ride requested for rideId: {}", rideId);
