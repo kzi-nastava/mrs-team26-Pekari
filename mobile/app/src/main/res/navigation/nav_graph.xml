@@ -3,7 +3,41 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/nav_graph"
-    app:startDestination="@id/homeFragment">
+    app:startDestination="@id/loginFragment">
+
+    <!-- Login Fragment - Start Destination -->
+    <fragment
+        android:id="@+id/loginFragment"
+        android:name="com.example.blackcar.presentation.auth.views.LoginFragment"
+        android:label="@string/title_login"
+        tools:layout="@layout/fragment_login">
+
+        <action
+            android:id="@+id/action_login_to_home"
+            app:destination="@id/homeFragment"
+            app:popUpTo="@id/loginFragment"
+            app:popUpToInclusive="true" />
+
+        <action
+            android:id="@+id/action_login_to_forgot_password"
+            app:destination="@id/forgotPasswordFragment" />
+
+        <action
+            android:id="@+id/action_login_to_register"
+            app:destination="@id/registerFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/forgotPasswordFragment"
+        android:name="com.example.blackcar.presentation.auth.views.ForgotPasswordFragment"
+        android:label="@string/title_forgot_password"
+        tools:layout="@layout/fragment_forgot_password" />
+
+    <fragment
+        android:id="@+id/registerFragment"
+        android:name="com.example.blackcar.presentation.auth.views.RegisterFragment"
+        android:label="@string/title_register"
+        tools:layout="@layout/fragment_register" />
 
     <!-- Home Fragment - Landing Page -->
     <fragment

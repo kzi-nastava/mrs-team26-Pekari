@@ -43,13 +43,23 @@ public class MainActivity extends AppCompatActivity {
                 navController.navigate(R.id.driverHistoryFragment);
             } else if (id == R.id.nav_dashboard) {
                 navController.navigate(R.id.homeFragment);
-            }else {
+            } else {
                 return false;
             }
             return true;
         });
 
-
+        navController.addOnDestinationChangedListener((controller, destination, arguments) -> {
+            if (destination.getId() == R.id.loginFragment || 
+                destination.getId() == R.id.registerFragment ||
+                destination.getId() == R.id.forgotPasswordFragment) {
+                binding.bottomNavigation.setVisibility(android.view.View.GONE);
+                binding.appBarLayout.setVisibility(android.view.View.GONE);
+            } else {
+                binding.bottomNavigation.setVisibility(android.view.View.VISIBLE);
+                binding.appBarLayout.setVisibility(android.view.View.VISIBLE);
+            }
+        });
     }
 
     @Override
