@@ -2,6 +2,7 @@ package com.pekara.controller;
 
 import com.pekara.dto.request.CancelRideRequest;
 import com.pekara.dto.request.EstimateRideRequest;
+import com.pekara.dto.request.InconsistencyReportRequest;
 import com.pekara.dto.request.OrderRideRequest;
 import com.pekara.dto.request.RideHistoryFilterRequest;
 import com.pekara.dto.response.MessageResponse;
@@ -9,6 +10,7 @@ import com.pekara.dto.response.OrderRideResponse;
 import com.pekara.dto.response.RideDetailResponse;
 import com.pekara.dto.response.RideEstimateResponse;
 import com.pekara.dto.response.RideHistoryResponse;
+import com.pekara.dto.response.RideTrackingResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -168,6 +170,55 @@ public class RideController {
         return ResponseEntity.ok(new MessageResponse("Ride completed successfully."));
     }
 
+    @Operation(summary = "Track ride", description = "Get real-time tracking information for an active ride - Protected endpoint")
+    @PreAuthorize("hasAnyRole('PASSENGER', 'DRIVER')")
+    @GetMapping("/{rideId}/track")
+    public ResponseEntity<RideTrackingResponse> trackRide(@PathVariable Long rideId) {
+        log.debug("Ride tracking requested for rideId: {}", rideId);
+
+        // TODO: Implement ride tracking via RideService
+        // - Verify user is a passenger or driver on this ride
+        // - Fetch current vehicle location
+        // - Calculate distance to next stop and final destination
+        // - Calculate estimated time to destination (updates as vehicle moves)
+        // - Return real-time tracking information
+
+        RideTrackingResponse response = new RideTrackingResponse(
+                rideId,
+                45.2671,
+                19.8335,
+                12,
+                4.5,
+                "IN_PROGRESS",
+                "Trg Slobode",
+                5,
+                new RideTrackingResponse.VehicleInfo(1L, "STANDARD", "NS-123-AB")
+        );
+
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "Report inconsistency", description = "Report driver inconsistency during an active ride - Protected endpoint (Passengers only)")
+    @PreAuthorize("hasRole('PASSENGER')")
+    @PostMapping("/{rideId}/report-inconsistency")
+    public ResponseEntity<MessageResponse> reportInconsistency(
+            @PathVariable Long rideId,
+            @Valid @RequestBody InconsistencyReportRequest request) {
+
+        log.debug("Inconsistency report for rideId: {} - {}", rideId, request.getDescription());
+
+        // TODO: Implement inconsistency reporting via RideService
+        // - Verify user is a passenger on this ride
+        // - Verify ride is currently IN_PROGRESS
+        // - Create inconsistency report with passenger info and description
+        // - Store report linked to the ride
+        // - Reports will be shown in ride history and admin reports
+        // - Notify admin about the report
+
+        log.info("Inconsistency reported for ride {}", rideId);
+        return ResponseEntity.ok(new MessageResponse("Inconsistency reported successfully."));
+    }
+
     @Operation(summary = "Get user ride history", description = "View ride history for a user with filtering. Users can view their own history, admins can view any user's history.")
     @PostMapping("/users/{userId}/history/filter")
     public ResponseEntity<List<RideHistoryResponse>> getUserRideHistory(
@@ -195,6 +246,40 @@ public class RideController {
     }
 
     @Operation(summary = "Get ride details", description = "View detailed information about a specific ride. Users can view their own rides, admins can view any ride.")
+    @PreAuthorize("hasAnyRole(DRIVER, ADMIN)")
+    @GetMapping("/{rideId}")
+    public ResponseEntity<RideDetailResponse> getRideDetails(
+            @PathVariable Long rideId,
+            @AuthenticationPrincipal UserDetails currentUser) {
+
+        log.debug("Requesting details for rideId: {}", rideId);
+
+        // TODO: Implement ride detail retrieval via RideService
+        // - Get current user's ID and roles from UserDetails
+        // - Fetch ride information
+        // - Verify permissions:
+        //   * If currentUser is driver or passenger on this ride -> allow
+        //   * If currentUser has ADMIN role -> allow
+        //   * Otherwise -> throw 403 Forbidden
+        // - Return complete ride information including:
+        //   * Route with all stops
+        //   * Driver information
+        //   * All passengers information
+        //   * Inconsistency reports
+        //   * Ratings and comments
+        //   * Panic button activation status
+        //   * Cancellation details if applicable
+
+        RideDetailResponse rideDetails = new RideDetailResponse();
+
+        log.debug("Retrieved details for rideId: {}", rideId);
+        return ResponseEntity.ok(rideDetails);
+    }
+
+
+
+    @Operation(summary = "Get ride details", description = "View detailed information about a specific ride. Users can view their own rides, admins can view any ride.")
+    @PreAuthorize("hasRole(USER)")
     @GetMapping("/{rideId}")
     public ResponseEntity<RideDetailResponse> getRideDetails(
             @PathVariable Long rideId,
