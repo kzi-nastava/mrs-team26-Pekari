@@ -25,5 +25,4 @@ public class PassengerProfileResponse {
     // Passenger-specific fields
     private Integer totalRides;
     private Double averageRating;
-    private String paymentMethod;
 }

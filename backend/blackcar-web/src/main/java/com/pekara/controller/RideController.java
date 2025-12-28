@@ -13,7 +13,6 @@ import com.pekara.dto.response.PassengerRideDetailResponse;
 import com.pekara.dto.response.PassengerRideHistoryResponse;
 import com.pekara.dto.response.RideDetailResponse;
 import com.pekara.dto.response.RideEstimateResponse;
-import com.pekara.dto.response.RideHistoryResponse;
 import com.pekara.dto.response.RideTrackingResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
