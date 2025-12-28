@@ -3,19 +3,26 @@ package com.pekara.controller;
 import com.pekara.dto.request.CancelRideRequest;
 import com.pekara.dto.request.EstimateRideRequest;
 import com.pekara.dto.request.OrderRideRequest;
+import com.pekara.dto.request.RideHistoryFilterRequest;
 import com.pekara.dto.response.MessageResponse;
 import com.pekara.dto.response.OrderRideResponse;
+import com.pekara.dto.response.RideDetailResponse;
 import com.pekara.dto.response.RideEstimateResponse;
+import com.pekara.dto.response.RideHistoryResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Slf4j
 @RestController
@@ -159,5 +166,61 @@ public class RideController {
 
         log.info("Ride {} stopped and completed successfully", rideId);
         return ResponseEntity.ok(new MessageResponse("Ride completed successfully."));
+    }
+
+    @Operation(summary = "Get user ride history", description = "View ride history for a user with filtering. Users can view their own history, admins can view any user's history.")
+    @PostMapping("/users/{userId}/history/filter")
+    public ResponseEntity<List<RideHistoryResponse>> getUserRideHistory(
+            @PathVariable Long userId,
+            @RequestBody RideHistoryFilterRequest filterRequest,
+            @AuthenticationPrincipal UserDetails currentUser) {
+
+        log.debug("Requesting ride history for userId: {} with filters", userId);
+
+        // TODO: Implement ride history retrieval via RideService
+        // - Get current user's ID and roles from UserDetails
+        // - Verify permissions:
+        //   * If currentUser.id == userId -> allow (own history)
+        //   * If currentUser has ADMIN role -> allow (any user's history)
+        //   * Otherwise -> throw 403 Forbidden
+        // - Fetch all rides for the specified user (as driver or passenger)
+        // - Filter by date range if provided
+        // - Sort by specified field (startTime, endTime, price, etc.)
+        // - Return list of rides with summary information
+
+        List<RideHistoryResponse> rideHistory = new ArrayList<>();
+
+        log.debug("Retrieved {} rides for userId: {}", rideHistory.size(), userId);
+        return ResponseEntity.ok(rideHistory);
+    }
+
+    @Operation(summary = "Get ride details", description = "View detailed information about a specific ride. Users can view their own rides, admins can view any ride.")
+    @GetMapping("/{rideId}")
+    public ResponseEntity<RideDetailResponse> getRideDetails(
+            @PathVariable Long rideId,
+            @AuthenticationPrincipal UserDetails currentUser) {
+
+        log.debug("Requesting details for rideId: {}", rideId);
+
+        // TODO: Implement ride detail retrieval via RideService
+        // - Get current user's ID and roles from UserDetails
+        // - Fetch ride information
+        // - Verify permissions:
+        //   * If currentUser is driver or passenger on this ride -> allow
+        //   * If currentUser has ADMIN role -> allow
+        //   * Otherwise -> throw 403 Forbidden
+        // - Return complete ride information including:
+        //   * Route with all stops
+        //   * Driver information
+        //   * All passengers information
+        //   * Inconsistency reports
+        //   * Ratings and comments
+        //   * Panic button activation status
+        //   * Cancellation details if applicable
+
+        RideDetailResponse rideDetails = new RideDetailResponse();
+
+        log.debug("Retrieved details for rideId: {}", rideId);
+        return ResponseEntity.ok(rideDetails);
     }
 }
