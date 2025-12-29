@@ -38,6 +38,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/auth/new-password").permitAll()
                         // Ride estimation - public
                         .requestMatchers("/api/v1/rides/estimate").permitAll()
+                        // Available vehichles - public
+                        .requestMatchers("/api/v1/vehicles").permitAll()
                         // All other endpoints require authentication
                         .anyRequest().authenticated()
                 )
