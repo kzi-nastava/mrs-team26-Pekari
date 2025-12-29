@@ -2,13 +2,18 @@ package com.pekara.controller;
 
 import com.pekara.dto.request.CancelRideRequest;
 import com.pekara.dto.request.EstimateRideRequest;
+import com.pekara.dto.request.InconsistencyReportRequest;
 import com.pekara.dto.request.OrderRideRequest;
 import com.pekara.dto.request.RideHistoryFilterRequest;
+import com.pekara.dto.request.RideRatingRequest;
+import com.pekara.dto.response.DriverRideHistoryResponse;
 import com.pekara.dto.response.MessageResponse;
 import com.pekara.dto.response.OrderRideResponse;
+import com.pekara.dto.response.PassengerRideDetailResponse;
+import com.pekara.dto.response.PassengerRideHistoryResponse;
 import com.pekara.dto.response.RideDetailResponse;
 import com.pekara.dto.response.RideEstimateResponse;
-import com.pekara.dto.response.RideHistoryResponse;
+import com.pekara.dto.response.RideTrackingResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -168,51 +173,153 @@ public class RideController {
         return ResponseEntity.ok(new MessageResponse("Ride completed successfully."));
     }
 
-    @Operation(summary = "Get user ride history", description = "View ride history for a user with filtering. Users can view their own history, admins can view any user's history.")
-    @PostMapping("/users/{userId}/history/filter")
-    public ResponseEntity<List<RideHistoryResponse>> getUserRideHistory(
-            @PathVariable Long userId,
-            @RequestBody RideHistoryFilterRequest filterRequest,
-            @AuthenticationPrincipal UserDetails currentUser) {
+    @Operation(summary = "Track ride", description = "Get real-time tracking information for an active ride - Protected endpoint")
+    @PreAuthorize("hasAnyRole('PASSENGER', 'DRIVER')")
+    @GetMapping("/{rideId}/track")
+    public ResponseEntity<RideTrackingResponse> trackRide(@PathVariable Long rideId) {
+        log.debug("Ride tracking requested for rideId: {}", rideId);
 
-        log.debug("Requesting ride history for userId: {} with filters", userId);
+        // TODO: Implement ride tracking via RideService
+        // - Verify user is a passenger or driver on this ride
+        // - Fetch current vehicle location
+        // - Calculate distance to next stop and final destination
+        // - Calculate estimated time to destination (updates as vehicle moves)
+        // - Return real-time tracking information
 
-        // TODO: Implement ride history retrieval via RideService
-        // - Get current user's ID and roles from UserDetails
-        // - Verify permissions:
-        //   * If currentUser.id == userId -> allow (own history)
-        //   * If currentUser has ADMIN role -> allow (any user's history)
-        //   * Otherwise -> throw 403 Forbidden
-        // - Fetch all rides for the specified user (as driver or passenger)
-        // - Filter by date range if provided
-        // - Sort by specified field (startTime, endTime, price, etc.)
-        // - Return list of rides with summary information
+        RideTrackingResponse response = new RideTrackingResponse(
+                rideId,
+                45.2671,
+                19.8335,
+                12,
+                4.5,
+                "IN_PROGRESS",
+                "Trg Slobode",
+                5,
+                new RideTrackingResponse.VehicleInfo(1L, "STANDARD", "NS-123-AB")
+        );
 
-        List<RideHistoryResponse> rideHistory = new ArrayList<>();
-
-        log.debug("Retrieved {} rides for userId: {}", rideHistory.size(), userId);
-        return ResponseEntity.ok(rideHistory);
+        return ResponseEntity.ok(response);
     }
 
-    @Operation(summary = "Get ride details", description = "View detailed information about a specific ride. Users can view their own rides, admins can view any ride.")
-    @GetMapping("/{rideId}")
-    public ResponseEntity<RideDetailResponse> getRideDetails(
+    @Operation(summary = "Report inconsistency", description = "Report driver inconsistency during an active ride - Protected endpoint (Passengers only)")
+    @PreAuthorize("hasRole('PASSENGER')")
+    @PostMapping("/{rideId}/report-inconsistency")
+    public ResponseEntity<MessageResponse> reportInconsistency(
+            @PathVariable Long rideId,
+            @Valid @RequestBody InconsistencyReportRequest request) {
+
+        log.debug("Inconsistency report for rideId: {} - {}", rideId, request.getDescription());
+
+        // TODO: Implement inconsistency reporting via RideService
+        // - Verify user is a passenger on this ride
+        // - Verify ride is currently IN_PROGRESS
+        // - Create inconsistency report with passenger info and description
+        // - Store report linked to the ride
+        // - Reports will be shown in ride history and admin reports
+        // - Notify admin about the report
+
+        log.info("Inconsistency reported for ride {}", rideId);
+        return ResponseEntity.ok(new MessageResponse("Inconsistency reported successfully."));
+    }
+
+    @Operation(summary = "Rate ride", description = "Rate a completed ride (vehicle and driver) - Protected endpoint (Passengers only)")
+    @PreAuthorize("hasRole('PASSENGER')")
+    @PostMapping("/{rideId}/rate")
+    public ResponseEntity<MessageResponse> rateRide(
+            @PathVariable Long rideId,
+            @Valid @RequestBody RideRatingRequest request) {
+
+        log.debug("Rating ride {} - Vehicle: {}/5, Driver: {}/5", rideId, request.getVehicleRating(), request.getDriverRating());
+
+        // TODO: Implement ride rating via RideService
+        // - Verify user is a passenger on this ride
+        // - Verify ride is COMPLETED
+        // - Verify ride was completed within last 3 days (rating deadline)
+        // - Verify user hasn't already rated this ride
+        // - Store rating (vehicle rating, driver rating, comment)
+        // - Update driver's average rating
+        // - Send email/notification to passenger confirming rating submission
+
+        log.info("Ride {} rated successfully", rideId);
+        return ResponseEntity.ok(new MessageResponse("Ride rated successfully."));
+    }
+
+    @Operation(summary = "Get driver ride history", description = "View driver's ride history with date filtering - Protected endpoint (Drivers only)")
+    @PreAuthorize("hasRole('DRIVER')")
+    @PostMapping("/history/driver")
+    public ResponseEntity<List<DriverRideHistoryResponse>> getDriverRideHistory(
+            @Valid @RequestBody RideHistoryFilterRequest filterRequest,
+            @AuthenticationPrincipal UserDetails currentUser) {
+
+        log.debug("Driver ride history requested with filters: {}", filterRequest);
+
+        // TODO: Implement driver ride history retrieval via RideService
+        // - Get current driver ID from UserDetails
+        // - Fetch all rides where user was the driver
+        // - Filter by date range (startDate to endDate)
+        // - For each ride include:
+        //   * Start time and end time
+        //   * Pickup and dropoff locations
+        //   * Cancelled status and who cancelled (passenger name or "driver")
+        //   * Price
+        //   * Panic button activation status
+        //   * All passengers information
+        // - Sort by date (newest first by default)
+
+        List<DriverRideHistoryResponse> history = new ArrayList<>();
+
+        log.debug("Retrieved {} rides for driver", history.size());
+        return ResponseEntity.ok(history);
+    }
+
+    @Operation(summary = "Get passenger ride history", description = "View passenger's ride history with date filtering - Protected endpoint (Passengers only)")
+    @PreAuthorize("hasRole('PASSENGER')")
+    @PostMapping("/history/passenger")
+    public ResponseEntity<List<PassengerRideHistoryResponse>> getPassengerRideHistory(
+            @Valid @RequestBody RideHistoryFilterRequest filterRequest,
+            @AuthenticationPrincipal UserDetails currentUser) {
+
+        log.debug("Passenger ride history requested with filters: {}", filterRequest);
+
+        // TODO: Implement passenger ride history retrieval via RideService
+        // - Get current passenger ID from UserDetails
+        // - Fetch all rides where user was a passenger
+        // - Filter by date range (startDate to endDate)
+        // - For each ride include:
+        //   * Start time and end time
+        //   * Pickup and dropoff locations
+        //   * Cancelled status and who cancelled ("passenger" or "driver")
+        //   * Price
+        //   * Panic button activation status
+        //   * Driver basic information (NOT other passengers)
+        // - Sort by date (newest first by default)
+
+        List<PassengerRideHistoryResponse> history = new ArrayList<>();
+
+        log.debug("Retrieved {} rides for passenger", history.size());
+        return ResponseEntity.ok(history);
+    }
+
+    @Operation(summary = "Get ride details (Driver/Admin)", description = "View detailed ride information with all passengers - Protected endpoint (Drivers/Admins only)")
+    @PreAuthorize("hasAnyRole('DRIVER', 'ADMIN')")
+    @GetMapping("/{rideId}/details")
+    public ResponseEntity<RideDetailResponse> getRideDetailsForDriver(
             @PathVariable Long rideId,
             @AuthenticationPrincipal UserDetails currentUser) {
 
-        log.debug("Requesting details for rideId: {}", rideId);
+        log.debug("Requesting driver/admin details for rideId: {}", rideId);
 
         // TODO: Implement ride detail retrieval via RideService
         // - Get current user's ID and roles from UserDetails
         // - Fetch ride information
         // - Verify permissions:
-        //   * If currentUser is driver or passenger on this ride -> allow
+        //   * If currentUser is the driver on this ride -> allow
         //   * If currentUser has ADMIN role -> allow
         //   * Otherwise -> throw 403 Forbidden
         // - Return complete ride information including:
         //   * Route with all stops
         //   * Driver information
-        //   * All passengers information
+        //   * All passengers information (with full details)
         //   * Inconsistency reports
         //   * Ratings and comments
         //   * Panic button activation status
@@ -220,7 +327,33 @@ public class RideController {
 
         RideDetailResponse rideDetails = new RideDetailResponse();
 
-        log.debug("Retrieved details for rideId: {}", rideId);
+        log.debug("Retrieved driver/admin details for rideId: {}", rideId);
+        return ResponseEntity.ok(rideDetails);
+    }
+
+    @Operation(summary = "Get ride details (Passenger)", description = "View simplified ride information - Protected endpoint (Passengers only)")
+    @PreAuthorize("hasRole('PASSENGER')")
+    @GetMapping("/{rideId}")
+    public ResponseEntity<PassengerRideDetailResponse> getRideDetailsForPassenger(
+            @PathVariable Long rideId,
+            @AuthenticationPrincipal UserDetails currentUser) {
+
+        log.debug("Requesting passenger details for rideId: {}", rideId);
+
+        // TODO: Implement ride detail retrieval via RideService
+        // - Get current user's ID from UserDetails
+        // - Fetch ride information
+        // - Verify user is a passenger on this ride, otherwise -> throw 403 Forbidden
+        // - Return simplified ride information including:
+        //   * Start/end times
+        //   * Pickup/dropoff locations and stops
+        //   * Price and status
+        //   * Driver basic info (name, phone)
+        //   * Passenger's own rating if exists
+
+        PassengerRideDetailResponse rideDetails = new PassengerRideDetailResponse();
+
+        log.debug("Retrieved passenger details for rideId: {}", rideId);
         return ResponseEntity.ok(rideDetails);
     }
 }

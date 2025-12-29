@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class ProfileResponse {
+public class DriverProfileResponse {
 
     private String id;
     private String email;
@@ -18,22 +18,15 @@ public class ProfileResponse {
     private String lastName;
     private String phoneNumber;
     private String address;
-
-    /**
-     * Expected values based on web app: admin | passenger | driver
-     */
-    private String role;
-
-    /**
-     * Optional profile image (URL or Base64 string).
-     */
     private String profilePicture;
-
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-    /**
-     * Present only when the current user is a driver.
-     */
-    private VehicleResponse vehicle;
+    // Driver-specific fields
+    private String licenseNumber;
+    private String licenseExpiry;
+    private String vehicleRegistration;
+    private Double averageRating;
+    private Integer totalRides;
+    private Boolean isActive;
 }

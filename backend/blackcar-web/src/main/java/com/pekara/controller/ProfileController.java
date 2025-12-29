@@ -1,12 +1,13 @@
 package com.pekara.controller;
 
+import com.pekara.dto.response.DriverProfileResponse;
 import com.pekara.dto.response.FavouriteRouteResponse;
-import com.pekara.dto.response.ProfileResponse;
-import com.pekara.service.ProfileService;
+import com.pekara.dto.response.PassengerProfileResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -20,18 +21,67 @@ import java.util.List;
 @Tag(name = "Profile", description = "Profile endpoints")
 public class ProfileController {
 
-    private final ProfileService profileService;
+    @Operation(summary = "Get driver profile", description = "Get the currently authenticated driver's profile information")
+    @PreAuthorize("hasRole('DRIVER')")
+    @GetMapping("/driver")
+    public ResponseEntity<DriverProfileResponse> getDriverProfile() {
+        log.debug("Driver profile requested");
 
-    public ProfileController(ProfileService profileService) {
-        this.profileService = profileService;
+        // TODO: Implement profile retrieval via ProfileService
+        // - Identify current authenticated user from security context
+        // - Verify user has driver role
+        // - Fetch driver info with driver-specific fields
+        // - Return DriverProfileResponse
+
+        DriverProfileResponse response = new DriverProfileResponse(
+                "1",
+                "john@example.com",
+                "johndoe",
+                "John",
+                "Doe",
+                "+381 64 000 000",
+                "123 Main Street, City",
+                null,
+                LocalDateTime.now(),
+                LocalDateTime.now(),
+                "DL123456789",
+                "2026-12-31",
+                "ABC123",
+                4.8,
+                156,
+                true
+        );
+
+        return ResponseEntity.ok(response);
     }
 
-    @Operation(summary = "Get profile", description = "Get the currently authenticated user's profile information")
-    @GetMapping
-    public ResponseEntity<ProfileResponse> getProfile() {
-        log.debug("Profile requested");
+    @Operation(summary = "Get passenger profile", description = "Get the currently authenticated passenger's profile information")
+    @PreAuthorize("hasRole('USER')")
+    @GetMapping("/passenger")
+    public ResponseEntity<PassengerProfileResponse> getPassengerProfile() {
+        log.debug("Passenger profile requested");
 
-        ProfileResponse response = profileService.getCurrentProfile();
+        // TODO: Implement profile retrieval via ProfileService
+        // - Identify current authenticated user from security context
+        // - Verify user has passenger role
+        // - Fetch passenger info with passenger-specific fields
+        // - Return PassengerProfileResponse
+
+        PassengerProfileResponse response = new PassengerProfileResponse(
+                "2",
+                "jane@example.com",
+                "janedoe",
+                "Jane",
+                "Doe",
+                "+381 64 000 001",
+                "456 Oak Street, City",
+                null,
+                LocalDateTime.now(),
+                LocalDateTime.now(),
+                42,
+                4.9
+        );
+
         return ResponseEntity.ok(response);
     }
 
