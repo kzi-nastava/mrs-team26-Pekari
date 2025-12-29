@@ -62,4 +62,11 @@
         android:label="@string/title_driver_history"
         tools:layout="@layout/fragment_driver_history" />
 
+    <!-- Profile Fragment -->
+    <fragment
+        android:id="@+id/profileFragment"
+        android:name="com.example.blackcar.presentation.profile.views.ProfileFragment"
+        android:label="@string/title_profile"
+        tools:layout="@layout/fragment_profile" />
+
 </navigation>

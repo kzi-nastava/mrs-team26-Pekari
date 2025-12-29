@@ -43,6 +43,8 @@ public class MainActivity extends AppCompatActivity {
                 navController.navigate(R.id.driverHistoryFragment);
             } else if (id == R.id.nav_dashboard) {
                 navController.navigate(R.id.homeFragment);
+            } else if (id == R.id.nav_profile) {
+                navController.navigate(R.id.profileFragment);
             } else {
                 return false;
             }
