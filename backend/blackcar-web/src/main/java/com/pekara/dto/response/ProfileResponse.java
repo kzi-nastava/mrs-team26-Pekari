@@ -31,4 +31,9 @@ public class ProfileResponse {
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+
+    /**
+     * Present only when the current user is a driver.
+     */
+    private VehicleResponse vehicle;
 }

@@ -2,6 +2,7 @@ package com.pekara.controller;
 
 import com.pekara.dto.response.FavouriteRouteResponse;
 import com.pekara.dto.response.ProfileResponse;
+import com.pekara.service.ProfileService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
@@ -19,30 +20,18 @@ import java.util.List;
 @Tag(name = "Profile", description = "Profile endpoints")
 public class ProfileController {
 
+    private final ProfileService profileService;
+
+    public ProfileController(ProfileService profileService) {
+        this.profileService = profileService;
+    }
+
     @Operation(summary = "Get profile", description = "Get the currently authenticated user's profile information")
     @GetMapping
     public ResponseEntity<ProfileResponse> getProfile() {
         log.debug("Profile requested");
 
-        // TODO: Implement profile retrieval via ProfileService
-        // - Identify current authenticated user from security context
-        // - Fetch user info (id, email, name, phone, address, role, profile image)
-        // - Return ProfileResponse
-
-        ProfileResponse response = new ProfileResponse(
-                "1",
-                "john@example.com",
-                "johndoe",
-                "John",
-                "Doe",
-                "+381 64 000 000",
-                "123 Main Street, City",
-                "driver",
-                null,
-                LocalDateTime.now(),
-                LocalDateTime.now()
-        );
-
+        ProfileResponse response = profileService.getCurrentProfile();
         return ResponseEntity.ok(response);
     }
 
