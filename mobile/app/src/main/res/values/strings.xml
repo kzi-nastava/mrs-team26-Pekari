@@ -4,9 +4,51 @@
     <string name="action_settings">Settings</string>
     <string name="title_home">Home</string>
     <string name="title_driver_history">Ride History</string>
+    <string name="title_profile">Profile</string>
     <string name="title_login">Login</string>
     <string name="title_forgot_password">Forgot Password</string>
     <string name="title_register">Register</string>
+
+    <!-- Profile Feature -->
+    <string name="profile_title">Profile Information</string>
+    <string name="profile_basic_info">Basic Information</string>
+    <string name="profile_driver_info">Driver Information</string>
+    <string name="profile_approvals">Approval Requests</string>
+
+    <string name="profile_label_first_name">First name</string>
+    <string name="profile_label_last_name">Last name</string>
+    <string name="profile_label_phone">Phone</string>
+    <string name="profile_label_email">Email</string>
+    <string name="profile_label_address">Address</string>
+
+    <string name="profile_label_hours_active">Hours Active (Last 24H)</string>
+    <string name="profile_label_vehicle">Vehicle Information</string>
+    <string name="profile_vehicle_make">Make</string>
+    <string name="profile_vehicle_model">Model</string>
+    <string name="profile_vehicle_year">Year</string>
+    <string name="profile_vehicle_license_plate">License Plate</string>
+    <string name="profile_vehicle_vin">VIN</string>
+
+    <string name="profile_action_edit">Edit Profile</string>
+    <string name="profile_action_update">Update Profile</string>
+    <string name="profile_action_request_changes">Request Changes</string>
+    <string name="profile_action_cancel">Cancel</string>
+    <string name="profile_action_change_picture">Change Picture</string>
+    <string name="profile_action_change_password">Change Password</string>
+
+    <string name="profile_banner_driver_pending">Changes sent for admin approval. Current profile remains unchanged.</string>
+    <string name="profile_password_title">Change Password</string>
+    <string name="profile_password_current">Current password</string>
+    <string name="profile_password_new">New password</string>
+    <string name="profile_password_confirm">Confirm password</string>
+    <string name="profile_password_submit">Change Password</string>
+    <string name="profile_password_cancel">Cancel</string>
+
+    <string name="profile_admin_approve">Approve</string>
+    <string name="profile_admin_reject">Reject</string>
+    <string name="profile_admin_reject_reason_title">Reject reason</string>
+    <string name="profile_admin_reject_reason_hint">Enter a reason (optional)</string>
+
     <!-- Strings used for fragments for navigation -->
     <string name="first_fragment_label">First Fragment</string>
     <string name="second_fragment_label">Second Fragment</string>

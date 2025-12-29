@@ -24,6 +24,11 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
+            <groupId>com.pekara</groupId>
+            <artifactId>blackcar-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
@@ -57,6 +62,11 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <mainClass>com.pekara.WebApplication</mainClass>
+                    <workingDirectory>${project.parent.basedir}</workingDirectory>
+                    <profiles>dev</profiles>
+                </configuration>
             </plugin>
         </plugins>
     </build>
