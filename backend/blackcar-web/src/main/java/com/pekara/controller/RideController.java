@@ -9,6 +9,7 @@ import com.pekara.dto.request.RideRatingRequest;
 import com.pekara.dto.response.DriverRideHistoryResponse;
 import com.pekara.dto.response.MessageResponse;
 import com.pekara.dto.response.OrderRideResponse;
+import com.pekara.dto.response.PaginatedResponse;
 import com.pekara.dto.response.PassengerRideDetailResponse;
 import com.pekara.dto.response.PassengerRideHistoryResponse;
 import com.pekara.dto.response.RideDetailResponse;
@@ -247,16 +248,19 @@ public class RideController {
     @Operation(summary = "Get driver ride history", description = "View driver's ride history with date filtering - Protected endpoint (Drivers only)")
     @PreAuthorize("hasRole('DRIVER')")
     @PostMapping("/history/driver")
-    public ResponseEntity<List<DriverRideHistoryResponse>> getDriverRideHistory(
+    public ResponseEntity<PaginatedResponse<DriverRideHistoryResponse>> getDriverRideHistory(
             @Valid @RequestBody RideHistoryFilterRequest filterRequest,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
             @AuthenticationPrincipal UserDetails currentUser) {
 
-        log.debug("Driver ride history requested with filters: {}", filterRequest);
+        log.debug("Driver ride history requested with filters: {} (page: {}, size: {})", filterRequest, page, size);
 
         // TODO: Implement driver ride history retrieval via RideService
         // - Get current driver ID from UserDetails
         // - Fetch all rides where user was the driver
         // - Filter by date range (startDate to endDate)
+        // - Apply pagination (page, size)
         // - For each ride include:
         //   * Start time and end time
         //   * Pickup and dropoff locations
@@ -267,24 +271,28 @@ public class RideController {
         // - Sort by date (newest first by default)
 
         List<DriverRideHistoryResponse> history = new ArrayList<>();
+        PaginatedResponse<DriverRideHistoryResponse> response = new PaginatedResponse<>(history, page, size, 0L);
 
         log.debug("Retrieved {} rides for driver", history.size());
-        return ResponseEntity.ok(history);
+        return ResponseEntity.ok(response);
     }
 
     @Operation(summary = "Get passenger ride history", description = "View passenger's ride history with date filtering - Protected endpoint (Passengers only)")
     @PreAuthorize("hasRole('PASSENGER')")
     @PostMapping("/history/passenger")
-    public ResponseEntity<List<PassengerRideHistoryResponse>> getPassengerRideHistory(
+    public ResponseEntity<PaginatedResponse<PassengerRideHistoryResponse>> getPassengerRideHistory(
             @Valid @RequestBody RideHistoryFilterRequest filterRequest,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
             @AuthenticationPrincipal UserDetails currentUser) {
 
-        log.debug("Passenger ride history requested with filters: {}", filterRequest);
+        log.debug("Passenger ride history requested with filters: {} (page: {}, size: {})", filterRequest, page, size);
 
         // TODO: Implement passenger ride history retrieval via RideService
         // - Get current passenger ID from UserDetails
         // - Fetch all rides where user was a passenger
         // - Filter by date range (startDate to endDate)
+        // - Apply pagination (page, size)
         // - For each ride include:
         //   * Start time and end time
         //   * Pickup and dropoff locations
@@ -295,9 +303,43 @@ public class RideController {
         // - Sort by date (newest first by default)
 
         List<PassengerRideHistoryResponse> history = new ArrayList<>();
+        PaginatedResponse<PassengerRideHistoryResponse> response = new PaginatedResponse<>(history, page, size, 0L);
 
         log.debug("Retrieved {} rides for passenger", history.size());
-        return ResponseEntity.ok(history);
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "Get all rides history (Admin)", description = "View complete ride history for all drivers and passengers with filtering - Protected endpoint (Admins only)")
+    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping("/history/admin/all")
+    public ResponseEntity<PaginatedResponse<DriverRideHistoryResponse>> getAllRidesHistory(
+            @Valid @RequestBody RideHistoryFilterRequest filterRequest,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+
+        log.debug("Admin all rides history requested with filters: {} (page: {}, size: {})", filterRequest, page, size);
+
+        // TODO: Implement admin ride history retrieval via RideService
+        // - Fetch ALL rides in the system (no user filtering)
+        // - Filter by date range (startDate to endDate)
+        // - Apply pagination (page, size)
+        // - For each ride include:
+        //   * Start time and end time
+        //   * Pickup and dropoff locations
+        //   * Cancelled status and who cancelled (passenger name or "driver")
+        //   * Price
+        //   * Panic button activation status
+        //   * All passengers information
+        //   * Driver information
+        //   * Inconsistency reports if any
+        //   * Ratings if any
+        // - Sort by date (newest first by default)
+
+        List<DriverRideHistoryResponse> history = new ArrayList<>();
+        PaginatedResponse<DriverRideHistoryResponse> response = new PaginatedResponse<>(history, page, size, 0L);
+
+        log.debug("Retrieved {} total rides for admin", history.size());
+        return ResponseEntity.ok(response);
     }
 
     @Operation(summary = "Get ride details (Driver/Admin)", description = "View detailed ride information with all passengers - Protected endpoint (Drivers/Admins only)")

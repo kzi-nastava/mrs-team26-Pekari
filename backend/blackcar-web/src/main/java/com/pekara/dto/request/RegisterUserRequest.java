@@ -7,6 +7,7 @@ import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.web.multipart.MultipartFile;
 
 @Data
 @NoArgsConstructor
@@ -23,9 +24,6 @@ public class RegisterUserRequest {
             message = "Password must contain at least one uppercase letter, one lowercase letter, and one digit")
     private String password;
 
-    @NotBlank(message = "Confirm password is required")
-    private String confirmPassword;
-
     @NotBlank(message = "First name is required")
     @Size(min = 2, max = 50, message = "First name must be between 2 and 50 characters")
     private String firstName;
@@ -41,6 +39,5 @@ public class RegisterUserRequest {
     @Pattern(regexp = "^\\+?[0-9]{10,15}$", message = "Phone number must be valid (10-15 digits)")
     private String phoneNumber;
 
-    @Pattern(regexp = "^(https?://.*|)$", message = "Profile image must be a valid URL or empty")
-    private String profileImage; // optional
+    private MultipartFile profileImage; // optional
 }

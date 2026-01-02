@@ -2,6 +2,7 @@ package com.pekara.controller;
 
 import com.pekara.dto.response.DriverProfileResponse;
 import com.pekara.dto.response.FavouriteRouteResponse;
+import com.pekara.dto.response.PaginatedResponse;
 import com.pekara.dto.response.PassengerProfileResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -10,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDateTime;
@@ -87,15 +89,19 @@ public class ProfileController {
 
     @Operation(summary = "Get favourite routes", description = "Fetch the current user's favourite/saved routes")
     @GetMapping("/favourite-routes")
-    public ResponseEntity<List<FavouriteRouteResponse>> getFavouriteRoutes() {
-        log.debug("Favourite routes requested");
+    public ResponseEntity<PaginatedResponse<FavouriteRouteResponse>> getFavouriteRoutes(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+
+        log.debug("Favourite routes requested (page: {}, size: {})", page, size);
 
         // TODO: Implement favourite routes retrieval via ProfileService / RouteService
         // - Identify current authenticated user from security context
         // - Fetch stored favourite routes for the user
+        // - Apply pagination (page, size)
         // - Each route should preserve ordered stops
 
-        List<FavouriteRouteResponse> response = List.of(
+        List<FavouriteRouteResponse> routes = List.of(
                 new FavouriteRouteResponse(
                         1L,
                         "Home  Airport",
@@ -108,6 +114,7 @@ public class ProfileController {
                 )
         );
 
+        PaginatedResponse<FavouriteRouteResponse> response = new PaginatedResponse<>(routes, page, size, 1L);
         return ResponseEntity.ok(response);
     }
 }
