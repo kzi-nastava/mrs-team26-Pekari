@@ -23,6 +23,11 @@
             <artifactId>blackcar-api</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <!-- Spring Boot Starter for annotations like @Service, @Component -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter</artifactId>
+        </dependency>
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
             <artifactId>jjwt-api</artifactId>
