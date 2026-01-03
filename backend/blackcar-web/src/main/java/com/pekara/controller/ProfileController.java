@@ -1,9 +1,9 @@
 package com.pekara.controller;
 
-import com.pekara.dto.response.DriverProfileResponse;
-import com.pekara.dto.response.FavouriteRouteResponse;
-import com.pekara.dto.response.PaginatedResponse;
-import com.pekara.dto.response.PassengerProfileResponse;
+import com.pekara.dto.response.WebDriverProfileResponse;
+import com.pekara.dto.response.WebFavouriteRouteResponse;
+import com.pekara.dto.response.WebPaginatedResponse;
+import com.pekara.dto.response.WebPassengerProfileResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
@@ -26,7 +26,7 @@ public class ProfileController {
     @Operation(summary = "Get driver profile", description = "Get the currently authenticated driver's profile information")
     @PreAuthorize("hasRole('DRIVER')")
     @GetMapping("/driver")
-    public ResponseEntity<DriverProfileResponse> getDriverProfile() {
+    public ResponseEntity<WebDriverProfileResponse> getDriverProfile() {
         log.debug("Driver profile requested");
 
         // TODO: Implement profile retrieval via ProfileService
@@ -35,7 +35,7 @@ public class ProfileController {
         // - Fetch driver info with driver-specific fields
         // - Return DriverProfileResponse
 
-        DriverProfileResponse response = new DriverProfileResponse(
+        WebDriverProfileResponse response = new WebDriverProfileResponse(
                 "1",
                 "john@example.com",
                 "johndoe",
@@ -60,7 +60,7 @@ public class ProfileController {
     @Operation(summary = "Get passenger profile", description = "Get the currently authenticated passenger's profile information")
     @PreAuthorize("hasRole('USER')")
     @GetMapping("/passenger")
-    public ResponseEntity<PassengerProfileResponse> getPassengerProfile() {
+    public ResponseEntity<WebPassengerProfileResponse> getPassengerProfile() {
         log.debug("Passenger profile requested");
 
         // TODO: Implement profile retrieval via ProfileService
@@ -69,7 +69,7 @@ public class ProfileController {
         // - Fetch passenger info with passenger-specific fields
         // - Return PassengerProfileResponse
 
-        PassengerProfileResponse response = new PassengerProfileResponse(
+        WebPassengerProfileResponse response = new WebPassengerProfileResponse(
                 "2",
                 "jane@example.com",
                 "janedoe",
@@ -89,7 +89,7 @@ public class ProfileController {
 
     @Operation(summary = "Get favourite routes", description = "Fetch the current user's favourite/saved routes")
     @GetMapping("/favourite-routes")
-    public ResponseEntity<PaginatedResponse<FavouriteRouteResponse>> getFavouriteRoutes(
+    public ResponseEntity<WebPaginatedResponse<WebFavouriteRouteResponse>> getFavouriteRoutes(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
 
@@ -101,8 +101,8 @@ public class ProfileController {
         // - Apply pagination (page, size)
         // - Each route should preserve ordered stops
 
-        List<FavouriteRouteResponse> routes = List.of(
-                new FavouriteRouteResponse(
+        List<WebFavouriteRouteResponse> routes = List.of(
+                new WebFavouriteRouteResponse(
                         1L,
                         "Home  Airport",
                         "Bulevar Osloboenja 1",
@@ -114,7 +114,7 @@ public class ProfileController {
                 )
         );
 
-        PaginatedResponse<FavouriteRouteResponse> response = new PaginatedResponse<>(routes, page, size, 1L);
+        WebPaginatedResponse<WebFavouriteRouteResponse> response = new WebPaginatedResponse<>(routes, page, size, 1L);
         return ResponseEntity.ok(response);
     }
 }
