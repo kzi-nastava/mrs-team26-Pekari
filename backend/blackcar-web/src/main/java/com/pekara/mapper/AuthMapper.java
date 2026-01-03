@@ -5,6 +5,7 @@ import com.pekara.dto.request.WebRegisterUserRequest;
 import com.pekara.dto.response.AuthResponse;
 import com.pekara.dto.response.RegisterResponse;
 import com.pekara.dto.response.WebAuthResponse;
+import com.pekara.dto.response.WebMessageResponse;
 import com.pekara.dto.response.WebRegisterResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -81,5 +82,16 @@ public class AuthMapper {
                 .profileImage(imageBytes)
                 .profileImageFileName(imageFileName)
                 .build();
+    }
+
+    /**
+     * Maps service layer AuthResponse to presentation layer WebMessageResponse
+     */
+    public WebMessageResponse toWebMessageResponse(AuthResponse authResponse) {
+        if (authResponse == null) {
+            return null;
+        }
+
+        return new WebMessageResponse(authResponse.getMessage());
     }
 }

@@ -36,14 +36,12 @@ public class AuthController {
     public ResponseEntity<WebAuthResponse> login(@Valid @RequestBody WebLoginRequest request) {
         log.debug("Login attempt for email: {}", request.getEmail());
 
-        // TODO: Implement login logic via AuthService
-        // - Validate email and password
-        // - Check if account is activated
-        // - Generate JWT token
-        // - Return AuthResponse with token, email, and role
+        var serviceResponse = authService.login(request.getEmail(), request.getPassword());
+
+        WebAuthResponse webResponse = authMapper.toWebAuthResponse(serviceResponse);
 
         log.info("User logged in successfully: {}", request.getEmail());
-        return ResponseEntity.ok(new WebAuthResponse("dummy-token", request.getEmail(), "USER"));
+        return ResponseEntity.ok(webResponse);
     }
 
     @Operation(summary = "Register user", description = "Create a new user account")
@@ -87,13 +85,12 @@ public class AuthController {
     public ResponseEntity<WebMessageResponse> activateAccount(@RequestParam("token") String token) {
         log.debug("Account activation attempt with token");
 
-        // TODO: Implement account activation logic via AuthService
-        // - Validate activation token
-        // - Check if token is expired (24h)
-        // - Activate user account
+        var serviceResponse = authService.activateAccount(token);
 
-        log.info("Account activated successfully");
-        return ResponseEntity.ok(new WebMessageResponse("Account activated successfully. You can now login."));
+        WebMessageResponse webResponse = authMapper.toWebMessageResponse(serviceResponse);
+
+        log.info("Account activated successfully for user: {}", serviceResponse.getEmail());
+        return ResponseEntity.ok(webResponse);
     }
 
     @PostMapping("/reset-password")

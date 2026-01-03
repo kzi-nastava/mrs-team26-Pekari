@@ -1,6 +1,5 @@
 package com.pekara.service;
 
-import com.pekara.dto.request.ActivateAccountRequest;
 import com.pekara.dto.request.RegisterUserRequest;
 import com.pekara.dto.response.AuthResponse;
 import com.pekara.dto.response.RegisterResponse;
@@ -12,6 +11,7 @@ import com.pekara.model.UserRole;
 import com.pekara.repository.AccountActivationTokenRepository;
 import com.pekara.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,6 +27,7 @@ public class AuthServiceImpl implements AuthService {
     private final AccountActivationTokenRepository tokenRepository;
     private final MailService mailService;
     private final PasswordEncoder passwordEncoder;
+    private final JwtService jwtService;
 
     @Override
     @Transactional
@@ -74,8 +75,8 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional
-    public AuthResponse activateAccount(ActivateAccountRequest request) {
-        AccountActivationToken token = tokenRepository.findByToken(request.getToken())
+    public AuthResponse activateAccount(String tokenValue) {
+        AccountActivationToken token = tokenRepository.findByToken(tokenValue)
                 .orElseThrow(() -> new InvalidTokenException("Invalid activation token"));
 
         if (token.isActivated()) {
@@ -95,6 +96,31 @@ public class AuthServiceImpl implements AuthService {
 
         return AuthResponse.builder()
                 .message("Account activated successfully. You can now log in.")
+                .userId(user.getId())
+                .email(user.getEmail())
+                .role(user.getRole().name())
+                .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public AuthResponse login(String email, String password) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new BadCredentialsException("Invalid email or password"));
+
+        if (!passwordEncoder.matches(password, user.getPassword())) {
+            throw new BadCredentialsException("Invalid email or password");
+        }
+
+        if (!user.getIsActive()) {
+            throw new BadCredentialsException("Account is not activated. Please check your email.");
+        }
+
+        String jwtToken = jwtService.generateToken(user.getEmail(), user.getRole().name());
+
+        return AuthResponse.builder()
+                .message("Login successful")
+                .token(jwtToken)
                 .userId(user.getId())
                 .email(user.getEmail())
                 .role(user.getRole().name())

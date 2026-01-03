@@ -4,6 +4,7 @@ import com.pekara.dto.response.WebErrorResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -81,6 +82,54 @@ public class GlobalExceptionHandler {
 
         WebErrorResponse error = new WebErrorResponse(
                 "INVALID_ARGUMENT",
+                ex.getMessage()
+        );
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
+
+    /**
+     * Handles BadCredentialsException from authentication
+     * Returns unauthorized response
+     */
+    @ExceptionHandler(BadCredentialsException.class)
+    public ResponseEntity<WebErrorResponse> handleBadCredentials(BadCredentialsException ex) {
+        log.warn("Authentication failed: {}", ex.getMessage());
+
+        WebErrorResponse error = new WebErrorResponse(
+                "AUTHENTICATION_FAILED",
+                ex.getMessage()
+        );
+
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+    }
+
+    /**
+     * Handles DuplicateResourceException
+     * Returns conflict response
+     */
+    @ExceptionHandler(DuplicateResourceException.class)
+    public ResponseEntity<WebErrorResponse> handleDuplicateResource(DuplicateResourceException ex) {
+        log.warn("Duplicate resource: {}", ex.getMessage());
+
+        WebErrorResponse error = new WebErrorResponse(
+                "DUPLICATE_RESOURCE",
+                ex.getMessage()
+        );
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    /**
+     * Handles InvalidTokenException
+     * Returns bad request response
+     */
+    @ExceptionHandler(InvalidTokenException.class)
+    public ResponseEntity<WebErrorResponse> handleInvalidToken(InvalidTokenException ex) {
+        log.warn("Invalid token: {}", ex.getMessage());
+
+        WebErrorResponse error = new WebErrorResponse(
+                "INVALID_TOKEN",
                 ex.getMessage()
         );
 
