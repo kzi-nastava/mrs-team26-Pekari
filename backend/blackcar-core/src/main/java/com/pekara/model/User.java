@@ -2,6 +2,7 @@ package com.pekara.model;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
@@ -52,9 +53,11 @@ public class User {
     private UserRole role;
 
     @Column(name = "is_active", nullable = false)
-    private Boolean isActive = true;
+    @Builder.Default
+    private Boolean isActive = false;
 
     @Column(name = "total_rides", nullable = false)
+    @Builder.Default
     private Integer totalRides = 0;
 
     @Column(name = "average_rating")

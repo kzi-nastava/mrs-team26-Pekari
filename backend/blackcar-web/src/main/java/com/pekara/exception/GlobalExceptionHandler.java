@@ -1,6 +1,6 @@
 package com.pekara.exception;
 
-import com.pekara.dto.response.ErrorResponse;
+import com.pekara.dto.response.WebErrorResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -44,10 +44,10 @@ public class GlobalExceptionHandler {
      * Example: empty body for a @RequestBody parameter, malformed JSON, wrong types.
      */
     @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<ErrorResponse> handleHttpMessageNotReadable(HttpMessageNotReadableException ex) {
+    public ResponseEntity<WebErrorResponse> handleHttpMessageNotReadable(HttpMessageNotReadableException ex) {
         log.warn("Invalid or unreadable request body", ex);
 
-        ErrorResponse error = new ErrorResponse(
+        WebErrorResponse error = new WebErrorResponse(
                 "INVALID_REQUEST_BODY",
                 "Request body is missing or invalid JSON."
         );
@@ -60,10 +60,10 @@ public class GlobalExceptionHandler {
      * Returns a generic error message to avoid leaking sensitive information
      */
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponse> handleGenericException(Exception ex) {
+    public ResponseEntity<WebErrorResponse> handleGenericException(Exception ex) {
         log.error("Unexpected error occurred", ex);
 
-        ErrorResponse error = new ErrorResponse(
+        WebErrorResponse error = new WebErrorResponse(
                 "INTERNAL_SERVER_ERROR",
                 "An unexpected error occurred. Please try again later."
         );
@@ -76,10 +76,10 @@ public class GlobalExceptionHandler {
      * Returns a bad request response
      */
     @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<ErrorResponse> handleIllegalArgumentException(IllegalArgumentException ex) {
+    public ResponseEntity<WebErrorResponse> handleIllegalArgumentException(IllegalArgumentException ex) {
         log.warn("Invalid argument: {}", ex.getMessage());
 
-        ErrorResponse error = new ErrorResponse(
+        WebErrorResponse error = new WebErrorResponse(
                 "INVALID_ARGUMENT",
                 ex.getMessage()
         );
