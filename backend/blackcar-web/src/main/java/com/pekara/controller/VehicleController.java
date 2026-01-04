@@ -1,7 +1,7 @@
 package com.pekara.controller;
 
-import com.pekara.dto.response.ActiveVehicleResponse;
-import com.pekara.dto.response.PaginatedResponse;
+import com.pekara.dto.response.WebActiveVehicleResponse;
+import com.pekara.dto.response.WebPaginatedResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
@@ -21,7 +21,7 @@ public class VehicleController {
 
     @Operation(summary = "Get active vehicles", description = "Get all currently active vehicles with their positions on the map - Public endpoint")
     @GetMapping("/active")
-    public ResponseEntity<PaginatedResponse<ActiveVehicleResponse>> getActiveVehicles(
+    public ResponseEntity<WebPaginatedResponse<WebActiveVehicleResponse>> getActiveVehicles(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "50") int size) {
 
@@ -34,8 +34,8 @@ public class VehicleController {
         // - Include status: FREE (available) or BUSY (in ride)
         // - Return paginated list of active vehicles
 
-        List<ActiveVehicleResponse> vehicles = List.of(
-                new ActiveVehicleResponse(
+        List<WebActiveVehicleResponse> vehicles = List.of(
+                new WebActiveVehicleResponse(
                         1L,
                         "STANDARD",
                         "NS-123-AB",
@@ -43,9 +43,9 @@ public class VehicleController {
                         19.8335,
                         false,
                         "FREE",
-                        new ActiveVehicleResponse.DriverBasicInfo(1L, "John", "Doe")
+                        new WebActiveVehicleResponse.DriverBasicInfo(1L, "John", "Doe")
                 ),
-                new ActiveVehicleResponse(
+                new WebActiveVehicleResponse(
                         2L,
                         "VAN",
                         "NS-456-CD",
@@ -53,11 +53,11 @@ public class VehicleController {
                         19.8450,
                         true,
                         "BUSY",
-                        new ActiveVehicleResponse.DriverBasicInfo(2L, "Jane", "Smith")
+                        new WebActiveVehicleResponse.DriverBasicInfo(2L, "Jane", "Smith")
                 )
         );
 
-        PaginatedResponse<ActiveVehicleResponse> response = new PaginatedResponse<>(vehicles, page, size, 2L);
+        WebPaginatedResponse<WebActiveVehicleResponse> response = new WebPaginatedResponse<>(vehicles, page, size, 2L);
         return ResponseEntity.ok(response);
     }
 }
