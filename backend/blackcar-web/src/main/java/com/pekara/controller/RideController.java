@@ -1,20 +1,20 @@
 package com.pekara.controller;
 
-import com.pekara.dto.request.CancelRideRequest;
-import com.pekara.dto.request.EstimateRideRequest;
-import com.pekara.dto.request.InconsistencyReportRequest;
-import com.pekara.dto.request.OrderRideRequest;
-import com.pekara.dto.request.RideHistoryFilterRequest;
-import com.pekara.dto.request.RideRatingRequest;
-import com.pekara.dto.response.DriverRideHistoryResponse;
-import com.pekara.dto.response.MessageResponse;
-import com.pekara.dto.response.OrderRideResponse;
-import com.pekara.dto.response.PaginatedResponse;
-import com.pekara.dto.response.PassengerRideDetailResponse;
-import com.pekara.dto.response.PassengerRideHistoryResponse;
-import com.pekara.dto.response.RideDetailResponse;
-import com.pekara.dto.response.RideEstimateResponse;
-import com.pekara.dto.response.RideTrackingResponse;
+import com.pekara.dto.request.WebCancelRideRequest;
+import com.pekara.dto.request.WebEstimateRideRequest;
+import com.pekara.dto.request.WebInconsistencyReportRequest;
+import com.pekara.dto.request.WebOrderRideRequest;
+import com.pekara.dto.request.WebRideHistoryFilterRequest;
+import com.pekara.dto.request.WebRideRatingRequest;
+import com.pekara.dto.response.WebDriverRideHistoryResponse;
+import com.pekara.dto.response.WebMessageResponse;
+import com.pekara.dto.response.WebOrderRideResponse;
+import com.pekara.dto.response.WebPaginatedResponse;
+import com.pekara.dto.response.WebPassengerRideDetailResponse;
+import com.pekara.dto.response.WebPassengerRideHistoryResponse;
+import com.pekara.dto.response.WebRideDetailResponse;
+import com.pekara.dto.response.WebRideEstimateResponse;
+import com.pekara.dto.response.WebRideTrackingResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -38,7 +38,7 @@ public class RideController {
 
     @Operation(summary = "Estimate ride", description = "Calculate ride estimation (price, duration, distance) - Public endpoint")
     @PostMapping("/estimate")
-    public ResponseEntity<RideEstimateResponse> estimateRide(@Valid @RequestBody EstimateRideRequest request) {
+    public ResponseEntity<WebRideEstimateResponse> estimateRide(@Valid @RequestBody WebEstimateRideRequest request) {
         log.debug("Ride estimation requested from {} to {}", request.getPickupLocation(), request.getDropoffLocation());
 
         // TODO: Implement ride estimation logic via RideService
@@ -48,7 +48,7 @@ public class RideController {
         // - Filter available vehicles by baby/pet transport requirements
         // - Return estimation details
 
-        RideEstimateResponse response = new RideEstimateResponse(
+        WebRideEstimateResponse response = new WebRideEstimateResponse(
                 new BigDecimal("250.00"),
                 15,
                 5.5,
@@ -62,7 +62,7 @@ public class RideController {
 
     @Operation(summary = "Order ride", description = "Order a ride now or schedule it up to 5 hours ahead - Protected endpoint")
     @PostMapping("/order")
-    public ResponseEntity<OrderRideResponse> orderRide(@Valid @RequestBody OrderRideRequest request) {
+    public ResponseEntity<WebOrderRideResponse> orderRide(@Valid @RequestBody WebOrderRideRequest request) {
         log.debug("Ride order requested from {} to {}", request.getPickupLocation(), request.getDropoffLocation());
 
         if (request.getScheduledAt() != null) {
@@ -94,7 +94,7 @@ public class RideController {
         // - Create reminder notifications: 15 minutes before, then every 5 minutes until start
 
         boolean isScheduled = request.getScheduledAt() != null;
-        OrderRideResponse response = new OrderRideResponse(
+        WebOrderRideResponse response = new WebOrderRideResponse(
                 1L,
                 isScheduled ? "SCHEDULED" : "ACCEPTED",
                 isScheduled ? "Ride scheduled successfully." : "Ride ordered successfully.",
@@ -109,9 +109,9 @@ public class RideController {
 
     @Operation(summary = "Cancel ride", description = "Cancel a scheduled or active ride - Protected endpoint")
     @PostMapping("/{rideId}/cancel")
-    public ResponseEntity<MessageResponse> cancelRide(
+    public ResponseEntity<WebMessageResponse> cancelRide(
             @PathVariable Long rideId,
-            @Valid @RequestBody CancelRideRequest request) {
+            @Valid @RequestBody WebCancelRideRequest request) {
 
         log.debug("Ride cancellation requested for rideId: {} with reason: {}", rideId, request.getReason());
 
@@ -126,7 +126,7 @@ public class RideController {
         // - Return confirmation
 
         log.info("Ride {} cancelled successfully", rideId);
-        return ResponseEntity.ok(new MessageResponse("Ride cancelled successfully."));
+        return ResponseEntity.ok(new WebMessageResponse("Ride cancelled successfully."));
     }
 
     /**
@@ -136,7 +136,7 @@ public class RideController {
     @Operation(summary = "Start ride", description = "Mark that the ride has started - Protected endpoint (Drivers only)")
     @PreAuthorize("hasRole('DRIVER')")
     @PostMapping("/{rideId}/start")
-    public ResponseEntity<MessageResponse> startRide(@PathVariable Long rideId) {
+    public ResponseEntity<WebMessageResponse> startRide(@PathVariable Long rideId) {
         log.debug("Start ride requested for rideId: {}", rideId);
 
         // TODO: Implement start ride logic via RideService
@@ -148,7 +148,7 @@ public class RideController {
         // - Notify passengers that the ride has started
 
         log.info("Ride {} started successfully", rideId);
-        return ResponseEntity.ok(new MessageResponse("Ride started successfully."));
+        return ResponseEntity.ok(new WebMessageResponse("Ride started successfully."));
     }
 
     /**
@@ -157,7 +157,7 @@ public class RideController {
      */
     @Operation(summary = "Stop ride", description = "Stop a ride in progress - Protected endpoint (Drivers only)")
     @PostMapping("/{rideId}/stop")
-    public ResponseEntity<MessageResponse> stopRide(@PathVariable Long rideId) {
+    public ResponseEntity<WebMessageResponse> stopRide(@PathVariable Long rideId) {
         log.debug("Stop ride requested for rideId: {}", rideId);
 
         // TODO: Implement stop ride logic via RideService
@@ -171,13 +171,13 @@ public class RideController {
         // - Return completion details
 
         log.info("Ride {} stopped and completed successfully", rideId);
-        return ResponseEntity.ok(new MessageResponse("Ride completed successfully."));
+        return ResponseEntity.ok(new WebMessageResponse("Ride completed successfully."));
     }
 
     @Operation(summary = "Track ride", description = "Get real-time tracking information for an active ride - Protected endpoint")
     @PreAuthorize("hasAnyRole('PASSENGER', 'DRIVER')")
     @GetMapping("/{rideId}/track")
-    public ResponseEntity<RideTrackingResponse> trackRide(@PathVariable Long rideId) {
+    public ResponseEntity<WebRideTrackingResponse> trackRide(@PathVariable Long rideId) {
         log.debug("Ride tracking requested for rideId: {}", rideId);
 
         // TODO: Implement ride tracking via RideService
@@ -187,7 +187,7 @@ public class RideController {
         // - Calculate estimated time to destination (updates as vehicle moves)
         // - Return real-time tracking information
 
-        RideTrackingResponse response = new RideTrackingResponse(
+        WebRideTrackingResponse response = new WebRideTrackingResponse(
                 rideId,
                 45.2671,
                 19.8335,
@@ -196,7 +196,7 @@ public class RideController {
                 "IN_PROGRESS",
                 "Trg Slobode",
                 5,
-                new RideTrackingResponse.VehicleInfo(1L, "STANDARD", "NS-123-AB")
+                new WebRideTrackingResponse.VehicleInfo(1L, "STANDARD", "NS-123-AB")
         );
 
         return ResponseEntity.ok(response);
@@ -205,9 +205,9 @@ public class RideController {
     @Operation(summary = "Report inconsistency", description = "Report driver inconsistency during an active ride - Protected endpoint (Passengers only)")
     @PreAuthorize("hasRole('PASSENGER')")
     @PostMapping("/{rideId}/report-inconsistency")
-    public ResponseEntity<MessageResponse> reportInconsistency(
+    public ResponseEntity<WebMessageResponse> reportInconsistency(
             @PathVariable Long rideId,
-            @Valid @RequestBody InconsistencyReportRequest request) {
+            @Valid @RequestBody WebInconsistencyReportRequest request) {
 
         log.debug("Inconsistency report for rideId: {} - {}", rideId, request.getDescription());
 
@@ -220,15 +220,15 @@ public class RideController {
         // - Notify admin about the report
 
         log.info("Inconsistency reported for ride {}", rideId);
-        return ResponseEntity.ok(new MessageResponse("Inconsistency reported successfully."));
+        return ResponseEntity.ok(new WebMessageResponse("Inconsistency reported successfully."));
     }
 
     @Operation(summary = "Rate ride", description = "Rate a completed ride (vehicle and driver) - Protected endpoint (Passengers only)")
     @PreAuthorize("hasRole('PASSENGER')")
     @PostMapping("/{rideId}/rate")
-    public ResponseEntity<MessageResponse> rateRide(
+    public ResponseEntity<WebMessageResponse> rateRide(
             @PathVariable Long rideId,
-            @Valid @RequestBody RideRatingRequest request) {
+            @Valid @RequestBody WebRideRatingRequest request) {
 
         log.debug("Rating ride {} - Vehicle: {}/5, Driver: {}/5", rideId, request.getVehicleRating(), request.getDriverRating());
 
@@ -242,14 +242,14 @@ public class RideController {
         // - Send email/notification to passenger confirming rating submission
 
         log.info("Ride {} rated successfully", rideId);
-        return ResponseEntity.ok(new MessageResponse("Ride rated successfully."));
+        return ResponseEntity.ok(new WebMessageResponse("Ride rated successfully."));
     }
 
     @Operation(summary = "Get driver ride history", description = "View driver's ride history with date filtering - Protected endpoint (Drivers only)")
     @PreAuthorize("hasRole('DRIVER')")
     @PostMapping("/history/driver")
-    public ResponseEntity<PaginatedResponse<DriverRideHistoryResponse>> getDriverRideHistory(
-            @Valid @RequestBody RideHistoryFilterRequest filterRequest,
+    public ResponseEntity<WebPaginatedResponse<WebDriverRideHistoryResponse>> getDriverRideHistory(
+            @Valid @RequestBody WebRideHistoryFilterRequest filterRequest,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @AuthenticationPrincipal UserDetails currentUser) {
@@ -270,8 +270,8 @@ public class RideController {
         //   * All passengers information
         // - Sort by date (newest first by default)
 
-        List<DriverRideHistoryResponse> history = new ArrayList<>();
-        PaginatedResponse<DriverRideHistoryResponse> response = new PaginatedResponse<>(history, page, size, 0L);
+        List<WebDriverRideHistoryResponse> history = new ArrayList<>();
+        WebPaginatedResponse<WebDriverRideHistoryResponse> response = new WebPaginatedResponse<>(history, page, size, 0L);
 
         log.debug("Retrieved {} rides for driver", history.size());
         return ResponseEntity.ok(response);
@@ -280,8 +280,8 @@ public class RideController {
     @Operation(summary = "Get passenger ride history", description = "View passenger's ride history with date filtering - Protected endpoint (Passengers only)")
     @PreAuthorize("hasRole('PASSENGER')")
     @PostMapping("/history/passenger")
-    public ResponseEntity<PaginatedResponse<PassengerRideHistoryResponse>> getPassengerRideHistory(
-            @Valid @RequestBody RideHistoryFilterRequest filterRequest,
+    public ResponseEntity<WebPaginatedResponse<WebPassengerRideHistoryResponse>> getPassengerRideHistory(
+            @Valid @RequestBody WebRideHistoryFilterRequest filterRequest,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @AuthenticationPrincipal UserDetails currentUser) {
@@ -302,8 +302,8 @@ public class RideController {
         //   * Driver basic information (NOT other passengers)
         // - Sort by date (newest first by default)
 
-        List<PassengerRideHistoryResponse> history = new ArrayList<>();
-        PaginatedResponse<PassengerRideHistoryResponse> response = new PaginatedResponse<>(history, page, size, 0L);
+        List<WebPassengerRideHistoryResponse> history = new ArrayList<>();
+        WebPaginatedResponse<WebPassengerRideHistoryResponse> response = new WebPaginatedResponse<>(history, page, size, 0L);
 
         log.debug("Retrieved {} rides for passenger", history.size());
         return ResponseEntity.ok(response);
@@ -312,8 +312,8 @@ public class RideController {
     @Operation(summary = "Get all rides history (Admin)", description = "View complete ride history for all drivers and passengers with filtering - Protected endpoint (Admins only)")
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/history/admin/all")
-    public ResponseEntity<PaginatedResponse<DriverRideHistoryResponse>> getAllRidesHistory(
-            @Valid @RequestBody RideHistoryFilterRequest filterRequest,
+    public ResponseEntity<WebPaginatedResponse<WebDriverRideHistoryResponse>> getAllRidesHistory(
+            @Valid @RequestBody WebRideHistoryFilterRequest filterRequest,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
 
@@ -335,8 +335,8 @@ public class RideController {
         //   * Ratings if any
         // - Sort by date (newest first by default)
 
-        List<DriverRideHistoryResponse> history = new ArrayList<>();
-        PaginatedResponse<DriverRideHistoryResponse> response = new PaginatedResponse<>(history, page, size, 0L);
+        List<WebDriverRideHistoryResponse> history = new ArrayList<>();
+        WebPaginatedResponse<WebDriverRideHistoryResponse> response = new WebPaginatedResponse<>(history, page, size, 0L);
 
         log.debug("Retrieved {} total rides for admin", history.size());
         return ResponseEntity.ok(response);
@@ -345,7 +345,7 @@ public class RideController {
     @Operation(summary = "Get ride details (Driver/Admin)", description = "View detailed ride information with all passengers - Protected endpoint (Drivers/Admins only)")
     @PreAuthorize("hasAnyRole('DRIVER', 'ADMIN')")
     @GetMapping("/{rideId}/details")
-    public ResponseEntity<RideDetailResponse> getRideDetailsForDriver(
+    public ResponseEntity<WebRideDetailResponse> getRideDetailsForDriver(
             @PathVariable Long rideId,
             @AuthenticationPrincipal UserDetails currentUser) {
 
@@ -367,7 +367,7 @@ public class RideController {
         //   * Panic button activation status
         //   * Cancellation details if applicable
 
-        RideDetailResponse rideDetails = new RideDetailResponse();
+        WebRideDetailResponse rideDetails = new WebRideDetailResponse();
 
         log.debug("Retrieved driver/admin details for rideId: {}", rideId);
         return ResponseEntity.ok(rideDetails);
@@ -376,7 +376,7 @@ public class RideController {
     @Operation(summary = "Get ride details (Passenger)", description = "View simplified ride information - Protected endpoint (Passengers only)")
     @PreAuthorize("hasRole('PASSENGER')")
     @GetMapping("/{rideId}")
-    public ResponseEntity<PassengerRideDetailResponse> getRideDetailsForPassenger(
+    public ResponseEntity<WebPassengerRideDetailResponse> getRideDetailsForPassenger(
             @PathVariable Long rideId,
             @AuthenticationPrincipal UserDetails currentUser) {
 
@@ -393,7 +393,7 @@ public class RideController {
         //   * Driver basic info (name, phone)
         //   * Passenger's own rating if exists
 
-        PassengerRideDetailResponse rideDetails = new PassengerRideDetailResponse();
+        WebPassengerRideDetailResponse rideDetails = new WebPassengerRideDetailResponse();
 
         log.debug("Retrieved passenger details for rideId: {}", rideId);
         return ResponseEntity.ok(rideDetails);

@@ -5,17 +5,22 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 
+@Service
 public class JwtServiceImpl implements JwtService {
 
     private final String secretKey;
     private final Long expiration;
 
-    public JwtServiceImpl(String secretKey, Long expiration) {
+    public JwtServiceImpl(
+            @Value("${jwt.secret}") String secretKey,
+            @Value("${jwt.expiration}") Long expiration) {
         this.secretKey = secretKey;
         this.expiration = expiration;
     }
