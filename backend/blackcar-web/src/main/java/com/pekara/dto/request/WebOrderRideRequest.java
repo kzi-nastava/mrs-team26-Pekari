@@ -1,11 +1,13 @@
 package com.pekara.dto.request;
 
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import com.pekara.dto.common.WebLocationPoint;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -15,16 +17,16 @@ import java.util.List;
 @AllArgsConstructor
 public class WebOrderRideRequest {
 
-    @NotBlank(message = "Pickup location is required")
-    private String pickupLocation;
+    @NotNull(message = "Pickup location is required")
+    @Valid
+    private WebLocationPoint pickup;
 
-    /**
-     * Optional intermediate stops (order matters).
-     */
-    private List<@NotBlank(message = "Stop location must not be blank") String> stops;
+    /** Optional intermediate stops (order matters). */
+    private List<@Valid WebLocationPoint> stops;
 
-    @NotBlank(message = "Dropoff location is required")
-    private String dropoffLocation;
+    @NotNull(message = "Dropoff location is required")
+    @Valid
+    private WebLocationPoint dropoff;
 
     /**
      * Optional additional passengers (by email). Ride is paid by the creator.

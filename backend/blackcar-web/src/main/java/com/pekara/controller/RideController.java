@@ -15,6 +15,8 @@ import com.pekara.dto.response.WebPassengerRideHistoryResponse;
 import com.pekara.dto.response.WebRideDetailResponse;
 import com.pekara.dto.response.WebRideEstimateResponse;
 import com.pekara.dto.response.WebRideTrackingResponse;
+import com.pekara.mapper.RideMapper;
+import com.pekara.service.RideService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -36,71 +38,47 @@ import java.util.List;
 @Tag(name = "Rides", description = "Ride management endpoints")
 public class RideController {
 
+    private final RideService rideService;
+    private final RideMapper rideMapper;
+
+    public RideController(RideService rideService, RideMapper rideMapper) {
+        this.rideService = rideService;
+        this.rideMapper = rideMapper;
+    }
+
     @Operation(summary = "Estimate ride", description = "Calculate ride estimation (price, duration, distance) - Public endpoint")
     @PostMapping("/estimate")
     public ResponseEntity<WebRideEstimateResponse> estimateRide(@Valid @RequestBody WebEstimateRideRequest request) {
-        log.debug("Ride estimation requested from {} to {}", request.getPickupLocation(), request.getDropoffLocation());
+        log.debug("Ride estimation requested");
 
-        // TODO: Implement ride estimation logic via RideService
-        // - Calculate distance between pickup and dropoff locations
-        // - Calculate estimated duration based on traffic
-        // - Calculate price based on vehicle type, distance, baby/pet transport
-        // - Filter available vehicles by baby/pet transport requirements
-        // - Return estimation details
-
+        var serviceResponse = rideService.estimateRide(rideMapper.toServiceEstimateRideRequest(request));
         WebRideEstimateResponse response = new WebRideEstimateResponse(
-                new BigDecimal("250.00"),
-                15,
-                5.5,
-                request.getVehicleType()
+            serviceResponse.getEstimatedPrice(),
+            serviceResponse.getEstimatedDurationMinutes(),
+            serviceResponse.getDistanceKm(),
+            serviceResponse.getVehicleType()
         );
 
-        log.debug("Ride estimate calculated: {} RSD, {} minutes", response.getEstimatedPrice(), response.getEstimatedDurationMinutes());
         return ResponseEntity.ok(response);
     }
 
 
     @Operation(summary = "Order ride", description = "Order a ride now or schedule it up to 5 hours ahead - Protected endpoint")
     @PostMapping("/order")
-    public ResponseEntity<WebOrderRideResponse> orderRide(@Valid @RequestBody WebOrderRideRequest request) {
-        log.debug("Ride order requested from {} to {}", request.getPickupLocation(), request.getDropoffLocation());
+    public ResponseEntity<WebOrderRideResponse> orderRide(
+            @Valid @RequestBody WebOrderRideRequest request,
+            @AuthenticationPrincipal String currentUserEmail) {
+        log.debug("Ride order requested");
 
-        if (request.getScheduledAt() != null) {
-            LocalDateTime now = LocalDateTime.now();
-            if (request.getScheduledAt().isBefore(now)) {
-                throw new IllegalArgumentException("Scheduled time must be in the future");
-            }
-            if (request.getScheduledAt().isAfter(now.plusHours(5))) {
-                throw new IllegalArgumentException("Ride can be scheduled at most 5 hours in advance");
-            }
-        }
+        var serviceResponse = rideService.orderRide(currentUserEmail, rideMapper.toServiceOrderRideRequest(request));
 
-        // TODO: Implement ride ordering logic via RideService
-        // - Build ordered route: pickup -> stops (ordered) -> dropoff
-        // - Validate linked passengers exist by email; creator pays the ride
-        // - Calculate route distance (km) and price:
-        //     price = basePriceByVehicleType + distanceKm * 120
-        // - Find available drivers:
-        //   * Reject if no active/logged-in drivers
-        //   * Reject if all drivers are busy AND already have a future scheduled ride
-        //   * If there are free drivers, pick the nearest to pickup
-        //   * If all are busy, pick one closest to pickup AND close to finishing current ride (<= 10 min remaining)
-        //   * Exclude drivers with > 8 working hours in last 24h
-        // - If scheduled ride: prioritize pre-scheduled rides in assignment
-        // - Send notifications:
-        //   * Driver: new ride assigned
-        //   * Creator: accepted/rejected
-        //   * Linked passengers: ride details available
-        // - Create reminder notifications: 15 minutes before, then every 5 minutes until start
-
-        boolean isScheduled = request.getScheduledAt() != null;
         WebOrderRideResponse response = new WebOrderRideResponse(
-                1L,
-                isScheduled ? "SCHEDULED" : "ACCEPTED",
-                isScheduled ? "Ride scheduled successfully." : "Ride ordered successfully.",
-                new BigDecimal("250.00"),
-                request.getScheduledAt(),
-                null
+                serviceResponse.getRideId(),
+                serviceResponse.getStatus(),
+                serviceResponse.getMessage(),
+                serviceResponse.getEstimatedPrice(),
+                serviceResponse.getScheduledAt(),
+                serviceResponse.getAssignedDriverEmail()
         );
 
         return ResponseEntity.status(201).body(response);
