@@ -90,11 +90,27 @@ public class CoreDevDataSeeder implements ApplicationRunner {
             driver.setLicenseNumber("TEST-LIC-001");
             driver.setLicenseExpiry("2028-12");
             driver.setVehicleRegistration("NS-TEST-01");
+            driver.setVehicleType("STANDARD");
         }
 
         driver.setPassword(passwordEncoder.encode("Driver1234"));
         driver.setIsActive(true);
         driver.setRole(UserRole.DRIVER);
+        
+        // Ensure these fields are set even if driver existed before
+        if (driver.getVehicleType() == null) {
+            driver.setVehicleType("STANDARD");
+        }
+        if (driver.getVehicleRegistration() == null) {
+            driver.setVehicleRegistration("NS-TEST-01");
+        }
+        if (driver.getLicenseNumber() == null) {
+            driver.setLicenseNumber("TEST-LIC-001");
+        }
+        if (driver.getLicenseExpiry() == null) {
+            driver.setLicenseExpiry("2028-12");
+        }
+
         driver = driverRepository.saveAndFlush(driver);
 
         log.info("Seeded/updated dev driver: {} / Driver1234", email);

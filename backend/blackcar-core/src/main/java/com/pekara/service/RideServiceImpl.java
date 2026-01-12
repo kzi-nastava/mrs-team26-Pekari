@@ -222,7 +222,16 @@ public class RideServiceImpl implements com.pekara.service.RideService {
         List<DriverState> eligible = onlineDrivers.stream()
                 .filter(ds -> ds.getDriver() != null)
                 .filter(ds -> ds.getNextScheduledRideAt() == null)
-            .filter(ds -> !hasExceededWorkLimit(ds.getDriver().getId(), now))
+                .filter(ds -> !hasExceededWorkLimit(ds.getDriver().getId(), now))
+                .filter(ds -> {
+                    String reqType = request.getVehicleType();
+                    // If request doesn't specify type, assume STANDARD or allow any?
+                    // Let's assume strict matching if specified, otherwise loose (or default STANDARD).
+                    if (reqType == null) return true;
+                    
+                    String driverType = ds.getDriver().getVehicleType();
+                    return driverType != null && driverType.equalsIgnoreCase(reqType);
+                })
                 .toList();
 
         if (eligible.isEmpty()) {

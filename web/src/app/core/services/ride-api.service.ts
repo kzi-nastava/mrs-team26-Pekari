@@ -38,7 +38,7 @@ export interface OrderRideResponse {
   rideId: number;
   status: string;
   message: string;
-  estimatedPrice: string;
+  estimatedPrice: number | string;
   scheduledAt?: string | null;
   assignedDriverEmail?: string | null;
 }

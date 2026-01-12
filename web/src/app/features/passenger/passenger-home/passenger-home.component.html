@@ -124,15 +124,13 @@
             class="primary"
             type="button"
             (click)="orderRide()"
-            [disabled]="loadingEstimate || loadingOrder"
           >
-            {{ loadingOrder ? 'Requesting…' : 'Request Now' }}
+            Request Now
           </button>
           <button
             class="secondary"
             type="button"
             (click)="chooseFavoriteRoute()"
-            [disabled]="loadingEstimate || loadingOrder"
           >
             Choose Favorite Route
           </button>
@@ -141,9 +139,8 @@
             class="link"
             type="button"
             (click)="estimateRide()"
-            [disabled]="loadingEstimate || loadingOrder"
           >
-            {{ loadingEstimate ? 'Estimating…' : 'Estimate price' }}
+            Estimate price
           </button>
 
           <p class="error" *ngIf="error">{{ error }}</p>

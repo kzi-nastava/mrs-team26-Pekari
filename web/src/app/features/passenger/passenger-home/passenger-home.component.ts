@@ -1,8 +1,7 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnDestroy, OnInit, inject } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { FormArray, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RideApiService, OrderRideResponse, RideEstimateResponse } from '../../../core/services/ride-api.service';
-import { finalize } from 'rxjs';
 
 @Component({
   selector: 'app-passenger-home',
@@ -14,13 +13,11 @@ import { finalize } from 'rxjs';
 export class PassengerHomeComponent implements OnInit, OnDestroy {
   private fb = inject(FormBuilder);
   private rides = inject(RideApiService);
+  private cdr = inject(ChangeDetectorRef);
 
   estimate?: RideEstimateResponse;
   orderResult?: OrderRideResponse;
   error?: string;
-
-  loadingEstimate = false;
-  loadingOrder = false;
 
   scheduledMin = '';
   scheduledMax = '';
@@ -175,8 +172,6 @@ export class PassengerHomeComponent implements OnInit, OnDestroy {
 
     const value = this.form.getRawValue();
 
-    this.loadingEstimate = true;
-
     this.rides
       .estimateRide({
         pickup: value.pickup as any,
@@ -185,13 +180,16 @@ export class PassengerHomeComponent implements OnInit, OnDestroy {
         babyTransport: !!value.babyTransport,
         petTransport: !!value.petTransport
       })
-      .pipe(finalize(() => (this.loadingEstimate = false)))
       .subscribe({
-        next: (resp) => (this.estimate = resp),
+        next: (resp) => {
+          this.estimate = resp;
+          this.cdr.detectChanges();
+        },
         error: (err) => {
           const backendMsg = err?.error?.message;
           const plainMsg = typeof err?.error === 'string' ? err.error : undefined;
           this.error = backendMsg || plainMsg || err?.message || 'Estimate failed';
+          this.cdr.detectChanges();
         }
       });
   }
@@ -226,8 +224,6 @@ export class PassengerHomeComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.loadingOrder = true;
-
     this.rides
       .orderRide({
         pickup: value.pickup as any,
@@ -239,18 +235,22 @@ export class PassengerHomeComponent implements OnInit, OnDestroy {
         petTransport: !!value.petTransport,
         scheduledAt: scheduledResolved.scheduledAt
       })
-      .pipe(finalize(() => (this.loadingOrder = false)))
       .subscribe({
-        next: (resp) => (this.orderResult = resp),
+        next: (resp) => {
+          this.orderResult = resp;
+          this.cdr.detectChanges();
+        },
         error: (err) => {
           if (err?.status === 401 || err?.status === 403) {
             this.error = 'Please log in to request a ride.';
+            this.cdr.detectChanges();
             return;
           }
 
           const backendMsg = err?.error?.message;
           const plainMsg = typeof err?.error === 'string' ? err.error : undefined;
           this.error = backendMsg || plainMsg || err?.message || 'Order failed';
+          this.cdr.detectChanges();
         }
       });
   }

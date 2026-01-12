@@ -28,8 +28,14 @@ export class LoginComponent {
       const email = this.loginForm.value.email as string;
       const password = this.loginForm.value.password as string;
       this.authService.login({ email, password }).subscribe({
-        next: () => {
-          this.router.navigate(['/']);
+        next: (user) => {
+          if (user.role === 'passenger') {
+            this.router.navigate(['/passenger-home']);
+          } else if (user.role === 'driver') {
+            this.router.navigate(['/driver-history']);
+          } else {
+            this.router.navigate(['/']);
+          }
         },
         error: (err) => {
           this.errorMessage.set('Invalid email or password. Please try again.');
