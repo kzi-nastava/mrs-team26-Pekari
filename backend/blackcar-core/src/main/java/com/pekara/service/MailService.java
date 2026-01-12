@@ -9,4 +9,14 @@ public interface MailService {
      * @param activationToken activation token to include in email
      */
     void sendActivationEmail(String toEmail, String activationToken);
+
+    void sendRideAssignedToDriver(String driverEmail, Long rideId, java.time.LocalDateTime scheduledAt);
+
+    void sendRideOrderAccepted(String toEmail, Long rideId, String status);
+
+    void sendRideOrderRejected(String toEmail, String reason);
+
+    void sendRideDetailsShared(String toEmail, Long rideId, String creatorEmail);
+
+    void sendRideReminder(String toEmail, Long rideId, java.time.LocalDateTime scheduledAt);
 }

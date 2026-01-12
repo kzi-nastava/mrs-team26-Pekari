@@ -1,21 +1,25 @@
 package com.pekara.dto.request;
 
-import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import com.pekara.dto.common.WebLocationPoint;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class WebEstimateRideRequest {
 
-    @NotBlank(message = "Pickup location is required")
-    private String pickupLocation;
+    @NotNull(message = "Pickup location is required")
+    @Valid
+    private WebLocationPoint pickup;
 
-    @NotBlank(message = "Dropoff location is required")
-    private String dropoffLocation;
+    @NotNull(message = "Dropoff location is required")
+    @Valid
+    private WebLocationPoint dropoff;
 
     @NotNull(message = "Vehicle type is required")
     private String vehicleType;
