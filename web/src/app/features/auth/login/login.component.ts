@@ -25,7 +25,9 @@ export class LoginComponent {
   onSubmit(): void {
     if (this.loginForm.valid) {
       this.errorMessage.set(null);
-      this.authService.login(this.loginForm.value).subscribe({
+      const email = this.loginForm.value.email as string;
+      const password = this.loginForm.value.password as string;
+      this.authService.login({ email, password }).subscribe({
         next: () => {
           this.router.navigate(['/']);
         },
