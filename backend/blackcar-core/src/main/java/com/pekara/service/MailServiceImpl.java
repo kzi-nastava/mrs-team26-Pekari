@@ -17,7 +17,7 @@ public class MailServiceImpl implements MailService {
     @Value("${app.mail.from:noreply@blackcar.com}")
     private String fromEmail;
 
-    @Value("${app.frontend.url:http://localhost:3000}")
+    @Value("${app.frontend.url:http://localhost:4200}")
     private String frontendUrl;
 
     @Override

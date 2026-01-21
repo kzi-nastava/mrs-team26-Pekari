@@ -64,16 +64,38 @@ export class AuthService {
   }
 
   register(userData: any): Observable<User> {
-    // TODO: Hook to real multipart register endpoint (/auth/register/user)
-    const newUser: User = {
-      id: Math.random().toString(36).substring(7),
-      email: userData.email,
-      username: userData.username || `${userData.firstName}${userData.lastName}`.toLowerCase(),
-      firstName: userData.firstName,
-      lastName: userData.lastName,
-      role: 'passenger'
-    };
-    return of(newUser);
+    const formData = new FormData();
+    formData.append('email', userData.email);
+    // Auto-generate username from email since we don't have it in the form
+    const autoUsername = userData.email.split('@')[0];
+    formData.append('username', autoUsername);
+    formData.append('password', userData.password);
+    formData.append('firstName', userData.firstName);
+    formData.append('lastName', userData.lastName);
+    formData.append('address', userData.address);
+    // Ensure phone number format matches backend requirement (digits only, optional +)
+    // Remove spaces/dashes if any, keep +
+    const cleanPhone = userData.phoneNumber.replace(/[^0-9+]/g, '');
+    formData.append('phoneNumber', cleanPhone);
+
+    // We are not sending profileImage for now
+
+    return this.http.post<any>(`${this.env.getApiUrl()}/auth/register/user`, formData)
+      .pipe(
+        map(resp => {
+          // Construct a temporary User object from response + input data
+          // Actual login will happen when they click the email link or login manually
+          const newUser: User = {
+            id: String(resp.userId),
+            email: resp.email,
+            username: autoUsername,
+            firstName: userData.firstName,
+            lastName: userData.lastName,
+            role: 'passenger'
+          };
+          return newUser;
+        })
+      );
   }
 
   logout(): void {
@@ -90,5 +112,11 @@ export class AuthService {
   forgotPassword(email: string): Observable<void> {
     // TODO: Hook to real backend endpoint when implemented
     return this.http.post<void>(`${this.env.getApiUrl()}/auth/reset-password`, { email });
+  }
+
+  activate(token: string): Observable<void> {
+    return this.http.get<void>(`${this.env.getApiUrl()}/auth/activate`, {
+      params: { token }
+    });
   }
 }

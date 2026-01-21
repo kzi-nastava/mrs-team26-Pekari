@@ -56,12 +56,11 @@
             <artifactId>postgresql</artifactId>
             <scope>runtime</scope>
         </dependency>
-        <!-- Core module - runtime only for strict API encapsulation -->
+        <!-- Core module - includes models, repositories, and services -->
         <dependency>
             <groupId>com.pekara</groupId>
             <artifactId>blackcar-core</artifactId>
             <version>${project.version}</version>
-            <scope>runtime</scope>
         </dependency>
     </dependencies>
 

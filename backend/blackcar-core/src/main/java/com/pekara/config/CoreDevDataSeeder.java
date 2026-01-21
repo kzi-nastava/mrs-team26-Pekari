@@ -39,7 +39,35 @@ public class CoreDevDataSeeder implements ApplicationRunner {
         log.info("=== Starting dev data seeding ===");
         seedPassenger();
         seedDriverWithState();
+        seedAdmin();
         log.info("=== Dev data seeding complete ===");
+    }
+
+    private void seedAdmin() {
+        String email = "admin@test.com";
+
+        User admin = userRepository.findByEmail(email)
+                .orElseGet(() -> {
+                    log.info("Creating new admin user");
+                    return User.builder()
+                            .email(email)
+                            .username("admin_test")
+                            .firstName("Test")
+                            .lastName("Admin")
+                            .phoneNumber("+38160000000")
+                            .address("Admin Address 1")
+                            .role(UserRole.ADMIN)
+                            .isActive(true)
+                            .totalRides(0)
+                            .build();
+                });
+
+        admin.setPassword(passwordEncoder.encode("Admin1234"));
+        admin.setIsActive(true);
+        admin.setRole(UserRole.ADMIN);
+
+        userRepository.save(admin);
+        log.info("Seeded/updated dev admin: {} / Admin1234", email);
     }
 
     private void seedPassenger() {

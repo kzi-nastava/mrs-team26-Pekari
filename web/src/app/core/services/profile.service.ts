@@ -1,65 +1,139 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, of } from 'rxjs';
+import { Observable, of, map } from 'rxjs';
 import { ProfileData, DriverInfo, ProfileUpdateRequest, ApprovalRequest, PasswordChangeRequest } from '../models/profile.model';
+import { EnvironmentService } from './environment.service';
+import { AuthService } from './auth.service';
+
+// Backend response types
+interface DriverProfileResponse {
+  id: string;
+  email: string;
+  username: string;
+  firstName: string;
+  lastName: string;
+  phoneNumber: string;
+  address: string;
+  profilePicture: string | null;
+  createdAt: string;
+  updatedAt: string;
+  licenseNumber: string;
+  licenseExpiry: string;
+  vehicleRegistration: string;
+  averageRating: number;
+  totalRides: number;
+  isActive: boolean;
+}
+
+interface PassengerProfileResponse {
+  id: string;
+  email: string;
+  username: string;
+  firstName: string;
+  lastName: string;
+  phoneNumber: string;
+  address: string;
+  profilePicture: string | null;
+  createdAt: string;
+  updatedAt: string;
+  totalRides: number;
+  averageRating: number;
+}
 
 @Injectable({
   providedIn: 'root'
 })
 export class ProfileService {
   private http = inject(HttpClient);
-  private apiUrl = 'http://localhost:8080/api/profile'; // Update with actual backend URL
+  private env = inject(EnvironmentService);
+  private authService = inject(AuthService);
 
-  // Mock profile data for demo
-  private mockProfile: ProfileData = {
-    id: '1',
-    email: 'john@example.com',
-    username: 'johndoe',
-    firstName: 'John',
-    lastName: 'Doe',
-    phoneNumber: '+381 64 000 000',
-    address: '123 Main Street, City',
-    role: 'driver',
-    createdAt: new Date('2024-01-15'),
-    updatedAt: new Date('2024-01-15')
-  };
-
-  private mockDriverInfo: DriverInfo = {
-    hoursActiveLast24h: 5.33,
-    vehicle: {
-      id: 'v1',
-      make: 'Tesla',
-      model: 'Model 3',
-      year: 2023,
-      licensePlate: 'TS-123-AB',
-      vin: '12345678901234567'
-    }
-  };
+  private get apiUrl(): string {
+    return `${this.env.getApiUrl()}/profile`;
+  }
 
   /**
-   * Get current user's profile
+   * Get current user's profile based on their role
    */
   getProfile(): Observable<ProfileData> {
-    // Replace with actual HTTP call
-    return of(this.mockProfile);
+    const currentUser = this.authService.currentUser();
+    const role = currentUser?.role;
+
+    if (role === 'driver') {
+      return this.http.get<DriverProfileResponse>(`${this.apiUrl}/driver`).pipe(
+        map(response => this.mapDriverResponseToProfileData(response))
+      );
+    } else {
+      // Default to passenger endpoint for passengers and admins
+      return this.http.get<PassengerProfileResponse>(`${this.apiUrl}/passenger`).pipe(
+        map(response => this.mapPassengerResponseToProfileData(response))
+      );
+    }
+  }
+
+  private mapDriverResponseToProfileData(response: DriverProfileResponse): ProfileData {
+    return {
+      id: response.id,
+      email: response.email,
+      username: response.username,
+      firstName: response.firstName,
+      lastName: response.lastName,
+      phoneNumber: response.phoneNumber,
+      address: response.address,
+      role: 'driver',
+      profilePicture: response.profilePicture || undefined,
+      createdAt: new Date(response.createdAt),
+      updatedAt: new Date(response.updatedAt)
+    };
+  }
+
+  private mapPassengerResponseToProfileData(response: PassengerProfileResponse): ProfileData {
+    return {
+      id: response.id,
+      email: response.email,
+      username: response.username,
+      firstName: response.firstName,
+      lastName: response.lastName,
+      phoneNumber: response.phoneNumber,
+      address: response.address,
+      role: 'passenger',
+      profilePicture: response.profilePicture || undefined,
+      createdAt: new Date(response.createdAt),
+      updatedAt: new Date(response.updatedAt)
+    };
   }
 
   /**
    * Get driver-specific information (hours active, vehicle)
    */
   getDriverInfo(): Observable<DriverInfo> {
-    // Replace with actual HTTP call
-    return of(this.mockDriverInfo);
+    // TODO: Implement when backend endpoint is available
+    // For now, return mock data as the backend doesn't have a separate driver info endpoint
+    return of({
+      hoursActiveLast24h: 0,
+      vehicle: {
+        id: '',
+        make: '',
+        model: '',
+        year: 0,
+        licensePlate: '',
+        vin: ''
+      }
+    });
   }
 
   /**
    * Update user profile (creates approval request for drivers)
    */
   updateProfile(updateData: ProfileUpdateRequest): Observable<{ success: boolean; message: string }> {
-    // For drivers: creates approval request
-    // For admin/passenger: updates immediately
-    // Replace with actual HTTP call
-    return of({ success: true, message: 'Profile update request sent for approval' });
+    const currentUser = this.authService.currentUser();
+    const role = currentUser?.role;
+
+    const endpoint = role === 'driver' ? `${this.apiUrl}/driver` : `${this.apiUrl}/passenger`;
+
+    return this.http.put<{ message: string }>(endpoint, updateData).pipe(
+      map(response => ({ success: true, message: response.message }))
+    );
   }
 
   /**
