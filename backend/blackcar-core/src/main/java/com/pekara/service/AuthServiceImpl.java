@@ -1,14 +1,18 @@
 package com.pekara.service;
 
+import com.pekara.dto.request.RegisterDriverRequest;
 import com.pekara.dto.request.RegisterUserRequest;
 import com.pekara.dto.response.AuthResponse;
+import com.pekara.dto.response.RegisterDriverResponse;
 import com.pekara.dto.response.RegisterResponse;
 import com.pekara.exception.DuplicateResourceException;
 import com.pekara.exception.InvalidTokenException;
 import com.pekara.model.AccountActivationToken;
+import com.pekara.model.Driver;
 import com.pekara.model.User;
 import com.pekara.model.UserRole;
 import com.pekara.repository.AccountActivationTokenRepository;
+import com.pekara.repository.DriverRepository;
 import com.pekara.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -24,6 +28,7 @@ import java.util.UUID;
 public class AuthServiceImpl implements AuthService {
 
     private final UserRepository userRepository;
+    private final DriverRepository driverRepository;
     private final AccountActivationTokenRepository tokenRepository;
     private final MailService mailService;
     private final PasswordEncoder passwordEncoder;
@@ -71,6 +76,75 @@ public class AuthServiceImpl implements AuthService {
                 .userId(savedUser.getId())
                 .email(savedUser.getEmail())
                 .build();
+    }
+
+    @Override
+    @Transactional
+    public RegisterDriverResponse registerDriver(RegisterDriverRequest request) {
+        if (userRepository.existsByEmail(request.getEmail())) {
+            throw new DuplicateResourceException("Email already exists");
+        }
+
+        if (driverRepository.existsByLicenseNumber(request.getLicensePlate())) {
+            throw new DuplicateResourceException("Vehicle with this license plate already registered");
+        }
+
+        // Generate a temporary password - driver will set their own on first login
+        String tempPassword = UUID.randomUUID().toString().substring(0, 12);
+
+        Driver driver = Driver.builder()
+                .email(request.getEmail())
+                .username(generateUsernameFromEmail(request.getEmail()))
+                .password(passwordEncoder.encode(tempPassword))
+                .firstName(request.getFirstName())
+                .lastName(request.getLastName())
+                .phoneNumber(request.getPhoneNumber())
+                .address(request.getAddress())
+                .role(UserRole.DRIVER)
+                .isActive(false)
+                .totalRides(0)
+                .licenseNumber(request.getLicensePlate())
+                .vehicleRegistration(formatVehicleInfo(request))
+                .build();
+
+        Driver savedDriver = driverRepository.save(driver);
+
+        String tokenValue = UUID.randomUUID().toString();
+        AccountActivationToken token = AccountActivationToken.builder()
+                .token(tokenValue)
+                .user(savedDriver)
+                .expiresAt(LocalDateTime.now().plusHours(48))
+                .build();
+
+        tokenRepository.save(token);
+
+        mailService.sendDriverActivationEmail(savedDriver.getEmail(), tokenValue, savedDriver.getFirstName());
+
+        return RegisterDriverResponse.builder()
+                .message("Driver registration successful. An activation link has been sent to the driver's email.")
+                .userId(savedDriver.getId())
+                .email(savedDriver.getEmail())
+                .status("PENDING_ACTIVATION")
+                .build();
+    }
+
+    private String generateUsernameFromEmail(String email) {
+        String baseUsername = email.split("@")[0];
+        String username = baseUsername;
+        int counter = 1;
+        while (userRepository.existsByUsername(username)) {
+            username = baseUsername + counter++;
+        }
+        return username;
+    }
+
+    private String formatVehicleInfo(RegisterDriverRequest request) {
+        return String.format("%s|%s|%d|%b|%b",
+                request.getVehicleModel(),
+                request.getVehicleType(),
+                request.getNumberOfSeats(),
+                request.getBabyFriendly(),
+                request.getPetFriendly());
     }
 
     @Override

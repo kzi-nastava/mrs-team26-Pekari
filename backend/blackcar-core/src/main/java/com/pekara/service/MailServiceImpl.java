@@ -47,4 +47,34 @@ public class MailServiceImpl implements MailService {
             throw new RuntimeException("Failed to send activation email", e);
         }
     }
+
+    @Override
+    public void sendDriverActivationEmail(String toEmail, String activationToken, String driverName) {
+        try {
+            String activationLink = frontendUrl + "/activate?token=" + activationToken;
+
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(fromEmail);
+            message.setTo(toEmail);
+            message.setSubject("Welcome to BlackCar - Activate Your Driver Account");
+            message.setText(
+                    "Hello " + driverName + ",\n\n" +
+                    "You have been registered as a driver on BlackCar!\n\n" +
+                    "Please click the link below to activate your account and set up your password:\n" +
+                    activationLink + "\n\n" +
+                    "This link will expire in 48 hours.\n\n" +
+                    "Once activated, you'll be able to start accepting rides and earning with BlackCar.\n\n" +
+                    "If you didn't expect this email, please contact our support team.\n\n" +
+                    "Best regards,\n" +
+                    "BlackCar Team"
+            );
+
+            mailSender.send(message);
+            log.info("Driver activation email sent successfully to: {}", toEmail);
+
+        } catch (Exception e) {
+            log.error("Failed to send driver activation email to: {}", toEmail, e);
+            throw new RuntimeException("Failed to send driver activation email", e);
+        }
+    }
 }

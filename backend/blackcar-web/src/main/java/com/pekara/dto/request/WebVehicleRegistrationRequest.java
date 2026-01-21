@@ -4,7 +4,6 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -14,21 +13,21 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class WebVehicleRegistrationRequest {
 
-    @NotBlank(message = "Vehicle make is required")
-    private String make;
-
     @NotBlank(message = "Vehicle model is required")
     private String model;
 
-    @NotNull(message = "Vehicle year is required")
-    @Min(value = 1900, message = "Vehicle year must be valid")
-    @Max(value = 2100, message = "Vehicle year must be valid")
-    private Integer year;
+    @NotBlank(message = "Vehicle type is required")
+    private String type;
 
     @NotBlank(message = "License plate is required")
     private String licensePlate;
 
-    @NotBlank(message = "VIN is required")
-    @Size(min = 11, max = 17, message = "VIN must be between 11 and 17 characters")
-    private String vin;
+    @NotNull(message = "Number of seats is required")
+    @Min(value = 1, message = "Number of seats must be at least 1")
+    @Max(value = 8, message = "Number of seats cannot exceed 8")
+    private Integer numberOfSeats;
+
+    private Boolean babyFriendly = false;
+
+    private Boolean petFriendly = false;
 }
