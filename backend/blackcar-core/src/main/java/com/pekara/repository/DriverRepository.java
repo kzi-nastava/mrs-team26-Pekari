@@ -13,9 +13,13 @@ public interface DriverRepository extends JpaRepository<Driver, Long> {
 
     Optional<Driver> findByLicenseNumber(String licenseNumber);
 
+    Optional<Driver> findByLicensePlate(String licensePlate);
+
     Optional<Driver> findByEmail(String email);
 
     boolean existsByLicenseNumber(String licenseNumber);
+
+    boolean existsByLicensePlate(String licensePlate);
 
     @Query("SELECT d FROM Driver d WHERE d.isActive = true")
     List<Driver> findAllActiveDrivers();

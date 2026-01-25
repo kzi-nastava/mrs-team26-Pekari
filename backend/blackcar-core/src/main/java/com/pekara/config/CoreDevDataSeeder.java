@@ -43,17 +43,17 @@ public class CoreDevDataSeeder implements ApplicationRunner {
         seedUser("passenger4@test.com", "p_dana", "Dana", "White", UserRole.PASSENGER, "Pass1234");
 
         // 3. Seed Drivers with different vehicle types and locations
-        seedDriverWithState("driver_std@test.com", "d_john", "John", "Doe", 
-                "STANDARD", "NS-111-AA", 45.2671, 19.8335); // Center
+        seedDriverWithState("driver_std@test.com", "d_john", "John", "Doe",
+            "STANDARD", "Toyota Corolla", "NS-111-AA", 4, true, false, 45.2671, 19.8335); // Center
         
-        seedDriverWithState("driver_premium@test.com", "d_jane", "Jane", "Doe", 
-                "PREMIUM", "NS-222-BB", 45.2464, 19.8517); // Liman
+        seedDriverWithState("driver_premium@test.com", "d_jane", "Jane", "Doe",
+            "PREMIUM", "Mercedes E-Class", "NS-222-BB", 4, false, true, 45.2464, 19.8517); // Liman
         
-        seedDriverWithState("driver_eco@test.com", "d_mike", "Mike", "Ross", 
-                "ECO", "NS-333-CC", 45.2600, 19.8000); // Novo Naselje
+        seedDriverWithState("driver_eco@test.com", "d_mike", "Mike", "Ross",
+            "ECO", "Toyota Prius", "NS-333-CC", 4, false, false, 45.2600, 19.8000); // Novo Naselje
         
-        seedDriverWithState("driver_van@test.com", "d_sarah", "Sarah", "Connor", 
-                "VAN", "NS-444-DD", 45.2396, 19.8227); // Petrovaradin
+        seedDriverWithState("driver_van@test.com", "d_sarah", "Sarah", "Connor",
+            "VAN", "Volkswagen Transporter", "NS-444-DD", 7, true, true, 45.2396, 19.8227); // Petrovaradin
 
         log.info("=== Bulk dev data seeding complete ===");
     }
@@ -81,8 +81,9 @@ public class CoreDevDataSeeder implements ApplicationRunner {
     /**
      * Helper to create or update Drivers and their associated real-time State
      */
-    private void seedDriverWithState(String email, String username, String fName, String lName, 
-                                     String vType, String vReg, double lat, double lon) {
+    private void seedDriverWithState(String email, String username, String fName, String lName,
+                                     String vType, String vModel, String vReg, int seats, boolean babyFriendly,
+                                     boolean petFriendly, double lat, double lon) {
         
         Driver driver = driverRepository.findByEmail(email).orElseGet(() -> {
             Driver d = new Driver();
@@ -102,7 +103,11 @@ public class CoreDevDataSeeder implements ApplicationRunner {
         
         // Driver specific info
         driver.setVehicleType(vType);
-        driver.setVehicleRegistration(vReg);
+        driver.setVehicleModel(vModel);
+        driver.setLicensePlate(vReg);
+        driver.setNumberOfSeats(seats);
+        driver.setBabyFriendly(babyFriendly);
+        driver.setPetFriendly(petFriendly);
         driver.setLicenseNumber("LIC-" + vReg);
         driver.setLicenseExpiry("2030-01");
 

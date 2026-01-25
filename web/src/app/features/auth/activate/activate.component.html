@@ -12,6 +12,29 @@
         <p>{{ error() }}</p>
         <a routerLink="/login" class="btn-link">Back to Login</a>
       </div>
+    } @else if (success()) {
+      <div class="success-state">
+        <div class="icon success">✓</div>
+        <h2>Account Activated!</h2>
+        <p>{{ success() }}</p>
+        <a routerLink="/login" class="btn-primary">Proceed to Login</a>
+      </div>
+    } @else if (requiresPassword()) {
+      <div class="success-state">
+        <div class="icon success">✓</div>
+        <h2>Set Your Password</h2>
+        <p>Please create a password to activate your driver account.</p>
+
+        <form [formGroup]="passwordForm" (ngSubmit)="onSubmitPassword()" class="activation-form">
+          <label for="newPassword">New Password</label>
+          <input id="newPassword" type="password" formControlName="newPassword" />
+
+          <label for="confirmPassword">Confirm Password</label>
+          <input id="confirmPassword" type="password" formControlName="confirmPassword" />
+
+          <button class="btn-primary" type="submit">Set Password</button>
+        </form>
+      </div>
     } @else {
       <div class="success-state">
         <div class="icon success">✓</div>

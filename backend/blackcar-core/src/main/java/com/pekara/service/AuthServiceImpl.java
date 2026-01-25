@@ -2,6 +2,7 @@ package com.pekara.service;
 
 import com.pekara.dto.request.RegisterDriverRequest;
 import com.pekara.dto.request.RegisterUserRequest;
+import com.pekara.dto.response.ActivationInfoResponse;
 import com.pekara.dto.response.AuthResponse;
 import com.pekara.dto.response.RegisterDriverResponse;
 import com.pekara.dto.response.RegisterResponse;
@@ -85,7 +86,7 @@ public class AuthServiceImpl implements AuthService {
             throw new DuplicateResourceException("Email already exists");
         }
 
-        if (driverRepository.existsByLicenseNumber(request.getLicensePlate())) {
+        if (driverRepository.existsByLicensePlate(request.getLicensePlate())) {
             throw new DuplicateResourceException("Vehicle with this license plate already registered");
         }
 
@@ -103,8 +104,13 @@ public class AuthServiceImpl implements AuthService {
                 .role(UserRole.DRIVER)
                 .isActive(false)
                 .totalRides(0)
-                .licenseNumber(request.getLicensePlate())
-                .vehicleRegistration(formatVehicleInfo(request))
+            .licenseNumber("LIC-" + request.getLicensePlate())
+            .vehicleModel(request.getVehicleModel())
+            .vehicleType(request.getVehicleType())
+            .licensePlate(request.getLicensePlate())
+            .numberOfSeats(request.getNumberOfSeats())
+            .babyFriendly(request.getBabyFriendly())
+            .petFriendly(request.getPetFriendly())
                 .build();
 
         Driver savedDriver = driverRepository.save(driver);
@@ -113,7 +119,7 @@ public class AuthServiceImpl implements AuthService {
         AccountActivationToken token = AccountActivationToken.builder()
                 .token(tokenValue)
                 .user(savedDriver)
-                .expiresAt(LocalDateTime.now().plusHours(48))
+            .expiresAt(LocalDateTime.now().plusHours(24))
                 .build();
 
         tokenRepository.save(token);
@@ -128,6 +134,30 @@ public class AuthServiceImpl implements AuthService {
                 .build();
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public ActivationInfoResponse getActivationInfo(String tokenValue) {
+        AccountActivationToken token = tokenRepository.findByToken(tokenValue)
+                .orElseThrow(() -> new InvalidTokenException("Invalid activation token"));
+
+        if (token.isActivated()) {
+            throw new InvalidTokenException("Activation token already used");
+        }
+
+        if (token.isExpired()) {
+            throw new InvalidTokenException("Activation token expired");
+        }
+
+        User user = token.getUser();
+        boolean requiresPassword = user.getRole() == UserRole.DRIVER;
+
+        return new ActivationInfoResponse(
+                requiresPassword,
+                user.getRole().name(),
+                user.getEmail()
+        );
+    }
+
     private String generateUsernameFromEmail(String email) {
         String baseUsername = email.split("@")[0];
         String username = baseUsername;
@@ -136,15 +166,6 @@ public class AuthServiceImpl implements AuthService {
             username = baseUsername + counter++;
         }
         return username;
-    }
-
-    private String formatVehicleInfo(RegisterDriverRequest request) {
-        return String.format("%s|%s|%d|%b|%b",
-                request.getVehicleModel(),
-                request.getVehicleType(),
-                request.getNumberOfSeats(),
-                request.getBabyFriendly(),
-                request.getPetFriendly());
     }
 
     @Override
@@ -170,6 +191,36 @@ public class AuthServiceImpl implements AuthService {
 
         return AuthResponse.builder()
                 .message("Account activated successfully. You can now log in.")
+                .userId(user.getId())
+                .email(user.getEmail())
+                .role(user.getRole().name())
+                .build();
+    }
+
+    @Override
+    @Transactional
+    public AuthResponse setNewPassword(String tokenValue, String newPassword) {
+        AccountActivationToken token = tokenRepository.findByToken(tokenValue)
+                .orElseThrow(() -> new InvalidTokenException("Invalid activation token"));
+
+        if (token.isActivated()) {
+            throw new InvalidTokenException("Activation token already used");
+        }
+
+        if (token.isExpired()) {
+            throw new InvalidTokenException("Activation token expired");
+        }
+
+        User user = token.getUser();
+        user.setPassword(passwordEncoder.encode(newPassword));
+        user.setIsActive(true);
+        userRepository.save(user);
+
+        token.setActivatedAt(LocalDateTime.now());
+        tokenRepository.save(token);
+
+        return AuthResponse.builder()
+                .message("Password set successfully. You can now log in.")
                 .userId(user.getId())
                 .email(user.getEmail())
                 .role(user.getRole().name())

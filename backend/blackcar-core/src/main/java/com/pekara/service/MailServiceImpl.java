@@ -23,7 +23,7 @@ public class MailServiceImpl implements MailService {
     @Override
     public void sendActivationEmail(String toEmail, String activationToken) {
         try {
-            String activationLink = frontendUrl + "/activate?token=" + activationToken;
+            String activationLink = frontendUrl + "/activate?token=" + activationToken + "&mode=driver";
 
             SimpleMailMessage message = new SimpleMailMessage();
             message.setFrom(fromEmail);
@@ -62,7 +62,7 @@ public class MailServiceImpl implements MailService {
                     "You have been registered as a driver on BlackCar!\n\n" +
                     "Please click the link below to activate your account and set up your password:\n" +
                     activationLink + "\n\n" +
-                    "This link will expire in 48 hours.\n\n" +
+                    "This link will expire in 24 hours.\n\n" +
                     "Once activated, you'll be able to start accepting rides and earning with BlackCar.\n\n" +
                     "If you didn't expect this email, please contact our support team.\n\n" +
                     "Best regards,\n" +
