@@ -1,0 +1,21 @@
+<div class="autocomplete-wrapper">
+  <input
+    class="input"
+    [formControl]="addressControl"
+    [placeholder]="placeholder"
+    (focus)="onFocus()"
+    (blur)="onBlur()"
+    autocomplete="off"
+  />
+
+  <div class="suggestions" *ngIf="showSuggestions && suggestions.length > 0">
+    <button
+      *ngFor="let s of suggestions"
+      class="suggestion"
+      type="button"
+      (click)="select(s)"
+    >
+      {{ s.displayName }}
+    </button>
+  </div>
+</div>
