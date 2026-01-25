@@ -13,8 +13,6 @@ export interface EstimateRideRequest {
   stops?: LocationPoint[];
   dropoff: LocationPoint;
   vehicleType: string;
-  babyTransport: boolean;
-  petTransport: boolean;
 }
 
 export interface RideEstimateResponse {

@@ -28,10 +28,4 @@ public class WebEstimateRideRequest {
 
     @NotNull(message = "Vehicle type is required")
     private String vehicleType;
-
-    @NotNull(message = "Baby transport preference is required")
-    private Boolean babyTransport;
-
-    @NotNull(message = "Pet transport preference is required")
-    private Boolean petTransport;
 }

@@ -19,8 +19,6 @@ public class RideMapper {
                 .stops(web.getStops() == null ? null : web.getStops().stream().map(this::toLocation).toList())
                 .dropoff(toLocation(web.getDropoff()))
                 .vehicleType(web.getVehicleType())
-                .babyTransport(web.getBabyTransport())
-                .petTransport(web.getPetTransport())
                 .build();
     }
 

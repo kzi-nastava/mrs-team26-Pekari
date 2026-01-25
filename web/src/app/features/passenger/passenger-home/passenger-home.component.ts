@@ -335,12 +335,10 @@ export class PassengerHomeComponent implements OnInit, AfterViewInit, OnDestroy 
 
     this.rides
       .estimateRide({
-        pickup: value.pickup as any,
-        dropoff: value.dropoff as any,
-        vehicleType: value.vehicleType as string,
-        babyTransport: !!value.babyTransport,
-        petTransport: !!value.petTransport
-      })
+        pickup: value.pickup,
+        dropoff: value.dropoff,
+        vehicleType: value.vehicleType,
+      } as any)
       .subscribe({
         next: (resp) => {
           this.estimate = resp;

@@ -17,6 +17,4 @@ public class EstimateRideRequest {
     private List<LocationPointDto> stops;
     private LocationPointDto dropoff;
     private String vehicleType;
-    private Boolean babyTransport;
-    private Boolean petTransport;
 }

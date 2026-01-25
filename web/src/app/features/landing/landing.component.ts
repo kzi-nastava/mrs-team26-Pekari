@@ -51,9 +51,7 @@ export class LandingComponent implements AfterViewInit, OnDestroy {
       latitude: [null as number | null, Validators.required],
       longitude: [null as number | null, Validators.required]
     }),
-    vehicleType: ['STANDARD', Validators.required],
-    babyTransport: [false],
-    petTransport: [false]
+    vehicleType: ['STANDARD', Validators.required]
   });
 
   get stops(): FormArray {
@@ -108,6 +106,7 @@ export class LandingComponent implements AfterViewInit, OnDestroy {
     this.initializeMap();
     this.valueChangesSubscription = this.form.valueChanges.subscribe(() => {
       this.updateMapMarkers();
+      this.clearEstimateAndRoute();
     });
   }
 
@@ -312,9 +311,7 @@ export class LandingComponent implements AfterViewInit, OnDestroy {
         pickup: pickup as LocationPoint,
         stops,
         dropoff: dropoff as LocationPoint,
-        vehicleType: value.vehicleType || 'STANDARD',
-        babyTransport: !!value.babyTransport,
-        petTransport: !!value.petTransport
+        vehicleType: value.vehicleType || 'STANDARD'
       })
       .subscribe({
         next: (resp) => {
@@ -338,6 +335,13 @@ export class LandingComponent implements AfterViewInit, OnDestroy {
       this.routeLine.remove();
       this.routeLine = undefined;
     }
+  }
+
+  private clearEstimateAndRoute(): void {
+    this.estimate = undefined;
+    this.error = undefined;
+    this.clearRoute();
+    this.cdr.markForCheck();
   }
 
   private drawEstimatedRoute(routePoints?: LocationPoint[]): void {
