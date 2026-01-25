@@ -56,7 +56,9 @@ public class RideController {
             serviceResponse.getEstimatedPrice(),
             serviceResponse.getEstimatedDurationMinutes(),
             serviceResponse.getDistanceKm(),
-            serviceResponse.getVehicleType()
+            serviceResponse.getVehicleType(),
+            serviceResponse.getRoutePoints() == null ? null :
+                serviceResponse.getRoutePoints().stream().map(rideMapper::toWebLocation).toList()
         );
 
         return ResponseEntity.ok(response);

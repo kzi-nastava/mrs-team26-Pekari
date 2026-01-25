@@ -8,6 +8,8 @@ import lombok.NoArgsConstructor;
 
 import com.pekara.dto.common.WebLocationPoint;
 
+import java.util.List;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -16,6 +18,9 @@ public class WebEstimateRideRequest {
     @NotNull(message = "Pickup location is required")
     @Valid
     private WebLocationPoint pickup;
+
+    @Valid
+    private List<WebLocationPoint> stops;
 
     @NotNull(message = "Dropoff location is required")
     @Valid

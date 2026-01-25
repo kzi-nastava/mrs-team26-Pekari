@@ -42,6 +42,7 @@ public class RideServiceImpl implements com.pekara.service.RideService {
     private final DriverStateRepository driverStateRepository;
     private final DriverWorkLogRepository driverWorkLogRepository;
     private final MailService mailService;
+    private final RoutingService routingService;
 
     @Override
     @Transactional(readOnly = true)
@@ -49,19 +50,29 @@ public class RideServiceImpl implements com.pekara.service.RideService {
         validateLocation(request.getPickup(), "pickup");
         validateLocation(request.getDropoff(), "dropoff");
 
-        double distanceKm = GeoUtils.haversineKm(
-                request.getPickup().getLatitude(), request.getPickup().getLongitude(),
-                request.getDropoff().getLatitude(), request.getDropoff().getLongitude()
-        );
+        if (request.getStops() != null) {
+            for (LocationPointDto stop : request.getStops()) {
+                validateLocation(stop, "stop");
+            }
+        }
 
-        int estimatedDurationMinutes = estimateDurationMinutes(distanceKm, 0);
-        BigDecimal estimatedPrice = calculatePrice(request.getVehicleType(), distanceKm);
+        List<LocationPointDto> waypoints = new ArrayList<>();
+        waypoints.add(request.getPickup());
+        if (request.getStops() != null) {
+            waypoints.addAll(request.getStops());
+        }
+        waypoints.add(request.getDropoff());
+
+        var route = routingService.calculateRoute(waypoints);
+
+        BigDecimal estimatedPrice = calculatePrice(request.getVehicleType(), route.getDistanceKm());
 
         return RideEstimateResponse.builder()
                 .estimatedPrice(estimatedPrice)
-                .estimatedDurationMinutes(estimatedDurationMinutes)
-                .distanceKm(roundKm(distanceKm))
+                .estimatedDurationMinutes(route.getDurationMinutes())
+                .distanceKm(roundKm(route.getDistanceKm()))
                 .vehicleType(request.getVehicleType())
+                .routePoints(route.getRoutePoints())
                 .build();
     }
 
@@ -84,18 +95,22 @@ public class RideServiceImpl implements com.pekara.service.RideService {
         validateLocation(request.getPickup(), "pickup");
         validateLocation(request.getDropoff(), "dropoff");
 
-        List<LocationPointDto> route = new ArrayList<>();
-        route.add(request.getPickup());
         if (request.getStops() != null) {
             for (LocationPointDto stop : request.getStops()) {
                 validateLocation(stop, "stop");
-                route.add(stop);
             }
         }
-        route.add(request.getDropoff());
 
-        double distanceKm = calculateRouteDistanceKm(route);
-        int estimatedDurationMinutes = estimateDurationMinutes(distanceKm, request.getStops() != null ? request.getStops().size() : 0);
+        List<LocationPointDto> waypoints = new ArrayList<>();
+        waypoints.add(request.getPickup());
+        if (request.getStops() != null) {
+            waypoints.addAll(request.getStops());
+        }
+        waypoints.add(request.getDropoff());
+
+        var routeData = routingService.calculateRoute(waypoints);
+        double distanceKm = routeData.getDistanceKm();
+        int estimatedDurationMinutes = routeData.getDurationMinutes();
         BigDecimal estimatedPrice = calculatePrice(request.getVehicleType(), distanceKm);
 
         Ride ride = Ride.builder()
@@ -289,22 +304,6 @@ public class RideServiceImpl implements com.pekara.service.RideService {
         }
     }
 
-    private double calculateRouteDistanceKm(List<LocationPointDto> points) {
-        double total = 0;
-        for (int i = 0; i < points.size() - 1; i++) {
-            LocationPointDto a = points.get(i);
-            LocationPointDto b = points.get(i + 1);
-            total += GeoUtils.haversineKm(a.getLatitude(), a.getLongitude(), b.getLatitude(), b.getLongitude());
-        }
-        return total;
-    }
-
-    private int estimateDurationMinutes(double distanceKm, int stopCount) {
-        // Simple estimate: 40 km/h average + 3 minutes per stop
-        double minutes = (distanceKm / 40.0) * 60.0;
-        minutes += stopCount * 3.0;
-        return Math.max(1, (int) Math.round(minutes));
-    }
 
     private BigDecimal calculatePrice(String vehicleType, double distanceKm) {
         BigDecimal base = basePrice(vehicleType);

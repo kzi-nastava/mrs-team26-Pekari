@@ -16,6 +16,7 @@ public class RideMapper {
     public EstimateRideRequest toServiceEstimateRideRequest(WebEstimateRideRequest web) {
         return EstimateRideRequest.builder()
                 .pickup(toLocation(web.getPickup()))
+                .stops(web.getStops() == null ? null : web.getStops().stream().map(this::toLocation).toList())
                 .dropoff(toLocation(web.getDropoff()))
                 .vehicleType(web.getVehicleType())
                 .babyTransport(web.getBabyTransport())
@@ -44,6 +45,17 @@ public class RideMapper {
                 .address(web.getAddress())
                 .latitude(web.getLatitude())
                 .longitude(web.getLongitude())
+                .build();
+    }
+
+    public WebLocationPoint toWebLocation(LocationPointDto dto) {
+        if (dto == null) {
+            return null;
+        }
+        return WebLocationPoint.builder()
+                .address(dto.getAddress())
+                .latitude(dto.getLatitude())
+                .longitude(dto.getLongitude())
                 .build();
     }
 }

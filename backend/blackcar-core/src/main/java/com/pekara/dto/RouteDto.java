@@ -1,4 +1,4 @@
-package com.pekara.dto.response;
+package com.pekara.dto;
 
 import com.pekara.dto.common.LocationPointDto;
 import lombok.AllArgsConstructor;
@@ -6,17 +6,14 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.math.BigDecimal;
 import java.util.List;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class RideEstimateResponse {
-    private BigDecimal estimatedPrice;
-    private Integer estimatedDurationMinutes;
+public class RouteDto {
     private Double distanceKm;
-    private String vehicleType;
+    private Integer durationMinutes;
     private List<LocationPointDto> routePoints;
 }
