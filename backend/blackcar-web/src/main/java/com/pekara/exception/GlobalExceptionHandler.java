@@ -1,6 +1,9 @@
 package com.pekara.exception;
 
 import com.pekara.dto.response.WebErrorResponse;
+import com.pekara.exception.InvalidScheduleTimeException;
+import com.pekara.exception.NoActiveDriversException;
+import com.pekara.exception.NoDriversAvailableException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -134,5 +137,23 @@ public class GlobalExceptionHandler {
         );
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
+
+    @ExceptionHandler(InvalidScheduleTimeException.class)
+    public ResponseEntity<WebErrorResponse> handleInvalidScheduleTime(InvalidScheduleTimeException ex) {
+        WebErrorResponse error = new WebErrorResponse(
+                "INVALID_SCHEDULE_TIME",
+                ex.getMessage()
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
+
+    @ExceptionHandler({NoActiveDriversException.class, NoDriversAvailableException.class})
+    public ResponseEntity<WebErrorResponse> handleNoDrivers(RuntimeException ex) {
+        WebErrorResponse error = new WebErrorResponse(
+                "NO_DRIVERS_AVAILABLE",
+                ex.getMessage()
+        );
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
     }
 }
