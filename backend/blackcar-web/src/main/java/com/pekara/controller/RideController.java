@@ -64,6 +64,7 @@ public class RideController {
 
 
     @Operation(summary = "Order ride", description = "Order a ride now or schedule it up to 5 hours ahead - Protected endpoint")
+    @PreAuthorize("hasRole('PASSENGER')")
     @PostMapping("/order")
     public ResponseEntity<WebOrderRideResponse> orderRide(
             @Valid @RequestBody WebOrderRideRequest request,

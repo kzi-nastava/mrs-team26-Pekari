@@ -1,9 +1,6 @@
 package com.pekara.config;
 
-import com.pekara.model.Driver;
-import com.pekara.model.DriverState;
-import com.pekara.model.User;
-import com.pekara.model.UserRole;
+import com.pekara.model.*;
 import com.pekara.repository.DriverRepository;
 import com.pekara.repository.DriverStateRepository;
 import com.pekara.repository.UserRepository;
@@ -17,11 +14,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
-/**
- * Seeds development data when app.dev.seed=true.
- * Add to application-dev.properties: app.dev.seed=true
- */
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -36,132 +30,99 @@ public class CoreDevDataSeeder implements ApplicationRunner {
     @Override
     @Transactional
     public void run(ApplicationArguments args) {
-        log.info("=== Starting dev data seeding ===");
-        seedPassenger();
-        seedDriverWithState();
-        seedAdmin();
-        log.info("=== Dev data seeding complete ===");
+        log.info("=== Starting bulk dev data seeding ===");
+
+        // 1. Seed Admins
+        seedUser("admin@test.com", "admin_main", "Super", "Admin", UserRole.ADMIN, "Admin1234");
+        seedUser("support@test.com", "admin_support", "Support", "Tech", UserRole.ADMIN, "Admin1234");
+
+        // 2. Seed Passengers
+        seedUser("passenger1@test.com", "p_alice", "Alice", "Smith", UserRole.PASSENGER, "Pass1234");
+        seedUser("passenger2@test.com", "p_bob", "Bob", "Jones", UserRole.PASSENGER, "Pass1234");
+        seedUser("passenger3@test.com", "p_charlie", "Charlie", "Brown", UserRole.PASSENGER, "Pass1234");
+        seedUser("passenger4@test.com", "p_dana", "Dana", "White", UserRole.PASSENGER, "Pass1234");
+
+        // 3. Seed Drivers with different vehicle types and locations
+        seedDriverWithState("driver_std@test.com", "d_john", "John", "Doe", 
+                "STANDARD", "NS-111-AA", 45.2671, 19.8335); // Center
+        
+        seedDriverWithState("driver_premium@test.com", "d_jane", "Jane", "Doe", 
+                "PREMIUM", "NS-222-BB", 45.2464, 19.8517); // Liman
+        
+        seedDriverWithState("driver_eco@test.com", "d_mike", "Mike", "Ross", 
+                "ECO", "NS-333-CC", 45.2600, 19.8000); // Novo Naselje
+        
+        seedDriverWithState("driver_van@test.com", "d_sarah", "Sarah", "Connor", 
+                "VAN", "NS-444-DD", 45.2396, 19.8227); // Petrovaradin
+
+        log.info("=== Bulk dev data seeding complete ===");
     }
 
-    private void seedAdmin() {
-        String email = "admin@test.com";
+    /**
+     * Helper to create or update generic Users (Admin/Passenger)
+     */
+    private void seedUser(String email, String username, String fName, String lName, UserRole role, String rawPassword) {
+        User user = userRepository.findByEmail(email).orElseGet(() -> User.builder().email(email).build());
 
-        User admin = userRepository.findByEmail(email)
-                .orElseGet(() -> {
-                    log.info("Creating new admin user");
-                    return User.builder()
-                            .email(email)
-                            .username("admin_test")
-                            .firstName("Test")
-                            .lastName("Admin")
-                            .phoneNumber("+38160000000")
-                            .address("Admin Address 1")
-                            .role(UserRole.ADMIN)
-                            .isActive(true)
-                            .totalRides(0)
-                            .build();
-                });
+        user.setUsername(username);
+        user.setFirstName(fName);
+        user.setLastName(lName);
+        user.setPhoneNumber("+38160" + (int)(Math.random() * 9000000 + 1000000));
+        user.setAddress("Novi Sad");
+        user.setRole(role);
+        user.setPassword(passwordEncoder.encode(rawPassword));
+        user.setIsActive(true);
+        user.setTotalRides(0);
 
-        admin.setPassword(passwordEncoder.encode("Admin1234"));
-        admin.setIsActive(true);
-        admin.setRole(UserRole.ADMIN);
-
-        userRepository.save(admin);
-        log.info("Seeded/updated dev admin: {} / Admin1234", email);
+        userRepository.save(user);
+        log.info("Seeded {}: {}", role, email);
     }
 
-    private void seedPassenger() {
-        String email = "passenger@test.com";
+    /**
+     * Helper to create or update Drivers and their associated real-time State
+     */
+    private void seedDriverWithState(String email, String username, String fName, String lName, 
+                                     String vType, String vReg, double lat, double lon) {
+        
+        Driver driver = driverRepository.findByEmail(email).orElseGet(() -> {
+            Driver d = new Driver();
+            d.setEmail(email);
+            return d;
+        });
 
-        User passenger = userRepository.findByEmail(email)
-                .orElseGet(() -> {
-                    log.info("Creating new passenger user");
-                    return User.builder()
-                            .email(email)
-                            .username("passenger_test")
-                            .firstName("Test")
-                            .lastName("Passenger")
-                            .phoneNumber("+38160000001")
-                            .address("Novi Sad")
-                            .role(UserRole.PASSENGER)
-                            .isActive(true)
-                            .totalRides(0)
-                            .build();
-                });
-
-        passenger.setPassword(passwordEncoder.encode("Pass1234"));
-        passenger.setIsActive(true);
-        passenger.setRole(UserRole.PASSENGER);
-
-        userRepository.save(passenger);
-        log.info("Seeded/updated dev passenger: {} / Pass1234", email);
-    }
-
-    private void seedDriverWithState() {
-        String email = "driver@test.com";
-
-        // Find or create driver
-        Driver driver = driverRepository.findByEmail(email).orElse(null);
-
-        if (driver == null) {
-            log.info("Creating new driver user");
-            driver = new Driver();
-            driver.setEmail(email);
-            driver.setUsername("driver_test");
-            driver.setFirstName("Test");
-            driver.setLastName("Driver");
-            driver.setPhoneNumber("+38160000002");
-            driver.setAddress("Novi Sad");
-            driver.setRole(UserRole.DRIVER);
-            driver.setIsActive(true);
-            driver.setTotalRides(0);
-            driver.setLicenseNumber("TEST-LIC-001");
-            driver.setLicenseExpiry("2028-12");
-            driver.setVehicleRegistration("NS-TEST-01");
-            driver.setVehicleType("STANDARD");
-        }
-
+        // Set basic info
+        driver.setUsername(username);
+        driver.setFirstName(fName);
+        driver.setLastName(lName);
+        driver.setPhoneNumber("+38161" + (int)(Math.random() * 9000000 + 1000000));
+        driver.setAddress("Novi Sad");
+        driver.setRole(UserRole.DRIVER);
         driver.setPassword(passwordEncoder.encode("Driver1234"));
         driver.setIsActive(true);
-        driver.setRole(UserRole.DRIVER);
         
-        // Ensure these fields are set even if driver existed before
-        if (driver.getVehicleType() == null) {
-            driver.setVehicleType("STANDARD");
-        }
-        if (driver.getVehicleRegistration() == null) {
-            driver.setVehicleRegistration("NS-TEST-01");
-        }
-        if (driver.getLicenseNumber() == null) {
-            driver.setLicenseNumber("TEST-LIC-001");
-        }
-        if (driver.getLicenseExpiry() == null) {
-            driver.setLicenseExpiry("2028-12");
-        }
+        // Driver specific info
+        driver.setVehicleType(vType);
+        driver.setVehicleRegistration(vReg);
+        driver.setLicenseNumber("LIC-" + vReg);
+        driver.setLicenseExpiry("2030-01");
 
-        driver = driverRepository.saveAndFlush(driver);
+        Driver savedDriver = driverRepository.saveAndFlush(driver);
 
-        log.info("Seeded/updated dev driver: {} / Driver1234", email);
-
-        // Create or update driver state - use the saved driver directly
-        final Driver savedDriver = driver;
-        DriverState state = driverStateRepository.findById(driver.getId())
+        // Seed State
+        DriverState state = driverStateRepository.findById(savedDriver.getId())
                 .orElseGet(() -> {
-                    log.info("Creating new driver state");
-                    DriverState newState = new DriverState();
-                    newState.setDriver(savedDriver);
-                    newState.setOnline(false);
-                    newState.setBusy(false);
-                    return newState;
+                    DriverState s = new DriverState();
+                    s.setDriver(savedDriver);
+                    return s;
                 });
 
         state.setOnline(true);
         state.setBusy(false);
-        state.setLatitude(45.2671);
-        state.setLongitude(19.8335);
+        state.setLatitude(lat);
+        state.setLongitude(lon);
         state.setUpdatedAt(LocalDateTime.now());
 
         driverStateRepository.save(state);
-        log.info("Seeded dev driver state: online=true at (45.2671, 19.8335)");
+        log.info("Seeded Driver & State: {} ({}) at [{}, {}]", email, vType, lat, lon);
     }
 }

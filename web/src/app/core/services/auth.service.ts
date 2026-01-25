@@ -37,7 +37,7 @@ export class AuthService {
 
   login(credentials: { email: string; password: string }): Observable<User> {
     return this.http
-      .post<{ id?: string; userId?: string; email: string; role: string }>(`${this.env.getApiUrl()}/auth/login`, credentials, {
+      .post<{ token: string; id?: string; userId?: string; email: string; role: string }>(`${this.env.getApiUrl()}/auth/login`, credentials, {
         withCredentials: true // Enable cookies to be sent/received
       })
       .pipe(
@@ -45,6 +45,11 @@ export class AuthService {
           const role = this.normalizeRole(resp.role);
           if (!role) {
             throw new Error('Unsupported role');
+          }
+
+          // Store JWT token in localStorage
+          if (resp.token) {
+            localStorage.setItem('auth_token', resp.token);
           }
 
           const user: User = {
@@ -103,10 +108,12 @@ export class AuthService {
     }).pipe(
       map(() => {
         this.currentUserSignal.set(null);
+        localStorage.removeItem('auth_token');
       }),
       catchError(err => {
         // Even if logout fails, clear the user locally
         this.currentUserSignal.set(null);
+        localStorage.removeItem('auth_token');
         return of(void 0);
       })
     );

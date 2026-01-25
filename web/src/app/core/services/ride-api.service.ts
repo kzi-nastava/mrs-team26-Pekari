@@ -55,6 +55,14 @@ export class RideApiService {
   }
 
   orderRide(request: OrderRideRequest) {
+    const token = localStorage.getItem('auth_token');
+    if (token) {
+      return this.http.post<OrderRideResponse>(
+        `${this.env.getApiUrl()}/rides/order`,
+        request,
+        { headers: { 'Authorization': `Bearer ${token}` } }
+      );
+    }
     return this.http.post<OrderRideResponse>(`${this.env.getApiUrl()}/rides/order`, request);
   }
 }
