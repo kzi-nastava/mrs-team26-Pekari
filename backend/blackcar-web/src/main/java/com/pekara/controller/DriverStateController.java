@@ -3,6 +3,7 @@ package com.pekara.controller;
 import com.pekara.dto.request.UpdateDriverLocationRequest;
 import com.pekara.dto.request.UpdateDriverOnlineStatusRequest;
 import com.pekara.dto.response.DriverStateResponse;
+import com.pekara.dto.response.OnlineDriverWithVehicleResponse;
 import com.pekara.service.DriverStateService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -58,5 +59,13 @@ public class DriverStateController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "50") int size) {
         return ResponseEntity.ok(driverStateService.getOnlineDrivers(page, size));
+    }
+
+    @Operation(summary = "List online drivers with vehicle info")
+    @GetMapping("/online-with-vehicles")
+    public ResponseEntity<List<OnlineDriverWithVehicleResponse>> getOnlineDriversWithVehicles(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "50") int size) {
+        return ResponseEntity.ok(driverStateService.getOnlineDriversWithVehicles(page, size));
     }
 }
