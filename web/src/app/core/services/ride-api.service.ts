@@ -10,10 +10,9 @@ export interface LocationPoint {
 
 export interface EstimateRideRequest {
   pickup: LocationPoint;
+  stops?: LocationPoint[];
   dropoff: LocationPoint;
   vehicleType: string;
-  babyTransport: boolean;
-  petTransport: boolean;
 }
 
 export interface RideEstimateResponse {
@@ -21,6 +20,7 @@ export interface RideEstimateResponse {
   estimatedDurationMinutes: number;
   distanceKm: number;
   vehicleType: string;
+  routePoints?: LocationPoint[];
 }
 
 export interface OrderRideRequest {
@@ -55,6 +55,14 @@ export class RideApiService {
   }
 
   orderRide(request: OrderRideRequest) {
+    const token = localStorage.getItem('auth_token');
+    if (token) {
+      return this.http.post<OrderRideResponse>(
+        `${this.env.getApiUrl()}/rides/order`,
+        request,
+        { headers: { 'Authorization': `Bearer ${token}` } }
+      );
+    }
     return this.http.post<OrderRideResponse>(`${this.env.getApiUrl()}/rides/order`, request);
   }
 }

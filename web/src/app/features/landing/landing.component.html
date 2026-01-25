@@ -1,4 +1,117 @@
-<main>
-  <h2>Welcome to the Home Page</h2>
-  <p>This is a dummy home component.</p>
+<main class="ride-page">
+  <section class="ride-split">
+    <aside class="map-panel">
+      <div class="map-container" #mapContainer></div>
+    </aside>
+
+    <section class="form-panel">
+      <div class="ride-card">
+        <h2 class="ride-title">Get Ride Estimate</h2>
+
+        <form [formGroup]="form" class="ride-form">
+          <div class="block">
+            <div class="block-label">Pickup & destinations</div>
+
+            <div class="field field-with-clear">
+              <app-address-autocomplete
+                #pickupAutocomplete
+                placeholder="Pickup location"
+                [initialValue]="form.get('pickup.address')?.value || ''"
+                (addressSelected)="onPickupSelected($event)"
+                (focused)="onPickupFocus()"
+              ></app-address-autocomplete>
+              <button
+                *ngIf="form.get('pickup.address')?.value"
+                class="icon-btn"
+                type="button"
+                (click)="clearPickup()"
+              >×</button>
+            </div>
+
+            <div class="stops" formArrayName="stops">
+              <div class="stop" *ngFor="let stop of stops.controls; let i = index" [formGroupName]="i">
+                <app-address-autocomplete
+                  #stopAutocomplete
+                  placeholder="Stop {{ i + 1 }}"
+                  [initialValue]="stop.get('address')?.value || ''"
+                  (addressSelected)="onStopSelected(i, $event)"
+                  (focused)="onStopFocus(i)"
+                ></app-address-autocomplete>
+                <button class="icon-btn" type="button" (click)="removeStop(i)">×</button>
+              </div>
+
+              <button class="ghost-btn" type="button" (click)="addStop()">Add Stop</button>
+            </div>
+
+            <div class="field field-with-clear">
+              <app-address-autocomplete
+                #dropoffAutocomplete
+                placeholder="Final destination"
+                [initialValue]="form.get('dropoff.address')?.value || ''"
+                (addressSelected)="onDropoffSelected($event)"
+                (focused)="onDropoffFocus()"
+              ></app-address-autocomplete>
+              <button
+                *ngIf="form.get('dropoff.address')?.value"
+                class="icon-btn"
+                type="button"
+                (click)="clearDropoff()"
+              >×</button>
+            </div>
+          </div>
+
+          <div class="block compact">
+            <div class="block-label center">Vehicle type</div>
+            <div class="segmented">
+              <button
+                type="button"
+                class="seg-btn"
+                [class.active]="form.get('vehicleType')?.value === 'STANDARD'"
+                (click)="setVehicleType('STANDARD')"
+              >
+                Standard
+              </button>
+              <button
+                type="button"
+                class="seg-btn"
+                [class.active]="form.get('vehicleType')?.value === 'VAN'"
+                (click)="setVehicleType('VAN')"
+              >
+                Van
+              </button>
+              <button
+                type="button"
+                class="seg-btn"
+                [class.active]="form.get('vehicleType')?.value === 'LUX'"
+                (click)="setVehicleType('LUX')"
+              >
+                Lux
+              </button>
+            </div>
+          </div>
+
+          <button class="primary" type="button" (click)="estimateRide()">
+            Get Estimate
+          </button>
+
+          <p class="error" *ngIf="error">{{ error }}</p>
+
+          <div class="result" *ngIf="estimate">
+            <div class="result-row">
+              <span>Estimated price</span>
+              <strong>{{ estimate.estimatedPrice }} RSD</strong>
+            </div>
+            <div class="result-row">
+              <span>Distance</span>
+              <strong>{{ estimate.distanceKm }} km</strong>
+            </div>
+            <div class="result-row">
+              <span>Duration</span>
+              <strong>{{ estimate.estimatedDurationMinutes }} min</strong>
+            </div>
+          </div>
+        </form>
+      </div>
+    </section>
+  </section>
 </main>

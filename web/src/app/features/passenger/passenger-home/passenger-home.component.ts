@@ -1,7 +1,8 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnDestroy, OnInit, inject, ChangeDetectorRef } from '@angular/core';
+import { Component, OnDestroy, OnInit, AfterViewInit, inject, ChangeDetectorRef, ElementRef, ViewChild } from '@angular/core';
 import { FormArray, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RideApiService, OrderRideResponse, RideEstimateResponse } from '../../../core/services/ride-api.service';
+import * as L from 'leaflet';
 
 @Component({
   selector: 'app-passenger-home',
@@ -10,10 +11,18 @@ import { RideApiService, OrderRideResponse, RideEstimateResponse } from '../../.
   templateUrl: './passenger-home.component.html',
   styleUrl: './passenger-home.component.css'
 })
-export class PassengerHomeComponent implements OnInit, OnDestroy {
+export class PassengerHomeComponent implements OnInit, AfterViewInit, OnDestroy {
+  @ViewChild('mapContainer', { static: false }) mapContainer?: ElementRef;
+
   private fb = inject(FormBuilder);
   private rides = inject(RideApiService);
   private cdr = inject(ChangeDetectorRef);
+
+  private map?: L.Map;
+  private pickupMarker?: L.Marker;
+  private dropoffMarker?: L.Marker;
+  private stopMarkers: L.Marker[] = [];
+  private routeLine?: L.Polyline;
 
   estimate?: RideEstimateResponse;
   orderResult?: OrderRideResponse;
@@ -48,11 +57,23 @@ export class PassengerHomeComponent implements OnInit, OnDestroy {
 
     // Convenience: show current time in the picker, but don't actually schedule unless user changes it.
     this.form.patchValue({ scheduledAt: this.scheduledMin }, { emitEvent: false });
+
+    // Subscribe to form changes to update map
+    this.form.valueChanges.subscribe(() => {
+      this.updateMapMarkers();
+    });
+  }
+
+  ngAfterViewInit(): void {
+    this.initializeMap();
   }
 
   ngOnDestroy(): void {
     if (this.scheduleBoundsTimer) {
       window.clearInterval(this.scheduleBoundsTimer);
+    }
+    if (this.map) {
+      this.map.remove();
     }
   }
 
@@ -80,6 +101,146 @@ export class PassengerHomeComponent implements OnInit, OnDestroy {
 
   chooseFavoriteRoute() {
     this.error = 'Favorite routes are not implemented yet.';
+  }
+
+  private initializeMap(): void {
+    if (!this.mapContainer) return;
+
+    // Initialize map centered on Novi Sad
+    this.map = L.map(this.mapContainer.nativeElement, {
+      center: [45.2671, 19.8335],
+      zoom: 13,
+      zoomControl: true
+    });
+
+    // Add OpenStreetMap tile layer
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors',
+      maxZoom: 19
+    }).addTo(this.map);
+
+    // Initialize markers based on form values
+    this.updateMapMarkers();
+
+    // Add click listener to map
+    this.map.on('click', (e: L.LeafletMouseEvent) => {
+      this.onMapClick(e);
+    });
+  }
+
+  private updateMapMarkers(): void {
+    if (!this.map) return;
+
+    const value = this.form.getRawValue();
+
+    // Update pickup marker
+    if (value.pickup?.latitude && value.pickup?.longitude) {
+      if (this.pickupMarker) {
+        this.pickupMarker.setLatLng([value.pickup.latitude, value.pickup.longitude]);
+      } else {
+        this.pickupMarker = L.marker([value.pickup.latitude, value.pickup.longitude], {
+          icon: this.createCustomIcon('green')
+        })
+          .bindPopup('Pickup Location')
+          .addTo(this.map);
+      }
+    }
+
+    // Update dropoff marker
+    if (value.dropoff?.latitude && value.dropoff?.longitude) {
+      if (this.dropoffMarker) {
+        this.dropoffMarker.setLatLng([value.dropoff.latitude, value.dropoff.longitude]);
+      } else {
+        this.dropoffMarker = L.marker([value.dropoff.latitude, value.dropoff.longitude], {
+          icon: this.createCustomIcon('red')
+        })
+          .bindPopup('Dropoff Location')
+          .addTo(this.map);
+      }
+    }
+
+    // Clear existing stop markers
+    this.stopMarkers.forEach(marker => marker.remove());
+    this.stopMarkers = [];
+
+    // Add stop markers
+    const stops = value.stops as any[] || [];
+    stops.forEach((stop, index) => {
+      if (stop?.latitude && stop?.longitude) {
+        const marker = L.marker([stop.latitude, stop.longitude], {
+          icon: this.createCustomIcon('blue')
+        })
+          .bindPopup(`Stop ${index + 1}`)
+          .addTo(this.map!);
+        this.stopMarkers.push(marker);
+      }
+    });
+
+    // Draw route
+    this.drawRoute();
+  }
+
+  private drawRoute(): void {
+    if (!this.map) return;
+
+    // Remove existing route
+    if (this.routeLine) {
+      this.routeLine.remove();
+    }
+
+    const value = this.form.getRawValue();
+    const points: L.LatLngExpression[] = [];
+
+    // Add pickup
+    if (value.pickup?.latitude && value.pickup?.longitude) {
+      points.push([value.pickup.latitude, value.pickup.longitude]);
+    }
+
+    // Add stops
+    const stops = value.stops as any[] || [];
+    stops.forEach(stop => {
+      if (stop?.latitude && stop?.longitude) {
+        points.push([stop.latitude, stop.longitude]);
+      }
+    });
+
+    // Add dropoff
+    if (value.dropoff?.latitude && value.dropoff?.longitude) {
+      points.push([value.dropoff.latitude, value.dropoff.longitude]);
+    }
+
+    // Draw polyline if we have at least 2 points
+    if (points.length >= 2) {
+      this.routeLine = L.polyline(points, {
+        color: '#3b82f6',
+        weight: 4,
+        opacity: 0.7,
+        dashArray: '10, 10'
+      }).addTo(this.map);
+
+      // Fit map to show entire route
+      this.map.fitBounds(this.routeLine.getBounds(), { padding: [50, 50] });
+    }
+  }
+
+  private createCustomIcon(color: 'green' | 'red' | 'blue'): L.DivIcon {
+    const colorMap = {
+      green: '#22c55e',
+      red: '#ef4444',
+      blue: '#3b82f6'
+    };
+
+    return L.divIcon({
+      className: 'custom-marker',
+      html: `<div style="background-color: ${colorMap[color]}; width: 24px; height: 24px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3);"></div>`,
+      iconSize: [24, 24],
+      iconAnchor: [12, 12]
+    });
+  }
+
+  private onMapClick(e: L.LeafletMouseEvent): void {
+    // You can implement logic here to set pickup/dropoff on map click
+    console.log('Map clicked at:', e.latlng);
   }
 
   private refreshScheduleBounds() {
@@ -174,12 +335,10 @@ export class PassengerHomeComponent implements OnInit, OnDestroy {
 
     this.rides
       .estimateRide({
-        pickup: value.pickup as any,
-        dropoff: value.dropoff as any,
-        vehicleType: value.vehicleType as string,
-        babyTransport: !!value.babyTransport,
-        petTransport: !!value.petTransport
-      })
+        pickup: value.pickup,
+        dropoff: value.dropoff,
+        vehicleType: value.vehicleType,
+      } as any)
       .subscribe({
         next: (resp) => {
           this.estimate = resp;
