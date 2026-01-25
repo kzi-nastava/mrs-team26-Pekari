@@ -4,11 +4,10 @@ import { RouterOutlet, Router } from '@angular/router';
 import { AuthService } from './core/services/auth.service';
 import { EnvironmentService } from './core/services/environment.service';
 import { HeaderComponent, type NavLink } from './shared/components/header/header.component';
-import { DevLoginHelperComponent } from './core/components/dev-login-helper.component';
 
 @Component({
   selector: 'app-root',
-  imports: [CommonModule, RouterOutlet, HeaderComponent, DevLoginHelperComponent],
+  imports: [CommonModule, RouterOutlet, HeaderComponent],
   templateUrl: './app.html',
   styleUrl: './app.css'
 })
@@ -60,5 +59,5 @@ export class App {
   }
 
   // Show development helper based on environment configuration
-  isDevelopment = !this.environmentService.isProduction();
+  isDevelopment = this.environmentService.areDevToolsEnabled();
 }

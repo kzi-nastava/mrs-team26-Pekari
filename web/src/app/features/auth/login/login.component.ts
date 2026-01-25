@@ -25,9 +25,17 @@ export class LoginComponent {
   onSubmit(): void {
     if (this.loginForm.valid) {
       this.errorMessage.set(null);
-      this.authService.login(this.loginForm.value).subscribe({
-        next: () => {
-          this.router.navigate(['/']);
+      const email = this.loginForm.value.email as string;
+      const password = this.loginForm.value.password as string;
+      this.authService.login({ email, password }).subscribe({
+        next: (user) => {
+          if (user.role === 'passenger') {
+            this.router.navigate(['/passenger-home']);
+          } else if (user.role === 'driver') {
+            this.router.navigate(['/driver-history']);
+          } else {
+            this.router.navigate(['/']);
+          }
         },
         error: (err) => {
           this.errorMessage.set('Invalid email or password. Please try again.');

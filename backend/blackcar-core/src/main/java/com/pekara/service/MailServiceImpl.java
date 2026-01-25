@@ -17,7 +17,7 @@ public class MailServiceImpl implements MailService {
     @Value("${app.mail.from:noreply@blackcar.com}")
     private String fromEmail;
 
-    @Value("${app.frontend.url:http://localhost:3000}")
+    @Value("${app.frontend.url:http://localhost:4200}")
     private String frontendUrl;
 
     @Override
@@ -75,6 +75,73 @@ public class MailServiceImpl implements MailService {
         } catch (Exception e) {
             log.error("Failed to send driver activation email to: {}", toEmail, e);
             throw new RuntimeException("Failed to send driver activation email", e);
+          
+    public void sendRideAssignedToDriver(String driverEmail, Long rideId, java.time.LocalDateTime scheduledAt) {
+        String when = scheduledAt == null ? "now" : "scheduled for " + scheduledAt;
+        sendPlainText(
+                driverEmail,
+                "New Ride Assigned (Ride #" + rideId + ")",
+                "You have been assigned a new ride (Ride #" + rideId + ") " + when + ".\n\n" +
+                "Please check the application for details.\n\n" +
+                "BlackCar Team"
+        );
+    }
+
+    @Override
+    public void sendRideOrderAccepted(String toEmail, Long rideId, String status) {
+        sendPlainText(
+                toEmail,
+                "Ride Order Accepted (Ride #" + rideId + ")",
+                "Your ride order has been accepted.\n\n" +
+                "Ride ID: " + rideId + "\n" +
+                "Status: " + status + "\n\n" +
+                "BlackCar Team"
+        );
+    }
+
+    @Override
+    public void sendRideOrderRejected(String toEmail, String reason) {
+        sendPlainText(
+                toEmail,
+                "Ride Order Rejected",
+                "Your ride order could not be completed.\n\n" +
+                "Reason: " + reason + "\n\n" +
+                "BlackCar Team"
+        );
+    }
+
+    @Override
+    public void sendRideDetailsShared(String toEmail, Long rideId, String creatorEmail) {
+        sendPlainText(
+                toEmail,
+                "Ride Details Shared (Ride #" + rideId + ")",
+                creatorEmail + " shared ride details with you.\n\n" +
+                "Ride ID: " + rideId + "\n\n" +
+                "BlackCar Team"
+        );
+    }
+
+    @Override
+    public void sendRideReminder(String toEmail, Long rideId, java.time.LocalDateTime scheduledAt) {
+        sendPlainText(
+                toEmail,
+                "Ride Reminder (Ride #" + rideId + ")",
+                "Reminder: your scheduled ride (Ride #" + rideId + ") starts at " + scheduledAt + ".\n\n" +
+                "BlackCar Team"
+        );
+    }
+
+    private void sendPlainText(String toEmail, String subject, String text) {
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(fromEmail);
+            message.setTo(toEmail);
+            message.setSubject(subject);
+            message.setText(text);
+            mailSender.send(message);
+        } catch (Exception e) {
+            log.error("Failed to send email to: {}", toEmail, e);
+            throw new RuntimeException("Failed to send email", e);
         }
     }
 }
