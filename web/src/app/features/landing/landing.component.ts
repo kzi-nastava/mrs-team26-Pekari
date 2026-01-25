@@ -7,6 +7,22 @@ import { GeocodingService } from '../../core/services/geocoding.service';
 import { AddressAutocompleteComponent, AddressSelection } from '../../shared/components/address-autocomplete/address-autocomplete.component';
 import * as L from 'leaflet';
 
+interface DriverState {
+  driverId: number;
+  driverEmail: string;
+  online: boolean;
+  busy: boolean;
+  latitude: number;
+  longitude: number;
+  updatedAt: string;
+}
+
+interface OnlineDriverVehicle {
+  driverState: DriverState;
+  vehicleRegistration: string;
+  vehicleType: string;
+}
+
 type FocusedInput = 'pickup' | 'dropoff' | { type: 'stop', index: number } | null;
 
 @Component({
@@ -25,6 +41,8 @@ export class LandingComponent implements AfterViewInit, OnDestroy {
   private fb = inject(FormBuilder);
   private rides = inject(RideApiService);
   private geocoding = inject(GeocodingService);
+  private http = inject(HttpClient);
+  private env = inject(EnvironmentService);
   private cdr = inject(ChangeDetectorRef);
 
   private map?: L.Map;
@@ -32,6 +50,7 @@ export class LandingComponent implements AfterViewInit, OnDestroy {
   private dropoffMarker?: L.Marker;
   private stopMarkers: L.Marker[] = [];
   private routeLine?: L.Polyline;
+  private driverMarkers: L.Marker[] = [];
   private valueChangesSubscription?: Subscription;
 
   private focusedInput: FocusedInput = null;
@@ -139,6 +158,7 @@ export class LandingComponent implements AfterViewInit, OnDestroy {
     }).addTo(this.map);
 
     this.map.on('click', (e: L.LeafletMouseEvent) => this.onMapClick(e));
+    this.loadOnlineDrivers();
   }
 
   private updateMapMarkers(): void {
@@ -184,6 +204,45 @@ export class LandingComponent implements AfterViewInit, OnDestroy {
         this.stopMarkers.push(marker);
       }
     });
+
+    this.drawRoute();
+  }
+
+  private drawRoute(): void {
+    if (!this.map) return;
+
+    if (this.routeLine) {
+      this.routeLine.remove();
+    }
+
+    const value = this.form.getRawValue();
+    const points: L.LatLngExpression[] = [];
+
+    if (value.pickup?.latitude && value.pickup?.longitude) {
+      points.push([value.pickup.latitude, value.pickup.longitude]);
+    }
+
+    const stops = value.stops as any[] || [];
+    stops.forEach(stop => {
+      if (stop?.latitude && stop?.longitude) {
+        points.push([stop.latitude, stop.longitude]);
+      }
+    });
+
+    if (value.dropoff?.latitude && value.dropoff?.longitude) {
+      points.push([value.dropoff.latitude, value.dropoff.longitude]);
+    }
+
+    if (points.length >= 2) {
+      this.routeLine = L.polyline(points, {
+        color: '#3b82f6',
+        weight: 4,
+        opacity: 0.7,
+        dashArray: '10, 10'
+      }).addTo(this.map);
+
+      this.map.fitBounds(this.routeLine.getBounds(), { padding: [50, 50] });
+    }
   }
 
   private createCustomIcon(color: 'green' | 'red' | 'blue'): L.DivIcon {
@@ -199,6 +258,44 @@ export class LandingComponent implements AfterViewInit, OnDestroy {
       iconSize: [24, 24],
       iconAnchor: [12, 12]
     });
+  }
+
+  private loadOnlineDrivers(page = 0, size = 50): void {
+    this.http
+      .get<OnlineDriverVehicle[]>(
+        `${this.env.getApiUrl()}/drivers/online-with-vehicles?page=${page}&size=${size}`
+      )
+      .subscribe({
+        next: (drivers) => this.renderOnlineDrivers(drivers || []),
+        error: () => {
+          this.driverMarkers.forEach(marker => marker.remove());
+          this.driverMarkers = [];
+        }
+      });
+  }
+
+  private renderOnlineDrivers(drivers: OnlineDriverVehicle[]): void {
+    if (!this.map) return;
+
+    this.driverMarkers.forEach(marker => marker.remove());
+    this.driverMarkers = [];
+
+    drivers
+      .filter(driver => driver?.driverState?.online)
+      .forEach(driver => {
+        const state = driver.driverState;
+        if (!Number.isFinite(state?.latitude) || !Number.isFinite(state?.longitude)) return;
+
+        const marker = L.marker([state.latitude, state.longitude], {
+          icon: this.createCustomIcon(state.busy ? 'red' : 'green')
+        })
+          .bindPopup(
+            `<strong>${driver.vehicleRegistration}</strong><br/>${driver.vehicleType}<br/>${state.driverEmail}`
+          )
+          .addTo(this.map!);
+
+        this.driverMarkers.push(marker);
+      });
   }
 
   private onMapClick(e: L.LeafletMouseEvent): void {
