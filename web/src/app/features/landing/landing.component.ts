@@ -1,8 +1,10 @@
 import { CommonModule } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
 import { Component, inject, AfterViewInit, OnDestroy, ElementRef, ViewChild, QueryList, ViewChildren, ChangeDetectorRef } from '@angular/core';
 import { FormArray, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Subscription } from 'rxjs';
 import { RideApiService, RideEstimateResponse, LocationPoint } from '../../core/services/ride-api.service';
+import { EnvironmentService } from '../../core/services/environment.service';
 import { GeocodingService } from '../../core/services/geocoding.service';
 import { AddressAutocompleteComponent, AddressSelection } from '../../shared/components/address-autocomplete/address-autocomplete.component';
 import * as L from 'leaflet';
@@ -266,7 +268,7 @@ export class LandingComponent implements AfterViewInit, OnDestroy {
         `${this.env.getApiUrl()}/drivers/online-with-vehicles?page=${page}&size=${size}`
       )
       .subscribe({
-        next: (drivers) => this.renderOnlineDrivers(drivers || []),
+        next: (drivers: OnlineDriverVehicle[] | null) => this.renderOnlineDrivers(drivers || []),
         error: () => {
           this.driverMarkers.forEach(marker => marker.remove());
           this.driverMarkers = [];
