@@ -1,0 +1,176 @@
+<div class="add-driver-container">
+  <div class="add-driver-card">
+    <form [formGroup]="driverForm" (ngSubmit)="onSubmit()">
+      @if (errorMessage()) {
+        <div class="error-message">
+          {{ errorMessage() }}
+        </div>
+      }
+
+      @if (successMessage()) {
+        <div class="success-message">
+          {{ successMessage() }}
+        </div>
+      }
+
+      <div class="form-grid">
+        <!-- Driver Information Column -->
+        <div class="form-column">
+          <h3 class="section-title">Driver Information</h3>
+
+          <div class="form-group">
+            <label for="firstName">First Name</label>
+            <input
+              type="text"
+              id="firstName"
+              formControlName="firstName"
+              placeholder="John"
+              [class.invalid]="driverForm.get('firstName')?.invalid && driverForm.get('firstName')?.touched"
+            >
+            @if (driverForm.get('firstName')?.invalid && driverForm.get('firstName')?.touched) {
+              <div class="field-error">First name is required</div>
+            }
+          </div>
+
+          <div class="form-group">
+            <label for="lastName">Last Name</label>
+            <input
+              type="text"
+              id="lastName"
+              formControlName="lastName"
+              placeholder="Doe"
+              [class.invalid]="driverForm.get('lastName')?.invalid && driverForm.get('lastName')?.touched"
+            >
+            @if (driverForm.get('lastName')?.invalid && driverForm.get('lastName')?.touched) {
+              <div class="field-error">Last name is required</div>
+            }
+          </div>
+
+          <div class="form-group">
+            <label for="email">Email Address</label>
+            <input
+              type="email"
+              id="email"
+              formControlName="email"
+              placeholder="you@email.com"
+              [class.invalid]="driverForm.get('email')?.invalid && driverForm.get('email')?.touched"
+            >
+            @if (driverForm.get('email')?.invalid && driverForm.get('email')?.touched) {
+              <div class="field-error">
+                @if (driverForm.get('email')?.errors?.['required']) { Email is required }
+                @if (driverForm.get('email')?.errors?.['email']) { Invalid email format }
+              </div>
+            }
+          </div>
+
+          <div class="form-group">
+            <label for="address">Home Address</label>
+            <input
+              type="text"
+              id="address"
+              formControlName="address"
+              placeholder="Street No, State"
+              [class.invalid]="driverForm.get('address')?.invalid && driverForm.get('address')?.touched"
+            >
+            @if (driverForm.get('address')?.invalid && driverForm.get('address')?.touched) {
+              <div class="field-error">Address is required</div>
+            }
+          </div>
+
+          <div class="form-group">
+            <label for="phoneNumber">Phone Number</label>
+            <input
+              type="tel"
+              id="phoneNumber"
+              formControlName="phoneNumber"
+              placeholder="+381 6x xxx xxxx"
+              [class.invalid]="driverForm.get('phoneNumber')?.invalid && driverForm.get('phoneNumber')?.touched"
+            >
+            @if (driverForm.get('phoneNumber')?.invalid && driverForm.get('phoneNumber')?.touched) {
+              <div class="field-error">Valid phone number is required</div>
+            }
+          </div>
+        </div>
+
+        <!-- Vehicle Specifications Column -->
+        <div class="form-column">
+          <h3 class="section-title">Vehicle Specifications</h3>
+
+          <div class="form-group">
+            <label for="vehicleModel">Vehicle Model</label>
+            <input
+              type="text"
+              id="vehicleModel"
+              formControlName="vehicleModel"
+              placeholder="e.g. Tesla Model 3"
+              [class.invalid]="driverForm.get('vehicleModel')?.invalid && driverForm.get('vehicleModel')?.touched"
+            >
+            @if (driverForm.get('vehicleModel')?.invalid && driverForm.get('vehicleModel')?.touched) {
+              <div class="field-error">Vehicle model is required</div>
+            }
+          </div>
+
+          <div class="form-group">
+            <label for="vehicleType">Vehicle Type</label>
+            <select
+              id="vehicleType"
+              formControlName="vehicleType"
+              [class.invalid]="driverForm.get('vehicleType')?.invalid && driverForm.get('vehicleType')?.touched"
+            >
+              @for (type of vehicleTypes; track type.value) {
+                <option [value]="type.value">{{ type.label }}</option>
+              }
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="licensePlate">License Plate</label>
+            <input
+              type="text"
+              id="licensePlate"
+              formControlName="licensePlate"
+              placeholder="BG-123-AA"
+              [class.invalid]="driverForm.get('licensePlate')?.invalid && driverForm.get('licensePlate')?.touched"
+            >
+            @if (driverForm.get('licensePlate')?.invalid && driverForm.get('licensePlate')?.touched) {
+              <div class="field-error">License plate is required</div>
+            }
+          </div>
+
+          <div class="form-group">
+            <label for="numberOfSeats">Number of Seats</label>
+            <input
+              type="number"
+              id="numberOfSeats"
+              formControlName="numberOfSeats"
+              min="1"
+              max="8"
+              [class.invalid]="driverForm.get('numberOfSeats')?.invalid && driverForm.get('numberOfSeats')?.touched"
+            >
+            @if (driverForm.get('numberOfSeats')?.invalid && driverForm.get('numberOfSeats')?.touched) {
+              <div class="field-error">Valid number of seats is required (1-8)</div>
+            }
+          </div>
+
+          <div class="checkbox-group">
+            <label class="checkbox-label">
+              <input type="checkbox" formControlName="babyFriendly">
+              <span>Baby Friendly</span>
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" formControlName="petFriendly">
+              <span>Pet Friendly</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn-submit" [disabled]="driverForm.invalid || isSubmitting()">
+          {{ isSubmitting() ? 'Creating...' : 'Create Account & Send Invite' }}
+        </button>
+        <p class="helper-text">An activation link will be sent to the driver's email address.</p>
+      </div>
+    </form>
+  </div>
+</div>

@@ -44,7 +44,8 @@ export class App {
       );
     } else if (user.role === 'admin') {
       links.push(
-        { label: 'Profile', path: '/profile' },
+        { label: 'Management', path: '/admin/management' },
+        { label: 'Add Driver', path: '/admin/add-driver' },
         { label: 'Logout', onClick: () => this.handleLogout() }
       );
     }

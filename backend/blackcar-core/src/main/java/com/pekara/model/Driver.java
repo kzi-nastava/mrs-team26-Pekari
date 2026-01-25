@@ -22,7 +22,7 @@ public class Driver extends User {
     @Column(name = "license_expiry", length = 20)
     private String licenseExpiry;
 
-    @Column(name = "vehicle_registration", length = 20)
+    @Column(name = "vehicle_registration", length = 255)
     private String vehicleRegistration;
 
     @Column(name = "vehicle_type", length = 30)

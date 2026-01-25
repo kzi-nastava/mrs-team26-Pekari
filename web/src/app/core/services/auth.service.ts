@@ -2,6 +2,28 @@ import { Injectable, signal, inject } from '@angular/core';
 import { User } from '../models/user.model';
 import { Observable, map, of } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
+import { map, switchMap, catchError } from 'rxjs/operators';
+import { environment } from '../../../environments/environment';
+
+export interface RegisterDriverData {
+  firstName: string;
+  lastName: string;
+  email: string;
+  address: string;
+  phoneNumber: string;
+  vehicleModel: string;
+  vehicleType: string;
+  licensePlate: string;
+  numberOfSeats: number;
+  babyFriendly: boolean;
+  petFriendly: boolean;
+}
+
+export interface RegisterDriverResponse {
+  message: string;
+  email: string;
+  status: string;
+}
 import { EnvironmentService } from './environment.service';
 
 @Injectable({
@@ -118,5 +140,32 @@ export class AuthService {
     return this.http.get<void>(`${this.env.getApiUrl()}/auth/activate`, {
       params: { token }
     });
+  }
+
+  registerDriver(driverData: Partial<RegisterDriverData>): Observable<RegisterDriverResponse> {
+    const formData = new FormData();
+    formData.append('email', driverData.email || '');
+    formData.append('firstName', driverData.firstName || '');
+    formData.append('lastName', driverData.lastName || '');
+    formData.append('address', driverData.address || '');
+    formData.append('phoneNumber', driverData.phoneNumber || '');
+
+    // Vehicle data as nested object for multipart/form-data
+    formData.append('vehicle.model', driverData.vehicleModel || '');
+    formData.append('vehicle.type', driverData.vehicleType || 'STANDARD');
+    formData.append('vehicle.licensePlate', driverData.licensePlate || '');
+    formData.append('vehicle.numberOfSeats', String(driverData.numberOfSeats || 4));
+    formData.append('vehicle.babyFriendly', String(driverData.babyFriendly || false));
+    formData.append('vehicle.petFriendly', String(driverData.petFriendly || false));
+
+    return this.http.post<RegisterDriverResponse>(
+      `${environment.apiUrl}/v1/auth/register/driver`,
+      formData
+    ).pipe(
+      catchError(err => {
+        const errorMessage = err.error?.message || 'Failed to register driver';
+        return throwError(() => new Error(errorMessage));
+      })
+    );
   }
 }

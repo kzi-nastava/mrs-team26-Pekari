@@ -2,14 +2,10 @@ package com.pekara.service;
 
 public interface MailService {
 
-    /**
-     * Send account activation email to user.
-     *
-     * @param toEmail recipient email address
-     * @param activationToken activation token to include in email
-     */
     void sendActivationEmail(String toEmail, String activationToken);
-
+  
+    void sendDriverActivationEmail(String toEmail, String activationToken, String driverName);
+  
     void sendRideAssignedToDriver(String driverEmail, Long rideId, java.time.LocalDateTime scheduledAt);
 
     void sendRideOrderAccepted(String toEmail, Long rideId, String status);

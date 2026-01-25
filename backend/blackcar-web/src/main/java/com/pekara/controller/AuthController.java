@@ -58,28 +58,19 @@ public class AuthController {
         return ResponseEntity.status(HttpStatus.CREATED).body(webResponse);
     }
 
-        @Operation(summary = "Register driver", description = "Create a new driver account (typically pending admin approval)")
-        @PostMapping(value = "/register/driver", consumes = "multipart/form-data")
-        public ResponseEntity<WebRegisterDriverResponse> registerDriver(@Valid @ModelAttribute WebRegisterDriverRequest request) {
+    @Operation(summary = "Register driver", description = "Create a new driver account (admin-initiated)")
+    @PostMapping(value = "/register/driver", consumes = "multipart/form-data")
+    public ResponseEntity<WebRegisterDriverResponse> registerDriver(@Valid @ModelAttribute WebRegisterDriverRequest request) {
         log.debug("Driver registration attempt for email: {}", request.getEmail());
 
-        // TODO: Implement driver registration logic via AuthService
-        // - Validate all required fields
-        // - Check if passwords match
-        // - Check if email is already registered
-        // - Validate vehicle fields (make/model/year/licensePlate/vin)
-        // - Create driver account (inactive / pending approval)
-        // - Notify admins or create approval workflow entry
-        // - Send activation email when approved or when account is created
+        var serviceRequest = authMapper.toServiceRegisterDriverRequest(request);
+        var serviceResponse = authService.registerDriver(serviceRequest);
 
-        log.info("Driver registered successfully (pending approval): {}", request.getEmail());
-        return ResponseEntity.status(HttpStatus.CREATED)
-            .body(new WebRegisterDriverResponse(
-                "Driver registration submitted successfully. Your account may require admin approval.",
-                request.getEmail(),
-                "PENDING_APPROVAL"
-            ));
-        }
+        WebRegisterDriverResponse webResponse = authMapper.toWebRegisterDriverResponse(serviceResponse);
+
+        log.info("Driver registered successfully: {}", request.getEmail());
+        return ResponseEntity.status(HttpStatus.CREATED).body(webResponse);
+    }
 
     @GetMapping("/activate")
     public ResponseEntity<WebMessageResponse> activateAccount(@RequestParam("token") String token) {
