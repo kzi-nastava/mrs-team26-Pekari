@@ -4,10 +4,11 @@ import { RouterOutlet, Router } from '@angular/router';
 import { AuthService } from './core/services/auth.service';
 import { EnvironmentService } from './core/services/environment.service';
 import { HeaderComponent, type NavLink } from './shared/components/header/header.component';
+import { DevLoginHelperComponent } from './core/components/dev-login-helper.component';
 
 @Component({
   selector: 'app-root',
-  imports: [CommonModule, RouterOutlet, HeaderComponent],
+  imports: [CommonModule, RouterOutlet, HeaderComponent, DevLoginHelperComponent],
   templateUrl: './app.html',
   styleUrl: './app.css'
 })
@@ -54,8 +55,10 @@ export class App {
   });
 
   handleLogout() {
-    this.authService.logout();
-    this.router.navigate(['/']);
+    this.authService.logout().subscribe({
+      next: () => this.router.navigate(['/']),
+      error: () => this.router.navigate(['/']) // Navigate even if logout fails
+    });
   }
 
   // Show development helper based on environment configuration

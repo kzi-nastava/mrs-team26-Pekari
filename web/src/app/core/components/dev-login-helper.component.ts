@@ -124,41 +124,47 @@ export class DevLoginHelperComponent {
   private router = inject(Router);
 
   quickLogin(role: 'passenger' | 'driver' | 'admin'): void {
-    const mockUsers: Record<string, User> = {
+    const testCredentials: Record<string, { email: string; password: string }> = {
       passenger: {
-        id: '2',
-        email: 'passenger@example.com',
-        username: 'passengeruser',
-        firstName: 'Jane',
-        lastName: 'Smith',
-        role: 'passenger'
+        email: 'passenger@test.com',
+        password: 'Pass1234'
       },
       driver: {
-        id: '1',
-        email: 'driver@example.com',
-        username: 'driveruser',
-        firstName: 'John',
-        lastName: 'Doe',
-        role: 'driver'
+        email: 'driver@test.com',
+        password: 'Driver1234'
       },
       admin: {
-        id: '3',
-        email: 'admin@example.com',
-        username: 'adminuser',
-        firstName: 'Admin',
-        lastName: 'User',
-        role: 'admin'
+        email: 'admin@test.com',
+        password: 'Admin1234'
       }
     };
 
-    // Directly set the user (bypass login form for development)
-    const user = mockUsers[role];
-    (this.authService as any).currentUserSignal.set(user);
-    this.router.navigate(['/profile']);
+    const credentials = testCredentials[role];
+
+    this.authService.login(credentials).subscribe({
+      next: (user) => {
+        // Navigate based on role
+        if (user.role === 'driver') {
+          this.router.navigate(['/driver-history']);
+        } else if (user.role === 'passenger') {
+          this.router.navigate(['/passenger-home']);
+        } else if (user.role === 'admin') {
+          this.router.navigate(['/admin/add-driver']);
+        } else {
+          this.router.navigate(['/profile']);
+        }
+      },
+      error: (err) => {
+        console.error('Dev login failed:', err);
+        alert(`Login failed: ${err.message}`);
+      }
+    });
   }
 
   logout(): void {
-    this.authService.logout();
-    this.router.navigate(['/']);
+    this.authService.logout().subscribe({
+      next: () => this.router.navigate(['/']),
+      error: () => this.router.navigate(['/'])
+    });
   }
 }

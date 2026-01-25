@@ -1,15 +1,13 @@
 import { HttpInterceptorFn } from '@angular/common/http';
 
+/**
+ * Auth interceptor that enables credentials (cookies) for all HTTP requests
+ * No need to manually add Authorization header - backend uses HTTP-only cookies
+ */
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
-  const token = localStorage.getItem('auth_token');
-  if (!token) {
-    return next(req);
-  }
-
+  // Clone request to enable credentials (cookies)
   const authReq = req.clone({
-    setHeaders: {
-      Authorization: `Bearer ${token}`
-    }
+    withCredentials: true
   });
 
   return next(authReq);

@@ -33,6 +33,8 @@ export class LoginComponent {
             this.router.navigate(['/passenger-home']);
           } else if (user.role === 'driver') {
             this.router.navigate(['/driver-history']);
+          } else if (user.role === 'admin') {
+            this.router.navigate(['/admin/add-driver']);
           } else {
             this.router.navigate(['/']);
           }

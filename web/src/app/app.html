@@ -1,5 +1,7 @@
 <app-header [title]="title" [navLinksLeft]="navLinksLeft()" [navLinksRight]="navLinksRight()"></app-header>
 <router-outlet></router-outlet>
 <!-- DEVELOPMENT ONLY: Quick login helper (remove in production) -->
-<!-- Login helper removed as per user request -->
+@if (isDevelopment) {
+  <app-dev-login-helper></app-dev-login-helper>
+}
 

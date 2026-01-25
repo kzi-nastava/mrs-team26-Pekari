@@ -1,9 +1,9 @@
 import { Injectable, signal, inject } from '@angular/core';
 import { User } from '../models/user.model';
-import { Observable, map, of } from 'rxjs';
+import { Observable, of, throwError } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 import { map, switchMap, catchError } from 'rxjs/operators';
-import { environment } from '../../../environments/environment';
+import { EnvironmentService } from './environment.service';
 
 export interface RegisterDriverData {
   firstName: string;
@@ -24,7 +24,6 @@ export interface RegisterDriverResponse {
   email: string;
   status: string;
 }
-import { EnvironmentService } from './environment.service';
 
 @Injectable({
   providedIn: 'root'
@@ -36,43 +35,30 @@ export class AuthService {
 
   readonly currentUser = this.currentUserSignal.asReadonly();
 
-  constructor() {
-    this.checkSession();
-  }
-
-  private checkSession(): void {
-    const token = localStorage.getItem('auth_token');
-    const email = localStorage.getItem('auth_email');
-    const role = localStorage.getItem('auth_role');
-    if (token && email && role) {
-      const normalizedRole = this.normalizeRole(role);
-      if (normalizedRole) {
-        this.currentUserSignal.set({ id: 'me', email, username: email, role: normalizedRole });
-      }
-    }
-  }
-
   login(credentials: { email: string; password: string }): Observable<User> {
     return this.http
-      .post<{ token: string; email: string; role: string }>(`${this.env.getApiUrl()}/auth/login`, credentials)
+      .post<{ id?: string; userId?: string; email: string; role: string }>(`${this.env.getApiUrl()}/auth/login`, credentials, {
+        withCredentials: true // Enable cookies to be sent/received
+      })
       .pipe(
         map((resp) => {
           const role = this.normalizeRole(resp.role);
           if (!role) {
             throw new Error('Unsupported role');
           }
-          localStorage.setItem('auth_token', resp.token);
-          localStorage.setItem('auth_email', resp.email);
-          localStorage.setItem('auth_role', role);
 
           const user: User = {
-            id: 'me',
+            id: resp.id || resp.userId || resp.email,
             email: resp.email,
             username: resp.email,
             role
           };
           this.currentUserSignal.set(user);
           return user;
+        }),
+        catchError(err => {
+          const errorMessage = err.error?.message || 'Login failed';
+          return throwError(() => new Error(errorMessage));
         })
       );
   }
@@ -85,7 +71,7 @@ export class AuthService {
     return null;
   }
 
-  register(userData: any): Observable<User> {
+  register(userData: any): Observable<{ message: string; email: string }> {
     const formData = new FormData();
     formData.append('email', userData.email);
     // Auto-generate username from email since we don't have it in the form
@@ -102,29 +88,28 @@ export class AuthService {
 
     // We are not sending profileImage for now
 
-    return this.http.post<any>(`${this.env.getApiUrl()}/auth/register/user`, formData)
+    return this.http.post<{ message: string; email: string }>(`${this.env.getApiUrl()}/auth/register/user`, formData)
       .pipe(
-        map(resp => {
-          // Construct a temporary User object from response + input data
-          // Actual login will happen when they click the email link or login manually
-          const newUser: User = {
-            id: String(resp.userId),
-            email: resp.email,
-            username: autoUsername,
-            firstName: userData.firstName,
-            lastName: userData.lastName,
-            role: 'passenger'
-          };
-          return newUser;
+        catchError(err => {
+          const errorMessage = err.error?.message || 'Registration failed';
+          return throwError(() => new Error(errorMessage));
         })
       );
   }
 
-  logout(): void {
-    this.currentUserSignal.set(null);
-    localStorage.removeItem('auth_token');
-    localStorage.removeItem('auth_email');
-    localStorage.removeItem('auth_role');
+  logout(): Observable<void> {
+    return this.http.post<void>(`${this.env.getApiUrl()}/auth/logout`, {}, {
+      withCredentials: true // Send cookies to backend
+    }).pipe(
+      map(() => {
+        this.currentUserSignal.set(null);
+      }),
+      catchError(err => {
+        // Even if logout fails, clear the user locally
+        this.currentUserSignal.set(null);
+        return of(void 0);
+      })
+    );
   }
 
   isAuthenticated(): boolean {
@@ -136,10 +121,15 @@ export class AuthService {
     return this.http.post<void>(`${this.env.getApiUrl()}/auth/reset-password`, { email });
   }
 
-  activate(token: string): Observable<void> {
-    return this.http.get<void>(`${this.env.getApiUrl()}/auth/activate`, {
+  activate(token: string): Observable<{ message: string }> {
+    return this.http.get<{ message: string }>(`${this.env.getApiUrl()}/auth/activate`, {
       params: { token }
-    });
+    }).pipe(
+      catchError(err => {
+        const errorMessage = err.error?.message || 'Activation failed';
+        return throwError(() => new Error(errorMessage));
+      })
+    );
   }
 
   registerDriver(driverData: Partial<RegisterDriverData>): Observable<RegisterDriverResponse> {
@@ -159,7 +149,7 @@ export class AuthService {
     formData.append('vehicle.petFriendly', String(driverData.petFriendly || false));
 
     return this.http.post<RegisterDriverResponse>(
-      `${environment.apiUrl}/v1/auth/register/driver`,
+      `${this.env.getApiUrl()}/auth/register/driver`,
       formData
     ).pipe(
       catchError(err => {
