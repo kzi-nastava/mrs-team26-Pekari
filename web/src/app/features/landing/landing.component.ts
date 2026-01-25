@@ -1,10 +1,13 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject, AfterViewInit, ElementRef, ViewChild, QueryList, ViewChildren } from '@angular/core';
+import { Component, inject, AfterViewInit, OnDestroy, ElementRef, ViewChild, QueryList, ViewChildren, ChangeDetectorRef } from '@angular/core';
 import { FormArray, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { RideApiService, RideEstimateResponse } from '../../core/services/ride-api.service';
+import { Subscription } from 'rxjs';
+import { RideApiService, RideEstimateResponse, LocationPoint } from '../../core/services/ride-api.service';
 import { GeocodingService } from '../../core/services/geocoding.service';
 import { AddressAutocompleteComponent, AddressSelection } from '../../shared/components/address-autocomplete/address-autocomplete.component';
 import * as L from 'leaflet';
+
+type FocusedInput = 'pickup' | 'dropoff' | { type: 'stop', index: number } | null;
 
 @Component({
   selector: 'app-landing',
@@ -13,7 +16,7 @@ import * as L from 'leaflet';
   templateUrl: './landing.component.html',
   styleUrl: './landing.component.css'
 })
-export class LandingComponent implements AfterViewInit {
+export class LandingComponent implements AfterViewInit, OnDestroy {
   @ViewChild('mapContainer', { static: false }) mapContainer?: ElementRef;
   @ViewChild('pickupAutocomplete') pickupAutocomplete?: AddressAutocompleteComponent;
   @ViewChild('dropoffAutocomplete') dropoffAutocomplete?: AddressAutocompleteComponent;
@@ -22,12 +25,16 @@ export class LandingComponent implements AfterViewInit {
   private fb = inject(FormBuilder);
   private rides = inject(RideApiService);
   private geocoding = inject(GeocodingService);
+  private cdr = inject(ChangeDetectorRef);
 
   private map?: L.Map;
   private pickupMarker?: L.Marker;
   private dropoffMarker?: L.Marker;
   private stopMarkers: L.Marker[] = [];
   private routeLine?: L.Polyline;
+  private valueChangesSubscription?: Subscription;
+
+  private focusedInput: FocusedInput = null;
 
   estimate?: RideEstimateResponse;
   error?: string;
@@ -69,12 +76,55 @@ export class LandingComponent implements AfterViewInit {
       this.stopMarkers[index].remove();
       this.stopMarkers.splice(index, 1);
     }
-    this.drawRoute();
+  }
+
+  clearPickup() {
+    this.form.patchValue({
+      pickup: { address: '', latitude: null, longitude: null }
+    });
+    if (this.pickupAutocomplete) {
+      this.pickupAutocomplete.setAddress('');
+    }
+    if (this.pickupMarker) {
+      this.pickupMarker.remove();
+      this.pickupMarker = undefined;
+    }
+  }
+
+  clearDropoff() {
+    this.form.patchValue({
+      dropoff: { address: '', latitude: null, longitude: null }
+    });
+    if (this.dropoffAutocomplete) {
+      this.dropoffAutocomplete.setAddress('');
+    }
+    if (this.dropoffMarker) {
+      this.dropoffMarker.remove();
+      this.dropoffMarker = undefined;
+    }
   }
 
   ngAfterViewInit(): void {
     this.initializeMap();
-    this.form.valueChanges.subscribe(() => this.updateMapMarkers());
+    this.valueChangesSubscription = this.form.valueChanges.subscribe(() => {
+      this.updateMapMarkers();
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.valueChangesSubscription?.unsubscribe();
+  }
+
+  onPickupFocus(): void {
+    this.focusedInput = 'pickup';
+  }
+
+  onDropoffFocus(): void {
+    this.focusedInput = 'dropoff';
+  }
+
+  onStopFocus(index: number): void {
+    this.focusedInput = { type: 'stop', index };
   }
 
   private initializeMap(): void {
@@ -124,7 +174,7 @@ export class LandingComponent implements AfterViewInit {
     this.stopMarkers.forEach(marker => marker.remove());
     this.stopMarkers = [];
 
-    const stops = value.stops as any[] || [];
+    const stops = (value.stops || []) as Array<{ address?: string, latitude?: number | null, longitude?: number | null }>;
     stops.forEach((stop, index) => {
       if (stop?.latitude && stop?.longitude) {
         const marker = L.marker([stop.latitude, stop.longitude], {
@@ -135,45 +185,6 @@ export class LandingComponent implements AfterViewInit {
         this.stopMarkers.push(marker);
       }
     });
-
-    this.drawRoute();
-  }
-
-  private drawRoute(): void {
-    if (!this.map) return;
-
-    if (this.routeLine) {
-      this.routeLine.remove();
-    }
-
-    const value = this.form.getRawValue();
-    const points: L.LatLngExpression[] = [];
-
-    if (value.pickup?.latitude && value.pickup?.longitude) {
-      points.push([value.pickup.latitude, value.pickup.longitude]);
-    }
-
-    const stops = value.stops as any[] || [];
-    stops.forEach(stop => {
-      if (stop?.latitude && stop?.longitude) {
-        points.push([stop.latitude, stop.longitude]);
-      }
-    });
-
-    if (value.dropoff?.latitude && value.dropoff?.longitude) {
-      points.push([value.dropoff.latitude, value.dropoff.longitude]);
-    }
-
-    if (points.length >= 2) {
-      this.routeLine = L.polyline(points, {
-        color: '#3b82f6',
-        weight: 4,
-        opacity: 0.7,
-        dashArray: '10, 10'
-      }).addTo(this.map);
-
-      this.map.fitBounds(this.routeLine.getBounds(), { padding: [50, 50] });
-    }
   }
 
   private createCustomIcon(color: 'green' | 'red' | 'blue'): L.DivIcon {
@@ -198,15 +209,23 @@ export class LandingComponent implements AfterViewInit {
     this.geocoding.reverseGeocode(lat, lng).subscribe({
       next: (result) => {
         if (result) {
-          const pickupAddress = this.form.get('pickup.address')?.value;
-          const dropoffAddress = this.form.get('dropoff.address')?.value;
-
-          if (!pickupAddress || pickupAddress.trim() === '') {
+          if (this.focusedInput === 'pickup') {
             this.updatePickupLocation(result.displayName, lat, lng);
-          } else if (!dropoffAddress || dropoffAddress.trim() === '') {
+          } else if (this.focusedInput === 'dropoff') {
             this.updateDropoffLocation(result.displayName, lat, lng);
+          } else if (this.focusedInput && typeof this.focusedInput === 'object' && this.focusedInput.type === 'stop') {
+            this.updateStopLocation(this.focusedInput.index, result.displayName, lat, lng);
           } else {
-            this.updateDropoffLocation(result.displayName, lat, lng);
+            const pickupAddress = this.form.get('pickup.address')?.value;
+            const dropoffAddress = this.form.get('dropoff.address')?.value;
+
+            if (!pickupAddress || pickupAddress.trim() === '') {
+              this.updatePickupLocation(result.displayName, lat, lng);
+            } else if (!dropoffAddress || dropoffAddress.trim() === '') {
+              this.updateDropoffLocation(result.displayName, lat, lng);
+            } else {
+              this.updateDropoffLocation(result.displayName, lat, lng);
+            }
           }
         }
       }
@@ -274,23 +293,66 @@ export class LandingComponent implements AfterViewInit {
 
     const value = this.form.getRawValue();
 
+    const pickup = value.pickup;
+    const dropoff = value.dropoff;
+
+    if (!pickup?.latitude || !pickup?.longitude || !pickup?.address ||
+        !dropoff?.latitude || !dropoff?.longitude || !dropoff?.address) {
+      this.error = 'Please fill all required location fields.';
+      return;
+    }
+
+    const stops = (value.stops || [])
+      .filter((s: any): s is LocationPoint =>
+        !!s && !!s.latitude && !!s.longitude && !!s.address
+      );
+
     this.rides
       .estimateRide({
-        pickup: value.pickup as any,
-        dropoff: value.dropoff as any,
-        vehicleType: value.vehicleType as string,
+        pickup: pickup as LocationPoint,
+        stops,
+        dropoff: dropoff as LocationPoint,
+        vehicleType: value.vehicleType || 'STANDARD',
         babyTransport: !!value.babyTransport,
         petTransport: !!value.petTransport
       })
       .subscribe({
         next: (resp) => {
+          console.log('Estimate response:', resp);
           this.estimate = resp;
+          this.drawEstimatedRoute(resp.routePoints);
+          this.cdr.markForCheck();
         },
         error: (err) => {
+          console.error('Estimate error:', err);
           const backendMsg = err?.error?.message;
           const plainMsg = typeof err?.error === 'string' ? err.error : undefined;
           this.error = backendMsg || plainMsg || err?.message || 'Estimate failed';
+          this.cdr.markForCheck();
         }
       });
+  }
+
+  private clearRoute(): void {
+    if (this.routeLine) {
+      this.routeLine.remove();
+      this.routeLine = undefined;
+    }
+  }
+
+  private drawEstimatedRoute(routePoints?: LocationPoint[]): void {
+    if (!this.map || !routePoints || routePoints.length < 2) return;
+
+    this.clearRoute();
+
+    const points: L.LatLngExpression[] = routePoints.map(p => [p.latitude, p.longitude]);
+
+    this.routeLine = L.polyline(points, {
+      color: '#3b82f6',
+      weight: 5,
+      opacity: 0.8
+    }).addTo(this.map);
+
+    this.map.fitBounds(this.routeLine.getBounds(), { padding: [50, 50] });
   }
 }

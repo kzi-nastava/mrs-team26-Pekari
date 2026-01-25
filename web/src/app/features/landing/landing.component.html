@@ -12,13 +12,20 @@
           <div class="block">
             <div class="block-label">Pickup & destinations</div>
 
-            <div class="field">
+            <div class="field field-with-clear">
               <app-address-autocomplete
                 #pickupAutocomplete
                 placeholder="Pickup location"
                 [initialValue]="form.get('pickup.address')?.value || ''"
                 (addressSelected)="onPickupSelected($event)"
+                (focused)="onPickupFocus()"
               ></app-address-autocomplete>
+              <button
+                *ngIf="form.get('pickup.address')?.value"
+                class="icon-btn"
+                type="button"
+                (click)="clearPickup()"
+              >×</button>
             </div>
 
             <div class="stops" formArrayName="stops">
@@ -28,21 +35,28 @@
                   placeholder="Stop {{ i + 1 }}"
                   [initialValue]="stop.get('address')?.value || ''"
                   (addressSelected)="onStopSelected(i, $event)"
+                  (focused)="onStopFocus(i)"
                 ></app-address-autocomplete>
-
                 <button class="icon-btn" type="button" (click)="removeStop(i)">×</button>
               </div>
 
               <button class="ghost-btn" type="button" (click)="addStop()">Add Stop</button>
             </div>
 
-            <div class="field">
+            <div class="field field-with-clear">
               <app-address-autocomplete
                 #dropoffAutocomplete
                 placeholder="Final destination"
                 [initialValue]="form.get('dropoff.address')?.value || ''"
                 (addressSelected)="onDropoffSelected($event)"
+                (focused)="onDropoffFocus()"
               ></app-address-autocomplete>
+              <button
+                *ngIf="form.get('dropoff.address')?.value"
+                class="icon-btn"
+                type="button"
+                (click)="clearDropoff()"
+              >×</button>
             </div>
           </div>
 
