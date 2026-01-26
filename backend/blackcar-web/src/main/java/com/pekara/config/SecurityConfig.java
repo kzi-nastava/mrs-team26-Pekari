@@ -54,6 +54,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/vehicles").permitAll()
                         // Online drivers - public
                         .requestMatchers("/api/v1/drivers/online", "/api/v1/drivers/online-with-vehicles").permitAll()
+                        // WebSocket handshake
+                        .requestMatchers("/ws/**").permitAll()
                         // All other endpoints require authentication
                         .anyRequest().authenticated()
                 )
