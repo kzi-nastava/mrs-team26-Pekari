@@ -1,21 +1,29 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnDestroy, OnInit, AfterViewInit, inject, ChangeDetectorRef, ElementRef, ViewChild } from '@angular/core';
+import { Component, OnDestroy, OnInit, AfterViewInit, inject, ChangeDetectorRef, ElementRef, ViewChild, ViewChildren, QueryList } from '@angular/core';
 import { FormArray, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { RideApiService, OrderRideResponse, RideEstimateResponse } from '../../../core/services/ride-api.service';
+import { RideApiService, OrderRideResponse, RideEstimateResponse, LocationPoint } from '../../../core/services/ride-api.service';
+import { GeocodingService } from '../../../core/services/geocoding.service';
+import { AddressAutocompleteComponent, AddressSelection } from '../../../shared/components/address-autocomplete/address-autocomplete.component';
 import * as L from 'leaflet';
+
+type FocusedInput = 'pickup' | 'dropoff' | { type: 'stop', index: number } | null;
 
 @Component({
   selector: 'app-passenger-home',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, AddressAutocompleteComponent],
   templateUrl: './passenger-home.component.html',
   styleUrl: './passenger-home.component.css'
 })
 export class PassengerHomeComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('mapContainer', { static: false }) mapContainer?: ElementRef;
+  @ViewChild('pickupAutocomplete') pickupAutocomplete?: AddressAutocompleteComponent;
+  @ViewChild('dropoffAutocomplete') dropoffAutocomplete?: AddressAutocompleteComponent;
+  @ViewChildren('stopAutocomplete') stopAutocompletes?: QueryList<AddressAutocompleteComponent>;
 
   private fb = inject(FormBuilder);
   private rides = inject(RideApiService);
+  private geocoding = inject(GeocodingService);
   private cdr = inject(ChangeDetectorRef);
 
   private map?: L.Map;
@@ -23,6 +31,7 @@ export class PassengerHomeComponent implements OnInit, AfterViewInit, OnDestroy 
   private dropoffMarker?: L.Marker;
   private stopMarkers: L.Marker[] = [];
   private routeLine?: L.Polyline;
+  private focusedInput: FocusedInput = null;
 
   estimate?: RideEstimateResponse;
   orderResult?: OrderRideResponse;
@@ -61,6 +70,7 @@ export class PassengerHomeComponent implements OnInit, AfterViewInit, OnDestroy 
     // Subscribe to form changes to update map
     this.form.valueChanges.subscribe(() => {
       this.updateMapMarkers();
+      this.clearEstimateAndRoute();
     });
   }
 
@@ -97,6 +107,18 @@ export class PassengerHomeComponent implements OnInit, AfterViewInit, OnDestroy 
 
   setVehicleType(vehicleType: 'STANDARD' | 'VAN' | 'LUX') {
     this.form.patchValue({ vehicleType });
+  }
+
+  onPickupFocus(): void {
+    this.focusedInput = 'pickup';
+  }
+
+  onDropoffFocus(): void {
+    this.focusedInput = 'dropoff';
+  }
+
+  onStopFocus(index: number): void {
+    this.focusedInput = { type: 'stop', index };
   }
 
   chooseFavoriteRoute() {
@@ -239,8 +261,78 @@ export class PassengerHomeComponent implements OnInit, AfterViewInit, OnDestroy 
   }
 
   private onMapClick(e: L.LeafletMouseEvent): void {
-    // You can implement logic here to set pickup/dropoff on map click
-    console.log('Map clicked at:', e.latlng);
+    const lat = e.latlng.lat;
+    const lng = e.latlng.lng;
+
+    this.geocoding.reverseGeocode(lat, lng).subscribe({
+      next: (result) => {
+        if (!result) return;
+
+        if (this.focusedInput === 'pickup') {
+          this.updatePickupLocation(result.displayName, lat, lng);
+        } else if (this.focusedInput === 'dropoff') {
+          this.updateDropoffLocation(result.displayName, lat, lng);
+        } else if (this.focusedInput && typeof this.focusedInput === 'object' && this.focusedInput.type === 'stop') {
+          this.updateStopLocation(this.focusedInput.index, result.displayName, lat, lng);
+        } else {
+          const pickupAddress = this.form.get('pickup.address')?.value;
+          const dropoffAddress = this.form.get('dropoff.address')?.value;
+
+          if (!pickupAddress || pickupAddress.trim() === '') {
+            this.updatePickupLocation(result.displayName, lat, lng);
+          } else if (!dropoffAddress || dropoffAddress.trim() === '') {
+            this.updateDropoffLocation(result.displayName, lat, lng);
+          } else {
+            this.updateDropoffLocation(result.displayName, lat, lng);
+          }
+        }
+      }
+    });
+  }
+
+  onPickupSelected(selection: AddressSelection): void {
+    this.updatePickupLocation(selection.address, selection.latitude, selection.longitude);
+  }
+
+  onDropoffSelected(selection: AddressSelection): void {
+    this.updateDropoffLocation(selection.address, selection.latitude, selection.longitude);
+  }
+
+  onStopSelected(index: number, selection: AddressSelection): void {
+    this.updateStopLocation(index, selection.address, selection.latitude, selection.longitude);
+  }
+
+  private updatePickupLocation(address: string, lat: number, lng: number): void {
+    this.form.patchValue({
+      pickup: { address, latitude: lat, longitude: lng }
+    });
+
+    if (this.pickupAutocomplete) {
+      this.pickupAutocomplete.setAddress(address);
+    }
+  }
+
+  private updateDropoffLocation(address: string, lat: number, lng: number): void {
+    this.form.patchValue({
+      dropoff: { address, latitude: lat, longitude: lng }
+    });
+
+    if (this.dropoffAutocomplete) {
+      this.dropoffAutocomplete.setAddress(address);
+    }
+  }
+
+  private updateStopLocation(index: number, address: string, lat: number, lng: number): void {
+    const stopsArray = this.stops;
+    if (index >= 0 && index < stopsArray.length) {
+      const stopGroup = stopsArray.at(index);
+      stopGroup?.patchValue({ address, latitude: lat, longitude: lng });
+
+      const stopAutocomplete = this.stopAutocompletes?.toArray()[index];
+      if (stopAutocomplete) {
+        stopAutocomplete.setAddress(address);
+      }
+    }
   }
 
   private refreshScheduleBounds() {
@@ -333,15 +425,31 @@ export class PassengerHomeComponent implements OnInit, AfterViewInit, OnDestroy 
 
     const value = this.form.getRawValue();
 
+    const pickup = value.pickup;
+    const dropoff = value.dropoff;
+
+    if (!pickup?.latitude || !pickup?.longitude || !pickup?.address ||
+        !dropoff?.latitude || !dropoff?.longitude || !dropoff?.address) {
+      this.error = 'Please fill all required location fields.';
+      return;
+    }
+
+    const stops = (value.stops || [])
+      .filter((s: any): s is LocationPoint =>
+        !!s && !!s.latitude && !!s.longitude && !!s.address
+      );
+
     this.rides
       .estimateRide({
-        pickup: value.pickup,
-        dropoff: value.dropoff,
-        vehicleType: value.vehicleType,
-      } as any)
+        pickup: pickup as LocationPoint,
+        stops,
+        dropoff: dropoff as LocationPoint,
+        vehicleType: value.vehicleType || 'STANDARD'
+      })
       .subscribe({
         next: (resp) => {
           this.estimate = resp;
+          this.drawEstimatedRoute(resp.routePoints);
           this.cdr.detectChanges();
         },
         error: (err) => {
@@ -412,5 +520,35 @@ export class PassengerHomeComponent implements OnInit, AfterViewInit, OnDestroy 
           this.cdr.detectChanges();
         }
       });
+  }
+
+  private clearRoute(): void {
+    if (this.routeLine) {
+      this.routeLine.remove();
+      this.routeLine = undefined;
+    }
+  }
+
+  private clearEstimateAndRoute(): void {
+    this.estimate = undefined;
+    this.error = undefined;
+    this.clearRoute();
+    this.cdr.detectChanges();
+  }
+
+  private drawEstimatedRoute(routePoints?: LocationPoint[]): void {
+    if (!this.map || !routePoints || routePoints.length < 2) return;
+
+    this.clearRoute();
+
+    const points: L.LatLngExpression[] = routePoints.map(p => [p.latitude, p.longitude]);
+
+    this.routeLine = L.polyline(points, {
+      color: '#3b82f6',
+      weight: 5,
+      opacity: 0.8
+    }).addTo(this.map);
+
+    this.map.fitBounds(this.routeLine.getBounds(), { padding: [50, 50] });
   }
 }

@@ -14,7 +14,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Slf4j
 @Component
@@ -43,14 +42,15 @@ public class CoreDevDataSeeder implements ApplicationRunner {
         seedUser("passenger4@test.com", "p_dana", "Dana", "White", UserRole.PASSENGER, "Pass1234");
 
         // 3. Seed Drivers with different vehicle types and locations
+        // Vehicle types must match frontend options: STANDARD, VAN, LUX
         seedDriverWithState("driver_std@test.com", "d_john", "John", "Doe",
             "STANDARD", "Toyota Corolla", "NS-111-AA", 4, true, false, 45.2671, 19.8335); // Center
         
-        seedDriverWithState("driver_premium@test.com", "d_jane", "Jane", "Doe",
-            "PREMIUM", "Mercedes E-Class", "NS-222-BB", 4, false, true, 45.2464, 19.8517); // Liman
+        seedDriverWithState("driver_lux@test.com", "d_jane_lux", "Jane", "Smith",
+            "LUX", "Mercedes E-Class", "NS-222-BB", 4, false, true, 45.2464, 19.8517); // Liman
         
-        seedDriverWithState("driver_eco@test.com", "d_mike", "Mike", "Ross",
-            "ECO", "Toyota Prius", "NS-333-CC", 4, false, false, 45.2600, 19.8000); // Novo Naselje
+        seedDriverWithState("driver_std2@test.com", "d_mike", "Mike", "Ross",
+            "STANDARD", "Toyota Camry", "NS-333-CC", 4, true, true, 45.2600, 19.8000); // Novo Naselje
         
         seedDriverWithState("driver_van@test.com", "d_sarah", "Sarah", "Connor",
             "VAN", "Volkswagen Transporter", "NS-444-DD", 7, true, true, 45.2396, 19.8227); // Petrovaradin
