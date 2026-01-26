@@ -221,14 +221,15 @@ public class RideServiceImpl implements com.pekara.service.RideService {
         Ride saved = rideRepository.save(ride);
         driverStateRepository.save(lockedState);
 
+        // Create work log entry for immediate rides (not for scheduled rides - those get logged when started)
+        // The work log is created with completed=false; it will be marked completed when the ride finishes
         if (request.getScheduledAt() == null) {
-            // Best-effort approximation: until full start/stop flow is implemented,
-            // treat assignment time as work start and estimated end as work end.
             driverWorkLogRepository.save(DriverWorkLog.builder()
                 .driver(driver)
                 .ride(saved)
                 .startedAt(now)
-                .endedAt(now.plusMinutes(estimatedDurationMinutes))
+                .endedAt(null)  // Will be set when ride completes
+                .completed(false)  // Will be set to true when ride completes
                 .build());
         }
 
@@ -353,9 +354,14 @@ public class RideServiceImpl implements com.pekara.service.RideService {
                 .orElse(null);
     }
 
+    /**
+     * Checks if a driver has exceeded the 8-hour work limit in the last 24 hours.
+     * Only completed rides count towards this limit (cancelled/pending rides don't count).
+     */
     private boolean hasExceededWorkLimit(Long driverId, LocalDateTime now) {
         LocalDateTime since = now.minusHours(24);
-        long workedMinutes = driverWorkLogRepository.findSince(driverId, since).stream()
+        long workedMinutes = driverWorkLogRepository.findCompletedSince(driverId, since).stream()
+                .filter(w -> w.getEndedAt() != null)  // Safety check
                 .mapToLong(w -> java.time.Duration.between(w.getStartedAt(), w.getEndedAt()).toMinutes())
                 .sum();
         return workedMinutes > 8L * 60L;
@@ -405,5 +411,145 @@ public class RideServiceImpl implements com.pekara.service.RideService {
 
     private Double roundKm(double km) {
         return BigDecimal.valueOf(km).setScale(3, RoundingMode.HALF_UP).doubleValue();
+    }
+
+    @Override
+    @Transactional
+    public void startRide(Long rideId, String driverEmail) {
+        Ride ride = rideRepository.findById(rideId)
+                .orElseThrow(() -> new IllegalArgumentException("Ride not found"));
+
+        if (ride.getDriver() == null || !ride.getDriver().getEmail().equals(driverEmail)) {
+            throw new IllegalArgumentException("You are not the assigned driver for this ride");
+        }
+
+        if (ride.getStatus() != RideStatus.ACCEPTED && ride.getStatus() != RideStatus.SCHEDULED) {
+            throw new IllegalArgumentException("Ride cannot be started in current status: " + ride.getStatus());
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        ride.setStatus(RideStatus.IN_PROGRESS);
+        ride.setStartedAt(now);
+        rideRepository.save(ride);
+
+        // Create or update work log with actual start time
+        DriverWorkLog workLog = driverWorkLogRepository.findByRide(ride)
+                .orElseGet(() -> DriverWorkLog.builder()
+                        .driver(ride.getDriver())
+                        .ride(ride)
+                        .completed(false)
+                        .build());
+
+        workLog.setStartedAt(now);
+        driverWorkLogRepository.save(workLog);
+
+        log.info("Ride {} started by driver {}", rideId, driverEmail);
+    }
+
+    @Override
+    @Transactional
+    public void completeRide(Long rideId, String driverEmail) {
+        Ride ride = rideRepository.findById(rideId)
+                .orElseThrow(() -> new IllegalArgumentException("Ride not found"));
+
+        if (ride.getDriver() == null || !ride.getDriver().getEmail().equals(driverEmail)) {
+            throw new IllegalArgumentException("You are not the assigned driver for this ride");
+        }
+
+        if (ride.getStatus() != RideStatus.IN_PROGRESS) {
+            throw new IllegalArgumentException("Only in-progress rides can be completed");
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        ride.setStatus(RideStatus.COMPLETED);
+        ride.setCompletedAt(now);
+        rideRepository.save(ride);
+
+        // Update driver state - no longer busy
+        DriverState driverState = driverStateRepository.findById(ride.getDriver().getId())
+                .orElse(null);
+        if (driverState != null) {
+            driverState.setBusy(false);
+            driverState.setCurrentRideEndsAt(null);
+            driverState.setCurrentRideEndLatitude(null);
+            driverState.setCurrentRideEndLongitude(null);
+            driverStateRepository.save(driverState);
+        }
+
+        // Mark work log as completed with actual end time
+        DriverWorkLog workLog = driverWorkLogRepository.findByRide(ride)
+                .orElseGet(() -> DriverWorkLog.builder()
+                        .driver(ride.getDriver())
+                        .ride(ride)
+                        .startedAt(ride.getStartedAt() != null ? ride.getStartedAt() : now)
+                        .build());
+
+        workLog.setEndedAt(now);
+        workLog.setCompleted(true);  // This ride now counts towards the 8-hour limit
+        driverWorkLogRepository.save(workLog);
+
+        log.info("Ride {} completed by driver {}. Work logged: {} to {}", 
+                rideId, driverEmail, workLog.getStartedAt(), workLog.getEndedAt());
+    }
+
+    @Override
+    @Transactional
+    public void cancelRide(Long rideId, String userEmail, String reason) {
+        Ride ride = rideRepository.findById(rideId)
+                .orElseThrow(() -> new IllegalArgumentException("Ride not found"));
+
+        // Check if user is allowed to cancel (creator, passenger, or driver)
+        boolean isCreator = ride.getCreator().getEmail().equals(userEmail);
+        boolean isDriver = ride.getDriver() != null && ride.getDriver().getEmail().equals(userEmail);
+        boolean isPassenger = ride.getPassengers().stream()
+                .anyMatch(p -> p.getEmail().equals(userEmail));
+
+        if (!isCreator && !isDriver && !isPassenger) {
+            throw new IllegalArgumentException("You are not authorized to cancel this ride");
+        }
+
+        if (ride.getStatus() == RideStatus.COMPLETED || ride.getStatus() == RideStatus.CANCELLED) {
+            throw new IllegalArgumentException("Ride cannot be cancelled in current status: " + ride.getStatus());
+        }
+
+        ride.setStatus(RideStatus.CANCELLED);
+        rideRepository.save(ride);
+
+        // Update driver state - no longer busy
+        if (ride.getDriver() != null) {
+            DriverState driverState = driverStateRepository.findById(ride.getDriver().getId())
+                    .orElse(null);
+            if (driverState != null) {
+                driverState.setBusy(false);
+                driverState.setCurrentRideEndsAt(null);
+                driverState.setCurrentRideEndLatitude(null);
+                driverState.setCurrentRideEndLongitude(null);
+                driverState.setNextScheduledRideAt(null);
+                driverStateRepository.save(driverState);
+            }
+
+            // Delete or mark work log as not completed (won't count towards 8-hour limit)
+            driverWorkLogRepository.findByRide(ride).ifPresent(workLog -> {
+                workLog.setCompleted(false);
+                workLog.setEndedAt(LocalDateTime.now());
+                driverWorkLogRepository.save(workLog);
+            });
+        }
+
+        log.info("Ride {} cancelled by {}. Reason: {}", rideId, userEmail, reason);
+
+        // Send cancellation notifications
+        try {
+            if (ride.getDriver() != null && !isDriver) {
+                mailService.sendRideOrderRejected(ride.getDriver().getEmail(), 
+                        "Ride cancelled by " + (isCreator ? "passenger" : "user") + ": " + reason);
+            }
+            if (!isCreator) {
+                mailService.sendRideOrderRejected(ride.getCreator().getEmail(), 
+                        "Ride cancelled" + (isDriver ? " by driver" : "") + ": " + reason);
+            }
+        } catch (Exception e) {
+            log.warn("Failed to send cancellation notification: {}", e.getMessage());
+        }
     }
 }

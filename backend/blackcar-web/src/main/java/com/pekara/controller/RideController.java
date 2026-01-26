@@ -27,8 +27,6 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -89,22 +87,16 @@ public class RideController {
 
 
     @Operation(summary = "Cancel ride", description = "Cancel a scheduled or active ride - Protected endpoint")
+    @PreAuthorize("hasAnyRole('PASSENGER', 'DRIVER')")
     @PostMapping("/{rideId}/cancel")
     public ResponseEntity<WebMessageResponse> cancelRide(
             @PathVariable Long rideId,
-            @Valid @RequestBody WebCancelRideRequest request) {
+            @Valid @RequestBody WebCancelRideRequest request,
+            @AuthenticationPrincipal String currentUserEmail) {
 
         log.debug("Ride cancellation requested for rideId: {} with reason: {}", rideId, request.getReason());
 
-        // TODO: Implement ride cancellation logic via RideService
-        // - Verify user has permission to cancel this ride
-        // - Check if ride can be cancelled (not completed, not already cancelled)
-        // - For passengers: can cancel up to 10 minutes before ride start
-        // - For drivers: can cancel before passengers enter vehicle
-        // - Update ride status to CANCELLED
-        // - Notify driver/passengers about cancellation
-        // - Apply cancellation fee if applicable
-        // - Return confirmation
+        rideService.cancelRide(rideId, currentUserEmail, request.getReason());
 
         log.info("Ride {} cancelled successfully", rideId);
         return ResponseEntity.ok(new WebMessageResponse("Ride cancelled successfully."));
@@ -117,39 +109,30 @@ public class RideController {
     @Operation(summary = "Start ride", description = "Mark that the ride has started - Protected endpoint (Drivers only)")
     @PreAuthorize("hasRole('DRIVER')")
     @PostMapping("/{rideId}/start")
-    public ResponseEntity<WebMessageResponse> startRide(@PathVariable Long rideId) {
+    public ResponseEntity<WebMessageResponse> startRide(
+            @PathVariable Long rideId,
+            @AuthenticationPrincipal String currentUserEmail) {
         log.debug("Start ride requested for rideId: {}", rideId);
 
-        // TODO: Implement start ride logic via RideService
-        // - Verify current user is the assigned driver for this ride
-        // - Verify ride is in a state that can be started (e.g., ACCEPTED / SCHEDULED)
-        // - Verify all passengers have entered the vehicle (business rule / confirmation)
-        // - Update ride status to IN_PROGRESS and set start timestamp
-        // - Ensure passengers on this ride cannot order new rides until completion
-        // - Notify passengers that the ride has started
+        rideService.startRide(rideId, currentUserEmail);
 
         log.info("Ride {} started successfully", rideId);
         return ResponseEntity.ok(new WebMessageResponse("Ride started successfully."));
     }
 
     /**
-     * 2.6.5 Stop Ride in Progress
+     * 2.6.5 Stop Ride in Progress (Complete the ride)
      * Protected endpoint - drivers only
      */
-    @Operation(summary = "Stop ride", description = "Stop a ride in progress - Protected endpoint (Drivers only)")
+    @Operation(summary = "Complete ride", description = "Complete a ride in progress - Protected endpoint (Drivers only)")
+    @PreAuthorize("hasRole('DRIVER')")
     @PostMapping("/{rideId}/stop")
-    public ResponseEntity<WebMessageResponse> stopRide(@PathVariable Long rideId) {
+    public ResponseEntity<WebMessageResponse> stopRide(
+            @PathVariable Long rideId,
+            @AuthenticationPrincipal String currentUserEmail) {
         log.debug("Stop ride requested for rideId: {}", rideId);
 
-        // TODO: Implement stop ride logic via RideService
-        // - Verify user is the driver of this ride
-        // - Check if ride is currently IN_PROGRESS
-        // - Update ride status to COMPLETED
-        // - Capture current location as new dropoff point
-        // - Calculate final price based on actual distance/time
-        // - Process payment
-        // - Notify passengers about ride completion
-        // - Return completion details
+        rideService.completeRide(rideId, currentUserEmail);
 
         log.info("Ride {} stopped and completed successfully", rideId);
         return ResponseEntity.ok(new WebMessageResponse("Ride completed successfully."));
