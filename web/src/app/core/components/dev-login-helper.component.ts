@@ -126,11 +126,11 @@ export class DevLoginHelperComponent {
   quickLogin(role: 'passenger' | 'driver' | 'admin'): void {
     const testCredentials: Record<string, { email: string; password: string }> = {
       passenger: {
-        email: 'passenger@test.com',
+        email: 'passenger1@test.com',
         password: 'Pass1234'
       },
       driver: {
-        email: 'driver@test.com',
+        email: 'driver_std@test.com',
         password: 'Driver1234'
       },
       admin: {

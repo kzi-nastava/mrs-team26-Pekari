@@ -20,7 +20,9 @@ import com.pekara.repository.DriverWorkLogRepository;
 import com.pekara.repository.RideRepository;
 import com.pekara.repository.UserRepository;
 import com.pekara.util.GeoUtils;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,6 +33,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class RideServiceImpl implements com.pekara.service.RideService {
@@ -43,6 +46,7 @@ public class RideServiceImpl implements com.pekara.service.RideService {
     private final DriverWorkLogRepository driverWorkLogRepository;
     private final MailService mailService;
     private final RoutingService routingService;
+    private final EntityManager entityManager;
 
     @Override
     @Transactional(readOnly = true)
@@ -79,10 +83,9 @@ public class RideServiceImpl implements com.pekara.service.RideService {
     @Override
     @Transactional
     public OrderRideResponse orderRide(String creatorEmail, OrderRideRequest request) {
-        User creator = userRepository.findByEmail(creatorEmail)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
-
         LocalDateTime now = LocalDateTime.now();
+        
+        // Validate schedule time
         if (request.getScheduledAt() != null) {
             if (request.getScheduledAt().isBefore(now)) {
                 throw new InvalidScheduleTimeException("Scheduled time must be in the future");
@@ -92,15 +95,16 @@ public class RideServiceImpl implements com.pekara.service.RideService {
             }
         }
 
+        // Validate locations
         validateLocation(request.getPickup(), "pickup");
         validateLocation(request.getDropoff(), "dropoff");
-
         if (request.getStops() != null) {
             for (LocationPointDto stop : request.getStops()) {
                 validateLocation(stop, "stop");
             }
         }
 
+        // Calculate route
         List<LocationPointDto> waypoints = new ArrayList<>();
         waypoints.add(request.getPickup());
         if (request.getStops() != null) {
@@ -113,8 +117,48 @@ public class RideServiceImpl implements com.pekara.service.RideService {
         int estimatedDurationMinutes = routeData.getDurationMinutes();
         BigDecimal estimatedPrice = calculatePrice(request.getVehicleType(), distanceKm);
 
+        // Select driver candidate (returns ID only to avoid locking conflicts)
+        Long candidateDriverId = selectDriverIdForRide(request, now);
+
+        if (candidateDriverId == null) {
+            // Send rejection notification
+            sendRejectionNotificationSafely(creatorEmail, "No active drivers available");
+            throw new NoDriversAvailableException("Currently there are no active drivers available");
+        }
+
+        // Clear persistence context to avoid StaleObjectStateException when acquiring pessimistic lock
+        entityManager.flush();
+        entityManager.clear();
+
+        // Fetch fresh managed entities after clear
+        User creator = userRepository.findByEmail(creatorEmail)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        // Lock and assign driver
+        DriverState lockedState = driverStateRepository.findByDriverIdForUpdate(candidateDriverId)
+                .orElseThrow(() -> new NoDriversAvailableException("Driver became unavailable"));
+
+        // Re-validate after lock (driver might have been taken by another concurrent request)
+        if (!Boolean.TRUE.equals(lockedState.getOnline())) {
+            sendRejectionNotificationSafely(creator.getEmail(), "Driver became unavailable");
+            throw new NoDriversAvailableException("Driver became unavailable");
+        }
+
+        if (Boolean.TRUE.equals(lockedState.getBusy()) && request.getScheduledAt() == null) {
+            // Double-check: if driver is busy and we need immediate ride, verify they're finishing soon
+            if (lockedState.getCurrentRideEndsAt() == null || 
+                lockedState.getCurrentRideEndsAt().isAfter(now.plusMinutes(10))) {
+                sendRejectionNotificationSafely(creator.getEmail(), "Driver became unavailable");
+                throw new NoDriversAvailableException("Driver became unavailable");
+            }
+        }
+
+        Driver driver = lockedState.getDriver();
+
+        // Build the Ride entity with fresh managed entities
         Ride ride = Ride.builder()
                 .creator(creator)
+                .driver(driver)
                 .status(request.getScheduledAt() != null ? RideStatus.SCHEDULED : RideStatus.ACCEPTED)
                 .vehicleType(request.getVehicleType())
                 .babyTransport(Boolean.TRUE.equals(request.getBabyTransport()))
@@ -125,7 +169,7 @@ public class RideServiceImpl implements com.pekara.service.RideService {
                 .estimatedDurationMinutes(estimatedDurationMinutes)
                 .build();
 
-        // Passengers: include creator + linked passengers (if they exist)
+        // Add passengers: creator + linked passengers (if they exist)
         ride.getPassengers().add(creator);
         if (request.getPassengerEmails() != null) {
             for (String email : request.getPassengerEmails()) {
@@ -136,7 +180,7 @@ public class RideServiceImpl implements com.pekara.service.RideService {
             }
         }
 
-        // Stops: pickup + intermediate stops + dropoff
+        // Add stops: pickup + intermediate stops + dropoff
         int seq = 0;
         ride.addStop(RideStop.builder()
                 .sequenceIndex(seq++)
@@ -163,21 +207,7 @@ public class RideServiceImpl implements com.pekara.service.RideService {
                 .longitude(request.getDropoff().getLongitude())
                 .build());
 
-        DriverState chosenDriver = selectDriverForRide(request, now);
-
-        if (chosenDriver == null) {
-            throw new NoDriversAvailableException("Currently there are no active drivers available");
-        }
-
-        // Lock and assign
-        DriverState lockedState = driverStateRepository.findByDriverIdForUpdate(chosenDriver.getId())
-                .orElseThrow(() -> new IllegalArgumentException("Driver state not found"));
-
-        if (!Boolean.TRUE.equals(lockedState.getOnline())) {
-            throw new NoDriversAvailableException("Currently there are no active drivers available");
-        }
-
-        // If already reserved/scheduled, keep them unavailable for immediate rides
+        // Update driver state
         if (request.getScheduledAt() != null) {
             lockedState.setNextScheduledRideAt(request.getScheduledAt());
         } else {
@@ -187,35 +217,24 @@ public class RideServiceImpl implements com.pekara.service.RideService {
             lockedState.setCurrentRideEndLongitude(request.getDropoff().getLongitude());
         }
 
-        Driver driver = lockedState.getDriver();
-        ride.setDriver(driver);
-
+        // Persist
         Ride saved = rideRepository.save(ride);
         driverStateRepository.save(lockedState);
 
+        // Create work log entry for immediate rides (not for scheduled rides - those get logged when started)
+        // The work log is created with completed=false; it will be marked completed when the ride finishes
         if (request.getScheduledAt() == null) {
-            // Best-effort approximation: until full start/stop flow is implemented,
-            // treat assignment time as work start and estimated end as work end.
             driverWorkLogRepository.save(DriverWorkLog.builder()
                 .driver(driver)
                 .ride(saved)
                 .startedAt(now)
-                .endedAt(now.plusMinutes(estimatedDurationMinutes))
+                .endedAt(null)  // Will be set when ride completes
+                .completed(false)  // Will be set to true when ride completes
                 .build());
         }
 
-        // Email notifications
-        mailService.sendRideAssignedToDriver(driver.getEmail(), saved.getId(), saved.getScheduledAt());
-        mailService.sendRideOrderAccepted(creator.getEmail(), saved.getId(), saved.getStatus().name());
-
-        if (request.getPassengerEmails() != null) {
-            for (String email : request.getPassengerEmails()) {
-                if (email == null || email.isBlank()) {
-                    continue;
-                }
-                mailService.sendRideDetailsShared(email, saved.getId(), creator.getEmail());
-            }
-        }
+        // Email notifications (non-blocking - failures are logged, not thrown)
+        sendNotificationsSafely(driver.getEmail(), creator.getEmail(), saved, request.getPassengerEmails());
 
         return OrderRideResponse.builder()
                 .rideId(saved.getId())
@@ -227,33 +246,93 @@ public class RideServiceImpl implements com.pekara.service.RideService {
                 .build();
     }
 
-    private DriverState selectDriverForRide(OrderRideRequest request, LocalDateTime now) {
+    /**
+     * Send all ride notifications in a non-blocking way (failures are logged, not thrown).
+     */
+    private void sendNotificationsSafely(String driverEmail, String creatorEmail, Ride saved, List<String> passengerEmails) {
+        try {
+            mailService.sendRideAssignedToDriver(driverEmail, saved.getId(), saved.getScheduledAt());
+        } catch (Exception e) {
+            log.warn("Failed to send ride assignment email to driver {}: {}", driverEmail, e.getMessage());
+        }
+
+        try {
+            mailService.sendRideOrderAccepted(creatorEmail, saved.getId(), saved.getStatus().name());
+        } catch (Exception e) {
+            log.warn("Failed to send ride accepted email to creator {}: {}", creatorEmail, e.getMessage());
+        }
+
+        if (passengerEmails != null) {
+            for (String email : passengerEmails) {
+                if (email == null || email.isBlank()) {
+                    continue;
+                }
+                try {
+                    mailService.sendRideDetailsShared(email, saved.getId(), creatorEmail);
+                } catch (Exception e) {
+                    log.warn("Failed to send ride details email to passenger {}: {}", email, e.getMessage());
+                }
+            }
+        }
+    }
+
+    /**
+     * Send rejection notification safely (failures are logged, not thrown).
+     */
+    private void sendRejectionNotificationSafely(String email, String reason) {
+        try {
+            mailService.sendRideOrderRejected(email, reason);
+        } catch (Exception e) {
+            log.warn("Failed to send rejection email to {}: {}", email, e.getMessage());
+        }
+    }
+
+    /**
+     * Selects the best driver ID for the ride without loading entities into persistence context.
+     * Returns null if no suitable driver is found.
+     * 
+     * Selection criteria (per spec 2.4.1):
+     * - Driver must be online
+     * - Driver must not have a scheduled ride blocking them
+     * - Driver must not have exceeded 8 hours of work in last 24 hours
+     * - Driver's vehicle type must match the request
+     * - If baby/pet transport is requested, driver must support it
+     * - Priority: free drivers closest to pickup, then busy drivers finishing within 10 minutes
+     */
+    private Long selectDriverIdForRide(OrderRideRequest request, LocalDateTime now) {
         List<DriverState> onlineDrivers = driverStateRepository.findAllOnlineDrivers();
         if (onlineDrivers.isEmpty()) {
             throw new NoActiveDriversException("Currently there are no active drivers");
         }
 
-        // Exclude drivers that already have a reserved scheduled ride (simple rule for now)
+        String reqType = request.getVehicleType();
+        boolean needsBaby = Boolean.TRUE.equals(request.getBabyTransport());
+        boolean needsPet = Boolean.TRUE.equals(request.getPetTransport());
+
+        // Filter eligible drivers
         List<DriverState> eligible = onlineDrivers.stream()
                 .filter(ds -> ds.getDriver() != null)
+                // Exclude drivers with already scheduled rides
                 .filter(ds -> ds.getNextScheduledRideAt() == null)
+                // Exclude drivers who exceeded 8-hour work limit
                 .filter(ds -> !hasExceededWorkLimit(ds.getDriver().getId(), now))
+                // Match vehicle type
                 .filter(ds -> {
-                    String reqType = request.getVehicleType();
-                    // If request doesn't specify type, assume STANDARD or allow any?
-                    // Let's assume strict matching if specified, otherwise loose (or default STANDARD).
                     if (reqType == null) return true;
-                    
                     String driverType = ds.getDriver().getVehicleType();
                     return driverType != null && driverType.equalsIgnoreCase(reqType);
                 })
+                // Match baby transport requirement
+                .filter(ds -> !needsBaby || Boolean.TRUE.equals(ds.getDriver().getBabyFriendly()))
+                // Match pet transport requirement
+                .filter(ds -> !needsPet || Boolean.TRUE.equals(ds.getDriver().getPetFriendly()))
                 .toList();
 
         if (eligible.isEmpty()) {
             return null;
         }
 
-        // Free drivers first
+        // Priority 1: Free drivers - select the closest to pickup
         List<DriverState> free = eligible.stream()
                 .filter(ds -> !Boolean.TRUE.equals(ds.getBusy()))
                 .toList();
@@ -261,21 +340,28 @@ public class RideServiceImpl implements com.pekara.service.RideService {
         if (!free.isEmpty()) {
             return free.stream()
                     .min(Comparator.comparingDouble(ds -> distanceToPickup(ds, request.getPickup())))
+                    .map(ds -> ds.getDriver().getId())
                     .orElse(null);
         }
 
-        // Otherwise allow busy drivers that finish within 10 minutes
+        // Priority 2: Busy drivers finishing within 10 minutes - select closest to pickup from their end location
         LocalDateTime limit = now.plusMinutes(10);
         return eligible.stream()
                 .filter(ds -> Boolean.TRUE.equals(ds.getBusy()))
                 .filter(ds -> ds.getCurrentRideEndsAt() != null && !ds.getCurrentRideEndsAt().isAfter(limit))
                 .min(Comparator.comparingDouble(ds -> distanceToPickupFromEnd(ds, request.getPickup())))
+                .map(ds -> ds.getDriver().getId())
                 .orElse(null);
     }
 
+    /**
+     * Checks if a driver has exceeded the 8-hour work limit in the last 24 hours.
+     * Only completed rides count towards this limit (cancelled/pending rides don't count).
+     */
     private boolean hasExceededWorkLimit(Long driverId, LocalDateTime now) {
         LocalDateTime since = now.minusHours(24);
-        long workedMinutes = driverWorkLogRepository.findSince(driverId, since).stream()
+        long workedMinutes = driverWorkLogRepository.findCompletedSince(driverId, since).stream()
+                .filter(w -> w.getEndedAt() != null)  // Safety check
                 .mapToLong(w -> java.time.Duration.between(w.getStartedAt(), w.getEndedAt()).toMinutes())
                 .sum();
         return workedMinutes > 8L * 60L;
@@ -325,5 +411,145 @@ public class RideServiceImpl implements com.pekara.service.RideService {
 
     private Double roundKm(double km) {
         return BigDecimal.valueOf(km).setScale(3, RoundingMode.HALF_UP).doubleValue();
+    }
+
+    @Override
+    @Transactional
+    public void startRide(Long rideId, String driverEmail) {
+        Ride ride = rideRepository.findById(rideId)
+                .orElseThrow(() -> new IllegalArgumentException("Ride not found"));
+
+        if (ride.getDriver() == null || !ride.getDriver().getEmail().equals(driverEmail)) {
+            throw new IllegalArgumentException("You are not the assigned driver for this ride");
+        }
+
+        if (ride.getStatus() != RideStatus.ACCEPTED && ride.getStatus() != RideStatus.SCHEDULED) {
+            throw new IllegalArgumentException("Ride cannot be started in current status: " + ride.getStatus());
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        ride.setStatus(RideStatus.IN_PROGRESS);
+        ride.setStartedAt(now);
+        rideRepository.save(ride);
+
+        // Create or update work log with actual start time
+        DriverWorkLog workLog = driverWorkLogRepository.findByRide(ride)
+                .orElseGet(() -> DriverWorkLog.builder()
+                        .driver(ride.getDriver())
+                        .ride(ride)
+                        .completed(false)
+                        .build());
+
+        workLog.setStartedAt(now);
+        driverWorkLogRepository.save(workLog);
+
+        log.info("Ride {} started by driver {}", rideId, driverEmail);
+    }
+
+    @Override
+    @Transactional
+    public void completeRide(Long rideId, String driverEmail) {
+        Ride ride = rideRepository.findById(rideId)
+                .orElseThrow(() -> new IllegalArgumentException("Ride not found"));
+
+        if (ride.getDriver() == null || !ride.getDriver().getEmail().equals(driverEmail)) {
+            throw new IllegalArgumentException("You are not the assigned driver for this ride");
+        }
+
+        if (ride.getStatus() != RideStatus.IN_PROGRESS) {
+            throw new IllegalArgumentException("Only in-progress rides can be completed");
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        ride.setStatus(RideStatus.COMPLETED);
+        ride.setCompletedAt(now);
+        rideRepository.save(ride);
+
+        // Update driver state - no longer busy
+        DriverState driverState = driverStateRepository.findById(ride.getDriver().getId())
+                .orElse(null);
+        if (driverState != null) {
+            driverState.setBusy(false);
+            driverState.setCurrentRideEndsAt(null);
+            driverState.setCurrentRideEndLatitude(null);
+            driverState.setCurrentRideEndLongitude(null);
+            driverStateRepository.save(driverState);
+        }
+
+        // Mark work log as completed with actual end time
+        DriverWorkLog workLog = driverWorkLogRepository.findByRide(ride)
+                .orElseGet(() -> DriverWorkLog.builder()
+                        .driver(ride.getDriver())
+                        .ride(ride)
+                        .startedAt(ride.getStartedAt() != null ? ride.getStartedAt() : now)
+                        .build());
+
+        workLog.setEndedAt(now);
+        workLog.setCompleted(true);  // This ride now counts towards the 8-hour limit
+        driverWorkLogRepository.save(workLog);
+
+        log.info("Ride {} completed by driver {}. Work logged: {} to {}", 
+                rideId, driverEmail, workLog.getStartedAt(), workLog.getEndedAt());
+    }
+
+    @Override
+    @Transactional
+    public void cancelRide(Long rideId, String userEmail, String reason) {
+        Ride ride = rideRepository.findById(rideId)
+                .orElseThrow(() -> new IllegalArgumentException("Ride not found"));
+
+        // Check if user is allowed to cancel (creator, passenger, or driver)
+        boolean isCreator = ride.getCreator().getEmail().equals(userEmail);
+        boolean isDriver = ride.getDriver() != null && ride.getDriver().getEmail().equals(userEmail);
+        boolean isPassenger = ride.getPassengers().stream()
+                .anyMatch(p -> p.getEmail().equals(userEmail));
+
+        if (!isCreator && !isDriver && !isPassenger) {
+            throw new IllegalArgumentException("You are not authorized to cancel this ride");
+        }
+
+        if (ride.getStatus() == RideStatus.COMPLETED || ride.getStatus() == RideStatus.CANCELLED) {
+            throw new IllegalArgumentException("Ride cannot be cancelled in current status: " + ride.getStatus());
+        }
+
+        ride.setStatus(RideStatus.CANCELLED);
+        rideRepository.save(ride);
+
+        // Update driver state - no longer busy
+        if (ride.getDriver() != null) {
+            DriverState driverState = driverStateRepository.findById(ride.getDriver().getId())
+                    .orElse(null);
+            if (driverState != null) {
+                driverState.setBusy(false);
+                driverState.setCurrentRideEndsAt(null);
+                driverState.setCurrentRideEndLatitude(null);
+                driverState.setCurrentRideEndLongitude(null);
+                driverState.setNextScheduledRideAt(null);
+                driverStateRepository.save(driverState);
+            }
+
+            // Delete or mark work log as not completed (won't count towards 8-hour limit)
+            driverWorkLogRepository.findByRide(ride).ifPresent(workLog -> {
+                workLog.setCompleted(false);
+                workLog.setEndedAt(LocalDateTime.now());
+                driverWorkLogRepository.save(workLog);
+            });
+        }
+
+        log.info("Ride {} cancelled by {}. Reason: {}", rideId, userEmail, reason);
+
+        // Send cancellation notifications
+        try {
+            if (ride.getDriver() != null && !isDriver) {
+                mailService.sendRideOrderRejected(ride.getDriver().getEmail(), 
+                        "Ride cancelled by " + (isCreator ? "passenger" : "user") + ": " + reason);
+            }
+            if (!isCreator) {
+                mailService.sendRideOrderRejected(ride.getCreator().getEmail(), 
+                        "Ride cancelled" + (isDriver ? " by driver" : "") + ": " + reason);
+            }
+        } catch (Exception e) {
+            log.warn("Failed to send cancellation notification: {}", e.getMessage());
+        }
     }
 }

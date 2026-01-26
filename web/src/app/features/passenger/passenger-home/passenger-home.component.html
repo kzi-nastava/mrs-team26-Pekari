@@ -13,7 +13,13 @@
             <div class="block-label">Pickup &amp; destinations (in order)</div>
 
             <div class="field" formGroupName="pickup">
-              <input class="input" formControlName="address" placeholder="Pickup location" />
+              <app-address-autocomplete
+                #pickupAutocomplete
+                placeholder="Pickup location"
+                [initialValue]="form.get('pickup.address')?.value || ''"
+                (addressSelected)="onPickupSelected($event)"
+                (focused)="onPickupFocus()"
+              ></app-address-autocomplete>
               <details class="advanced">
                 <summary>Advanced coordinates</summary>
                 <div class="advanced-grid">
@@ -27,7 +33,13 @@
               <button class="ghost-btn" type="button" (click)="addStop()">Add Stop</button>
 
               <div class="stop" *ngFor="let stop of stops.controls; let i = index" [formGroupName]="i">
-                <input class="input" formControlName="address" placeholder="Stop" />
+                <app-address-autocomplete
+                  #stopAutocomplete
+                  placeholder="Stop {{ i + 1 }}"
+                  [initialValue]="stop.get('address')?.value || ''"
+                  (addressSelected)="onStopSelected(i, $event)"
+                  (focused)="onStopFocus(i)"
+                ></app-address-autocomplete>
 
                 <details class="advanced">
                   <summary>Advanced coordinates</summary>
@@ -42,7 +54,13 @@
             </div>
 
             <div class="field" formGroupName="dropoff">
-              <input class="input" formControlName="address" placeholder="Final destination" />
+              <app-address-autocomplete
+                #dropoffAutocomplete
+                placeholder="Final destination"
+                [initialValue]="form.get('dropoff.address')?.value || ''"
+                (addressSelected)="onDropoffSelected($event)"
+                (focused)="onDropoffFocus()"
+              ></app-address-autocomplete>
               <details class="advanced">
                 <summary>Advanced coordinates</summary>
                 <div class="advanced-grid">
