@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, of, map } from 'rxjs';
+import { Observable, of, map, throwError, catchError } from 'rxjs';
 import { ProfileData, DriverInfo, ProfileUpdateRequest, ApprovalRequest, PasswordChangeRequest } from '../models/profile.model';
 import { EnvironmentService } from './environment.service';
 import { AuthService } from './auth.service';
@@ -63,10 +63,14 @@ export class ProfileService {
       return this.http.get<DriverProfileResponse>(`${this.apiUrl}/driver`).pipe(
         map(response => this.mapDriverResponseToProfileData(response))
       );
+    } else if (role === 'admin') {
+      return this.http.get<PassengerProfileResponse>(`${this.apiUrl}/admin`).pipe(
+        map(response => this.mapPassengerResponseToProfileData(response, 'admin'))
+      );
     } else {
-      // Default to passenger endpoint for passengers and admins
+      // Default to passenger endpoint
       return this.http.get<PassengerProfileResponse>(`${this.apiUrl}/passenger`).pipe(
-        map(response => this.mapPassengerResponseToProfileData(response))
+        map(response => this.mapPassengerResponseToProfileData(response, 'passenger'))
       );
     }
   }
@@ -87,7 +91,7 @@ export class ProfileService {
     };
   }
 
-  private mapPassengerResponseToProfileData(response: PassengerProfileResponse): ProfileData {
+  private mapPassengerResponseToProfileData(response: PassengerProfileResponse, role: 'passenger' | 'admin' = 'passenger'): ProfileData {
     return {
       id: response.id,
       email: response.email,
@@ -96,7 +100,7 @@ export class ProfileService {
       lastName: response.lastName,
       phoneNumber: response.phoneNumber,
       address: response.address,
-      role: 'passenger',
+      role: role,
       profilePicture: response.profilePicture || undefined,
       createdAt: new Date(response.createdAt),
       updatedAt: new Date(response.updatedAt)
@@ -129,7 +133,14 @@ export class ProfileService {
     const currentUser = this.authService.currentUser();
     const role = currentUser?.role;
 
-    const endpoint = role === 'driver' ? `${this.apiUrl}/driver` : `${this.apiUrl}/passenger`;
+    let endpoint: string;
+    if (role === 'driver') {
+      endpoint = `${this.apiUrl}/driver`;
+    } else if (role === 'admin') {
+      endpoint = `${this.apiUrl}/admin`;
+    } else {
+      endpoint = `${this.apiUrl}/passenger`;
+    }
 
     return this.http.put<{ message: string }>(endpoint, updateData).pipe(
       map(response => ({ success: true, message: response.message }))
@@ -164,8 +175,13 @@ export class ProfileService {
    * Change password
    */
   changePassword(passwordData: PasswordChangeRequest): Observable<{ success: boolean; message: string }> {
-    // Replace with actual HTTP call
-    return of({ success: true, message: 'Password changed successfully' });
+    return this.http.post<{ message: string }>(`${this.apiUrl}/change-password`, passwordData).pipe(
+      map(response => ({ success: true, message: response.message })),
+      catchError(err => {
+        const errorMessage = err.error?.message || 'Password change failed';
+        return throwError(() => new Error(errorMessage));
+      })
+    );
   }
 
   /**
