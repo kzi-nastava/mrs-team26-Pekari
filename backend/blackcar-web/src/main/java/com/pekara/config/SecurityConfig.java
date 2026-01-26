@@ -45,6 +45,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/auth/register/user").permitAll()
                         .requestMatchers("/api/v1/auth/register/driver").permitAll()
                         .requestMatchers("/api/v1/auth/activate").permitAll()
+                        .requestMatchers("/api/v1/auth/activation-info").permitAll()
                         .requestMatchers("/api/v1/auth/reset-password").permitAll()
                         .requestMatchers("/api/v1/auth/new-password").permitAll()
                         // Ride estimation - public

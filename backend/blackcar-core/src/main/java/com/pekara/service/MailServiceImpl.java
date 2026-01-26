@@ -23,7 +23,7 @@ public class MailServiceImpl implements MailService {
     @Override
     public void sendActivationEmail(String toEmail, String activationToken) {
         try {
-            String activationLink = frontendUrl + "/activate?token=" + activationToken + "&mode=driver";
+            String activationLink = frontendUrl + "/activate?token=" + activationToken;
 
             SimpleMailMessage message = new SimpleMailMessage();
             message.setFrom(fromEmail);
@@ -51,7 +51,7 @@ public class MailServiceImpl implements MailService {
     @Override
     public void sendDriverActivationEmail(String toEmail, String activationToken, String driverName) {
         try {
-            String activationLink = frontendUrl + "/activate?token=" + activationToken;
+            String activationLink = frontendUrl + "/activate?token=" + activationToken + "&mode=driver";
 
             SimpleMailMessage message = new SimpleMailMessage();
             message.setFrom(fromEmail);
