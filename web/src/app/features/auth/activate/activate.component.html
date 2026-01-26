@@ -12,6 +12,51 @@
         <p>{{ error() }}</p>
         <a routerLink="/login" class="btn-link">Back to Login</a>
       </div>
+    } @else if (success()) {
+      <div class="success-state">
+        <div class="icon success">✓</div>
+        <h2>Account Activated!</h2>
+        <p>{{ success() }}</p>
+        <a routerLink="/login" class="btn-primary">Proceed to Login</a>
+      </div>
+    } @else if (requiresPassword()) {
+      <div class="password-state">
+        <div class="icon success">✓</div>
+        <h2>Set Your Password</h2>
+        <p>Please create a password to activate your driver account.</p>
+
+        <form [formGroup]="passwordForm" (ngSubmit)="onSubmitPassword()" class="password-form">
+          <div class="form-group">
+            <label for="newPassword">New Password</label>
+            <input
+              id="newPassword"
+              type="password"
+              formControlName="newPassword"
+              placeholder="Enter your password"
+              [class.input-error]="passwordForm.get('newPassword')?.invalid && passwordForm.get('newPassword')?.touched"
+            />
+            @if (passwordForm.get('newPassword')?.invalid && passwordForm.get('newPassword')?.touched) {
+              <span class="error-hint">Password must be at least 8 characters</span>
+            }
+          </div>
+
+          <div class="form-group">
+            <label for="confirmPassword">Confirm Password</label>
+            <input
+              id="confirmPassword"
+              type="password"
+              formControlName="confirmPassword"
+              placeholder="Confirm your password"
+              [class.input-error]="passwordForm.get('confirmPassword')?.touched && passwordForm.get('newPassword')?.value !== passwordForm.get('confirmPassword')?.value"
+            />
+            @if (passwordForm.get('confirmPassword')?.touched && passwordForm.get('newPassword')?.value !== passwordForm.get('confirmPassword')?.value) {
+              <span class="error-hint">Passwords do not match</span>
+            }
+          </div>
+
+          <button class="btn-primary" type="submit" [disabled]="isLoading()">Set Password</button>
+        </form>
+      </div>
     } @else {
       <div class="success-state">
         <div class="icon success">✓</div>

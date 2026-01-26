@@ -84,6 +84,14 @@ public class AuthController {
         return ResponseEntity.ok(webResponse);
     }
 
+    @GetMapping("/activation-info")
+    public ResponseEntity<?> getActivationInfo(@RequestParam("token") String token) {
+        log.debug("Activation info requested");
+
+        var info = authService.getActivationInfo(token);
+        return ResponseEntity.ok(info);
+    }
+
     @PostMapping("/reset-password")
     public ResponseEntity<WebMessageResponse> resetPassword(@Valid @RequestBody WebResetPasswordRequest request) {
         log.debug("Password reset requested for email: {}", request.getEmail());
@@ -101,13 +109,10 @@ public class AuthController {
     public ResponseEntity<WebMessageResponse> setNewPassword(@Valid @RequestBody WebNewPasswordRequest request) {
         log.debug("New password submission attempt");
 
-        // TODO: Implement new password logic via AuthService
-        // - Validate reset token
-        // - Check if token is expired
-        // - Update user password
+        var serviceResponse = authService.setNewPassword(request.getToken(), request.getNewPassword());
 
-        log.info("Password changed successfully");
-        return ResponseEntity.ok(new WebMessageResponse("Password has been reset successfully."));
+        log.info("Password set successfully for user: {}", serviceResponse.getEmail());
+        return ResponseEntity.ok(new WebMessageResponse(serviceResponse.getMessage()));
     }
 
     @PostMapping("/logout")

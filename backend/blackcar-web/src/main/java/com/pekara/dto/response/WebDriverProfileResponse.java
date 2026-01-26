@@ -26,6 +26,12 @@ public class WebDriverProfileResponse {
     private String licenseNumber;
     private String licenseExpiry;
     private String vehicleRegistration;
+    private String vehicleModel;
+    private String vehicleType;
+    private String licensePlate;
+    private Integer numberOfSeats;
+    private Boolean babyFriendly;
+    private Boolean petFriendly;
     private Double averageRating;
     private Integer totalRides;
     private Boolean isActive;

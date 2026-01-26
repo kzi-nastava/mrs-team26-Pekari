@@ -22,9 +22,21 @@ public class Driver extends User {
     @Column(name = "license_expiry", length = 20)
     private String licenseExpiry;
 
-    @Column(name = "vehicle_registration", length = 255)
-    private String vehicleRegistration;
-
     @Column(name = "vehicle_type", length = 30)
     private String vehicleType;
+
+    @Column(name = "vehicle_model", length = 100)
+    private String vehicleModel;
+
+    @Column(name = "vehicle_license_plate", length = 30, unique = true)
+    private String licensePlate;
+
+    @Column(name = "vehicle_number_of_seats")
+    private Integer numberOfSeats;
+
+    @Column(name = "vehicle_baby_friendly")
+    private Boolean babyFriendly;
+
+    @Column(name = "vehicle_pet_friendly")
+    private Boolean petFriendly;
 }

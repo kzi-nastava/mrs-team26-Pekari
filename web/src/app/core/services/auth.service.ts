@@ -139,6 +139,29 @@ export class AuthService {
     );
   }
 
+  getActivationInfo(token: string): Observable<{ requiresPassword: boolean; role: string; email: string }> {
+    return this.http.get<{ requiresPassword: boolean; role: string; email: string }>(`${this.env.getApiUrl()}/auth/activation-info`, {
+      params: { token }
+    }).pipe(
+      catchError(err => {
+        const errorMessage = err.error?.message || 'Activation info failed';
+        return throwError(() => new Error(errorMessage));
+      })
+    );
+  }
+
+  setNewPassword(token: string, newPassword: string): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.env.getApiUrl()}/auth/new-password`, {
+      token,
+      newPassword
+    }).pipe(
+      catchError(err => {
+        const errorMessage = err.error?.message || 'Password setup failed';
+        return throwError(() => new Error(errorMessage));
+      })
+    );
+  }
+
   registerDriver(driverData: Partial<RegisterDriverData>): Observable<RegisterDriverResponse> {
     const formData = new FormData();
     formData.append('email', driverData.email || '');
