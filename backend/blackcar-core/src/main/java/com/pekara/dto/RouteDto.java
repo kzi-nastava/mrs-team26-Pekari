@@ -1,4 +1,4 @@
-package com.pekara.dto.request;
+package com.pekara.dto;
 
 import com.pekara.dto.common.LocationPointDto;
 import lombok.AllArgsConstructor;
@@ -12,9 +12,8 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class EstimateRideRequest {
-    private LocationPointDto pickup;
-    private List<LocationPointDto> stops;
-    private LocationPointDto dropoff;
-    private String vehicleType;
+public class RouteDto {
+    private Double distanceKm;
+    private Integer durationMinutes;
+    private List<LocationPointDto> routePoints;
 }

@@ -89,6 +89,16 @@
   gap: 10px;
 }
 
+.field-with-clear {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.field-with-clear app-address-autocomplete {
+  flex: 1;
+}
+
 .stops {
   display: grid;
   gap: 10px;
@@ -98,14 +108,17 @@
 
 .stop {
   position: relative;
-  display: grid;
+  display: flex;
+  align-items: center;
   gap: 10px;
 }
 
+.stop app-address-autocomplete {
+  flex: 1;
+}
+
 .icon-btn {
-  position: absolute;
-  right: 10px;
-  top: 10px;
+  flex-shrink: 0;
   width: 34px;
   height: 34px;
   border-radius: 12px;
@@ -113,6 +126,10 @@
   background: rgba(255, 255, 255, 0.04);
   color: rgba(255, 255, 255, 0.8);
   cursor: pointer;
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .icon-btn:hover {

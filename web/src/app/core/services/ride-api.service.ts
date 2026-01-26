@@ -10,10 +10,9 @@ export interface LocationPoint {
 
 export interface EstimateRideRequest {
   pickup: LocationPoint;
+  stops?: LocationPoint[];
   dropoff: LocationPoint;
   vehicleType: string;
-  babyTransport: boolean;
-  petTransport: boolean;
 }
 
 export interface RideEstimateResponse {
@@ -21,6 +20,7 @@ export interface RideEstimateResponse {
   estimatedDurationMinutes: number;
   distanceKm: number;
   vehicleType: string;
+  routePoints?: LocationPoint[];
 }
 
 export interface OrderRideRequest {

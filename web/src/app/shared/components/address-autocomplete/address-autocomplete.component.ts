@@ -21,6 +21,7 @@ export class AddressAutocompleteComponent implements OnInit, OnDestroy {
   @Input() placeholder = '';
   @Input() initialValue = '';
   @Output() addressSelected = new EventEmitter<AddressSelection>();
+  @Output() focused = new EventEmitter<void>();
 
   addressControl = new FormControl('');
   searchQuery$ = new Subject<string>();
@@ -70,6 +71,7 @@ export class AddressAutocompleteComponent implements OnInit, OnDestroy {
 
   onFocus(): void {
     if (this.suggestions.length > 0) this.showSuggestions = true;
+    this.focused.emit();
   }
 
   onBlur(): void {
