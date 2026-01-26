@@ -138,7 +138,7 @@ public class DriverStateServiceImpl implements com.pekara.service.DriverStateSer
     private OnlineDriverWithVehicleResponse toOnlineResponse(DriverState state, Driver driver) {
         return OnlineDriverWithVehicleResponse.builder()
                 .driverState(toResponse(state, driver))
-                .vehicleRegistration(driver.getVehicleRegistration())
+                .vehicleRegistration(driver.getLicensePlate())
                 .vehicleType(driver.getVehicleType())
                 .build();
     }

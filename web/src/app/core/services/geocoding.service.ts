@@ -18,7 +18,7 @@ export class GeocodingService {
     if (!query || query.trim().length < 3) return of([]);
 
     return this.http
-      .get<any>('https://nominatim.openstreetmap.org/search', {
+      .get<any>('/nominatim/search', {
         params: {
           q: query,
           format: 'json',
@@ -58,7 +58,7 @@ export class GeocodingService {
 
   reverseGeocode(latitude: number, longitude: number): Observable<GeocodeResult | null> {
     return this.http
-      .get<any>('https://nominatim.openstreetmap.org/reverse', {
+      .get<any>('/nominatim/reverse', {
         params: { lat: latitude.toString(), lon: longitude.toString(), format: 'json' }
       })
       .pipe(
