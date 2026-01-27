@@ -23,6 +23,13 @@
 
   @if (activeRide()) {
     <div class="active-ride-card">
+      @if (stopRequested()) {
+        <div class="stop-request-notification">
+          <strong>⚠️ Stop Requested</strong>
+          <p>Passenger has requested to stop the ride early. Please stop at the nearest safe location and click "Stop Ride Early" button.</p>
+        </div>
+      }
+
       <div class="ride-header">
         <h2>Active Ride #{{ activeRide()!.rideId }}</h2>
         <span class="status-badge" [class]="getStatusClass(activeRide()!.status)">
@@ -31,7 +38,7 @@
       </div>
 
       <div class="ride-details">
-        @if (activeRide()!.status === 'IN_PROGRESS') {
+        @if (activeRide()!.status === 'IN_PROGRESS' || activeRide()!.status === 'STOP_REQUESTED') {
           <div class="detail-section">
             <h3>Live Tracking</h3>
             <div class="map-shell">
@@ -149,9 +156,18 @@
           </button>
         }
 
-        @if (canCompleteRide()) {
-          <button 
-            (click)="completeRide()" 
+        @if (canCompleteRide() && stopRequested()) {
+          <button
+            (click)="stopRideEarly()"
+            class="btn btn-stop-early"
+            [disabled]="actionInProgress()">
+            {{ actionInProgress() ? 'Stopping...' : 'Stop Ride Early' }}
+          </button>
+        }
+
+        @if (canCompleteRide() && !stopRequested()) {
+          <button
+            (click)="completeRide()"
             class="btn btn-complete"
             [disabled]="actionInProgress()">
             {{ actionInProgress() ? 'Completing...' : 'Complete Ride' }}

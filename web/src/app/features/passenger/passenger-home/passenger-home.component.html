@@ -234,7 +234,15 @@
             </div>
 
             <button
-              *ngIf="isRideActive"
+              *ngIf="isRideActive && rideStatus === 'IN_PROGRESS' && !stopRequested"
+              class="danger-btn"
+              type="button"
+              (click)="requestStopRide()"
+            >
+              Request Stop
+            </button>
+            <button
+              *ngIf="isRideActive && rideStatus !== 'IN_PROGRESS' && rideStatus !== 'STOP_REQUESTED' && !stopRequested"
               class="danger-btn"
               type="button"
               (click)="cancelRide()"
