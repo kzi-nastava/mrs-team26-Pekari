@@ -50,6 +50,7 @@ input, select {
   color: var(--secondary);
   border: 1px solid var(--border);
 }
+
 .rides-list {
   display: flex;
   flex-direction: column;

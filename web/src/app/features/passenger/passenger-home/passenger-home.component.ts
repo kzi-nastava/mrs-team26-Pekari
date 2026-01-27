@@ -1,12 +1,23 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnDestroy, OnInit, inject, ChangeDetectorRef, ViewChild, ViewChildren, QueryList } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject, ChangeDetectorRef, ViewChild, ViewChildren, QueryList, NgZone } from '@angular/core';
 import { FormArray, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { RideApiService, OrderRideResponse, RideEstimateResponse, LocationPoint, FavoriteRoute } from '../../../core/services/ride-api.service';
+import { RideApiService, OrderRideResponse, RideEstimateResponse, LocationPoint, FavoriteRoute, ActiveRideResponse } from '../../../core/services/ride-api.service';
+import { EnvironmentService } from '../../../core/services/environment.service';
 import { GeocodingService } from '../../../core/services/geocoding.service';
 import { AddressAutocompleteComponent, AddressSelection } from '../../../shared/components/address-autocomplete/address-autocomplete.component';
 import { RideMapComponent } from '../../../shared/components/ride-map/ride-map.component';
+import { Client, IStompSocket } from '@stomp/stompjs';
+import SockJS from 'sockjs-client';
+import type { StompSubscription } from '@stomp/stompjs';
 
 type FocusedInput = 'pickup' | 'dropoff' | { type: 'stop', index: number } | null;
+interface RideTrackingMessage {
+  rideId?: number;
+  vehicleLatitude?: number | null;
+  vehicleLongitude?: number | null;
+  status?: string | null;
+  updatedAt?: string | null;
+}
 
 @Component({
   selector: 'app-passenger-home',
@@ -22,10 +33,16 @@ export class PassengerHomeComponent implements OnInit, OnDestroy {
 
   private fb = inject(FormBuilder);
   private rides = inject(RideApiService);
+  private env = inject(EnvironmentService);
   private geocoding = inject(GeocodingService);
   private cdr = inject(ChangeDetectorRef);
+  private zone = inject(NgZone);
 
   private focusedInput: FocusedInput = null;
+  private stompClient: Client | null = null;
+  private trackingSubscription: StompSubscription | null = null;
+  private trackingRideId: number | null = null;
+  private activeRideRefreshTimer?: number;
 
   estimate?: RideEstimateResponse;
   orderResult?: OrderRideResponse;
@@ -33,6 +50,10 @@ export class PassengerHomeComponent implements OnInit, OnDestroy {
   isRideActive = false;
   favoriteRoutes: FavoriteRoute[] = [];
   showFavoriteRoutesModal = false;
+  activeRide: ActiveRideResponse | null = null;
+  trackingPosition: { latitude: number; longitude: number; updatedAt?: string | null } | null = null;
+  trackingStatus?: string | null;
+  trackingError?: string | null;
 
   scheduledMin = '';
   scheduledMax = '';
@@ -40,16 +61,29 @@ export class PassengerHomeComponent implements OnInit, OnDestroy {
 
   // Map component inputs
   get mapPickup() {
+    if (this.isRideActive && this.activeRide?.pickup) {
+      return { latitude: this.activeRide.pickup.latitude, longitude: this.activeRide.pickup.longitude };
+    }
     const pickup = this.form.get('pickup')?.value;
     return pickup?.latitude && pickup?.longitude ? { latitude: pickup.latitude, longitude: pickup.longitude } : null;
   }
 
   get mapDropoff() {
+    if (this.isRideActive && this.activeRide?.dropoff) {
+      return { latitude: this.activeRide.dropoff.latitude, longitude: this.activeRide.dropoff.longitude };
+    }
     const dropoff = this.form.get('dropoff')?.value;
     return dropoff?.latitude && dropoff?.longitude ? { latitude: dropoff.latitude, longitude: dropoff.longitude } : null;
   }
 
   get mapStops() {
+    if (this.isRideActive && this.activeRide?.stops) {
+      return this.activeRide.stops.map((stop, index) => ({
+        latitude: stop.latitude,
+        longitude: stop.longitude,
+        label: `Stop ${index + 1}`
+      }));
+    }
     const stops = this.form.get('stops')?.value as any[] || [];
     return stops
       .filter(stop => stop?.latitude && stop?.longitude)
@@ -61,6 +95,27 @@ export class PassengerHomeComponent implements OnInit, OnDestroy {
   }
 
   get mapRoutePoints() {
+    if (this.isRideActive && this.activeRide) {
+      const points: Array<{ latitude: number; longitude: number }> = [];
+      if (this.activeRide.pickup) {
+        points.push({
+          latitude: this.activeRide.pickup.latitude,
+          longitude: this.activeRide.pickup.longitude
+        });
+      }
+      if (this.activeRide.stops) {
+        this.activeRide.stops.forEach((stop) => {
+          points.push({ latitude: stop.latitude, longitude: stop.longitude });
+        });
+      }
+      if (this.activeRide.dropoff) {
+        points.push({
+          latitude: this.activeRide.dropoff.latitude,
+          longitude: this.activeRide.dropoff.longitude
+        });
+      }
+      return points;
+    }
     const points: Array<{ latitude: number; longitude: number }> = [];
     const value = this.form.getRawValue();
 
@@ -104,6 +159,7 @@ export class PassengerHomeComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.refreshScheduleBounds();
     this.scheduleBoundsTimer = window.setInterval(() => this.refreshScheduleBounds(), 60_000);
+    this.activeRideRefreshTimer = window.setInterval(() => this.refreshActiveRide(), 10_000);
 
     // Convenience: show current time in the picker, but don't actually schedule unless user changes it.
     this.form.patchValue({ scheduledAt: this.scheduledMin }, { emitEvent: false });
@@ -116,12 +172,17 @@ export class PassengerHomeComponent implements OnInit, OnDestroy {
 
     // Load favorite routes
     this.loadFavoriteRoutes();
+    this.refreshActiveRide(true);
   }
 
   ngOnDestroy(): void {
     if (this.scheduleBoundsTimer) {
       window.clearInterval(this.scheduleBoundsTimer);
     }
+    if (this.activeRideRefreshTimer) {
+      window.clearInterval(this.activeRideRefreshTimer);
+    }
+    this.stopTracking();
   }
 
   get stops(): FormArray {
@@ -187,11 +248,11 @@ export class PassengerHomeComponent implements OnInit, OnDestroy {
     }
 
     this.rides.getFavoriteRoutes().subscribe({
-      next: (routes) => {
+      next: (routes:any) => {
         this.favoriteRoutes = routes;
         this.cdr.detectChanges();
       },
-      error: (err) => {
+      error: (err:any) => {
         // Silently fail - user might not have any favorite routes yet
         console.debug('Failed to load favorite routes:', err);
       }
@@ -274,7 +335,6 @@ export class PassengerHomeComponent implements OnInit, OnDestroy {
       }
     }, 0);
 
-    this.updateMapMarkers();
     this.cdr.detectChanges();
   }
 
@@ -322,28 +382,32 @@ export class PassengerHomeComponent implements OnInit, OnDestroy {
 
     // Fetch address in background and update when ready
     this.geocoding.reverseGeocode(event.latitude, event.longitude).subscribe({
-      next: (result) => {
+      next: (result:any) => {
         if (!result) return;
 
         const address = result.displayName;
-        if (targetField === 'pickup') {
-          this.updatePickupLocation(address, event.latitude, event.longitude);
-        } else if (targetField === 'dropoff') {
-          this.updateDropoffLocation(address, event.latitude, event.longitude);
-        } else {
-          this.updateStopLocation(targetField.index, address, event.latitude, event.longitude);
-        }
+        setTimeout(() => {
+          if (targetField === 'pickup') {
+            this.updatePickupLocation(address, event.latitude, event.longitude);
+          } else if (targetField === 'dropoff') {
+            this.updateDropoffLocation(address, event.latitude, event.longitude);
+          } else {
+            this.updateStopLocation(targetField.index, address, event.latitude, event.longitude);
+          }
+        }, 0);
       },
       error: () => {
         // On error, use coordinates as address
         const fallbackAddress = `${event.latitude.toFixed(6)}, ${event.longitude.toFixed(6)}`;
-        if (targetField === 'pickup') {
-          this.updatePickupLocation(fallbackAddress, event.latitude, event.longitude);
-        } else if (targetField === 'dropoff') {
-          this.updateDropoffLocation(fallbackAddress, event.latitude, event.longitude);
-        } else {
-          this.updateStopLocation(targetField.index, fallbackAddress, event.latitude, event.longitude);
-        }
+        setTimeout(() => {
+          if (targetField === 'pickup') {
+            this.updatePickupLocation(fallbackAddress, event.latitude, event.longitude);
+          } else if (targetField === 'dropoff') {
+            this.updateDropoffLocation(fallbackAddress, event.latitude, event.longitude);
+          } else {
+            this.updateStopLocation(targetField.index, fallbackAddress, event.latitude, event.longitude);
+          }
+        }, 0);
       }
     });
   }
@@ -503,11 +567,11 @@ export class PassengerHomeComponent implements OnInit, OnDestroy {
         vehicleType: value.vehicleType || 'STANDARD'
       })
       .subscribe({
-        next: (resp) => {
+        next: (resp:any) => {
           this.estimate = resp;
           this.cdr.detectChanges();
         },
-        error: (err) => {
+        error: (err:any) => {
           const backendMsg = err?.error?.message;
           const plainMsg = typeof err?.error === 'string' ? err.error : undefined;
           this.error = backendMsg || plainMsg || err?.message || 'Estimate failed';
@@ -529,7 +593,7 @@ export class PassengerHomeComponent implements OnInit, OnDestroy {
 
     const passengerEmails = (value.passengerEmails || '')
       .split(',')
-      .map((e) => e.trim())
+      .map((e:any) => e.trim())
       .filter(Boolean);
 
     const scheduledResolved = this.resolveScheduledAt((value.scheduledAt || '').trim());
@@ -550,16 +614,17 @@ export class PassengerHomeComponent implements OnInit, OnDestroy {
         scheduledAt: scheduledResolved.scheduledAt
       })
       .subscribe({
-        next: (resp) => {
+        next: (resp:any) => {
           this.orderResult = resp;
           // Mark ride as active if successfully ordered
           if (resp.status === 'ACCEPTED' || resp.status === 'PENDING') {
             this.isRideActive = true;
             this.form.disable(); // Disable form when ride is active
           }
+          this.refreshActiveRide(true);
           this.cdr.detectChanges();
         },
-        error: (err) => {
+        error: (err:any) => {
           if (err?.status === 401 || err?.status === 403) {
             this.error = 'Please log in to request a ride.';
             this.cdr.detectChanges();
@@ -589,10 +654,15 @@ export class PassengerHomeComponent implements OnInit, OnDestroy {
     const reason = 'Cancelled by passenger'; // Default reason
 
     this.rides.cancelRide(this.orderResult.rideId, reason).subscribe({
-      next: (response) => {
+      next: (response:any) => {
         // Mark ride as no longer active, but keep the modal visible
         this.isRideActive = false;
         this.form.enable();
+        this.activeRide = null;
+        this.trackingPosition = null;
+        this.trackingStatus = null;
+        this.trackingError = null;
+        this.stopTracking();
 
         // Update the order result to show cancelled status
         this.orderResult = {
@@ -603,7 +673,7 @@ export class PassengerHomeComponent implements OnInit, OnDestroy {
 
         this.cdr.detectChanges();
       },
-      error: (err) => {
+      error: (err:any) => {
         const backendMsg = err?.error?.message;
         const plainMsg = typeof err?.error === 'string' ? err.error : undefined;
         this.error = backendMsg || plainMsg || err?.message || 'Failed to cancel ride';
@@ -617,5 +687,148 @@ export class PassengerHomeComponent implements OnInit, OnDestroy {
     this.form.enable();
     this.clearMessages();
     this.cdr.detectChanges();
+  }
+
+  get trackingDrivers() {
+    if (!this.trackingPosition) {
+      return [];
+    }
+    return [
+      {
+        latitude: this.trackingPosition.latitude,
+        longitude: this.trackingPosition.longitude,
+        busy: true,
+        popupContent: 'Driver'
+      }
+    ];
+  }
+
+  get trackingCenter(): [number, number] {
+    if (this.trackingPosition) {
+      return [this.trackingPosition.latitude, this.trackingPosition.longitude];
+    }
+    if (this.activeRide?.pickup) {
+      return [this.activeRide.pickup.latitude, this.activeRide.pickup.longitude];
+    }
+    return [45.2671, 19.8335];
+  }
+
+  private refreshActiveRide(force = false) {
+    if (!force && !this.isRideActive && !this.orderResult?.rideId) {
+      return;
+    }
+
+    this.rides.getActiveRideForPassenger().subscribe({
+      next: (ride) => {
+        this.activeRide = ride;
+        this.trackingError = null;
+        this.isRideActive = true;
+        this.form.disable();
+        this.handleTrackingState();
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        if (err.status === 204) {
+          this.activeRide = null;
+          this.trackingPosition = null;
+          this.trackingStatus = null;
+          this.trackingError = null;
+          this.isRideActive = false;
+          this.form.enable();
+          this.stopTracking();
+        } else {
+          this.trackingError = 'Failed to load active ride tracking.';
+          console.error('Error loading active ride:', err);
+        }
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  private handleTrackingState() {
+    if (!this.activeRide || this.activeRide.status !== 'IN_PROGRESS') {
+      this.trackingPosition = null;
+      this.trackingStatus = null;
+      this.stopTracking();
+      return;
+    }
+
+    this.startTracking(this.activeRide.rideId);
+  }
+
+  private startTracking(rideId: number) {
+    if (this.trackingRideId === rideId && this.stompClient?.connected) {
+      return;
+    }
+
+    this.stopTracking();
+    this.trackingRideId = rideId;
+
+    const wsUrl = this.getWebSocketUrl();
+    const token = localStorage.getItem('auth_token');
+
+    this.stompClient = new Client({
+      webSocketFactory: () => new SockJS(wsUrl) as IStompSocket,
+      reconnectDelay: 5000,
+      connectHeaders: token ? { Authorization: `Bearer ${token}` } : {},
+      onConnect: () => {
+        this.trackingSubscription = this.stompClient?.subscribe(
+          `/topic/rides/${rideId}/tracking`,
+          (message) => this.handleTrackingMessage(message.body)
+        ) || null;
+      },
+      onStompError: (frame) => {
+        this.zone.run(() => {
+          this.trackingError = frame.headers['message'] || 'Tracking connection error.';
+          this.cdr.detectChanges();
+        });
+      }
+    });
+
+    this.stompClient.activate();
+  }
+
+  private handleTrackingMessage(raw: string) {
+    let payload: RideTrackingMessage | null = null;
+    try {
+      payload = JSON.parse(raw);
+    } catch (error) {
+      console.warn('Failed to parse tracking message:', error);
+      return;
+    }
+
+    if (!payload || payload.vehicleLatitude == null || payload.vehicleLongitude == null) {
+      return;
+    }
+
+    this.zone.run(() => {
+      this.trackingPosition = {
+        latitude: payload.vehicleLatitude ?? 0,
+        longitude: payload.vehicleLongitude ?? 0,
+        updatedAt: payload.updatedAt ?? null
+      };
+      this.trackingStatus = payload.status ?? null;
+      this.trackingError = null;
+      this.cdr.detectChanges();
+    });
+  }
+
+  private stopTracking() {
+    if (this.trackingSubscription) {
+      this.trackingSubscription.unsubscribe();
+      this.trackingSubscription = null;
+    }
+    if (this.stompClient) {
+      this.stompClient.deactivate();
+      this.stompClient = null;
+    }
+    this.trackingRideId = null;
+  }
+
+  private getWebSocketUrl(): string {
+    const apiUrl = this.env.getApiUrl();
+    const baseUrl = apiUrl.replace(/\/api\/v1\/?$/, '');
+    const wsBase = baseUrl.replace(/^http/, 'ws');
+    return `${wsBase}/ws`;
   }
 }

@@ -78,6 +78,7 @@ export interface ActiveRideResponse {
   distanceKm: number;
   estimatedDurationMinutes: number;
   startedAt?: string | null;
+  routeCoordinates?: string | number[][];
   pickup: LocationPoint;
   dropoff: LocationPoint;
   stops?: LocationPoint[];
@@ -87,6 +88,14 @@ export interface ActiveRideResponse {
 
 export interface MessageResponse {
   message: string;
+}
+
+export interface RideLocationUpdateRequest {
+  latitude: number;
+  longitude: number;
+  heading?: number | null;
+  speed?: number | null;
+  recordedAt?: string | null;
 }
 
 export interface FavoriteRoute {
@@ -149,8 +158,8 @@ export class RideApiService {
     return this.http.post<MessageResponse>(`${this.env.getApiUrl()}/rides/${rideId}/stop`, {});
   }
 
-  cancelRide(rideId: number, reason: string) {
-    return this.http.post<MessageResponse>(`${this.env.getApiUrl()}/rides/${rideId}/cancel`, { reason });
+  updateRideLocation(rideId: number, payload: RideLocationUpdateRequest) {
+    return this.http.post<MessageResponse>(`${this.env.getApiUrl()}/rides/${rideId}/location`, payload);
   }
 
   // Favorite routes methods

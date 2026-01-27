@@ -31,6 +31,18 @@
       </div>
 
       <div class="ride-details">
+        @if (activeRide()!.status === 'IN_PROGRESS') {
+          <div class="detail-section">
+            <h3>Live Tracking</h3>
+            <div class="map-shell">
+              <div id="driver-map" class="driver-map"></div>
+              @if (!activeRide()!.routeCoordinates) {
+                <p class="map-empty">Route coordinates unavailable for this ride.</p>
+              }
+            </div>
+          </div>
+        }
+
         <div class="detail-section">
           <h3>Route Information</h3>
           <div class="location-info">

@@ -7,9 +7,18 @@
         [stops]="mapStops"
         [routePoints]="estimate ? [] : mapRoutePoints"
         [estimatedRoute]="estimate?.routePoints"
+        [drivers]="trackingDrivers"
         [locked]="isRideActive"
+        [center]="trackingCenter"
+        [zoom]="15"
         (mapClick)="onMapClick($event)"
       ></app-ride-map>
+      <div class="tracking-banner" *ngIf="activeRide && activeRide.status === 'IN_PROGRESS'">
+        <span>Live tracking active</span>
+        <span *ngIf="trackingPosition">Updated {{ trackingPosition.updatedAt | date:'shortTime' }}</span>
+        <span *ngIf="!trackingPosition">Waiting for driver location...</span>
+      </div>
+      <div class="tracking-error" *ngIf="trackingError">{{ trackingError }}</div>
     </aside>
 
     <section class="form-panel" aria-label="Ride request">

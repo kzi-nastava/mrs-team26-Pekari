@@ -248,24 +248,12 @@ export class LandingComponent implements OnInit, OnDestroy {
         if (!result) return;
 
         const address = result.displayName;
-        if (targetField === 'pickup') {
-          this.updatePickupLocation(address, event.latitude, event.longitude);
-        } else if (targetField === 'dropoff') {
-          this.updateDropoffLocation(address, event.latitude, event.longitude);
-        } else {
-          this.updateStopLocation(targetField.index, address, event.latitude, event.longitude);
-        }
+
       },
       error: () => {
         // On error, use coordinates as address
         const fallbackAddress = `${event.latitude.toFixed(6)}, ${event.longitude.toFixed(6)}`;
-        if (targetField === 'pickup') {
-          this.updatePickupLocation(fallbackAddress, event.latitude, event.longitude);
-        } else if (targetField === 'dropoff') {
-          this.updateDropoffLocation(fallbackAddress, event.latitude, event.longitude);
-        } else {
-          this.updateStopLocation(targetField.index, fallbackAddress, event.latitude, event.longitude);
-        }
+
       }
     });
   }
