@@ -33,6 +33,7 @@ export class App {
       );
     } else if (user.role === 'driver') {
       links.push(
+        { label: 'Home', path: '/driver-home' },
         { label: 'Profile', path: '/profile' },
         { label: 'History', path: '/driver-history' },
         { label: 'Logout', onClick: () => this.handleLogout() }

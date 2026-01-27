@@ -43,6 +43,44 @@ export interface OrderRideResponse {
   assignedDriverEmail?: string | null;
 }
 
+export interface PassengerInfo {
+  id: number;
+  name: string;
+  email: string;
+  phoneNumber: string;
+}
+
+export interface DriverInfo {
+  id: number;
+  name: string;
+  email: string;
+  phoneNumber: string;
+  vehicleType: string;
+  licensePlate: string;
+}
+
+export interface ActiveRideResponse {
+  rideId: number;
+  status: string;
+  vehicleType: string;
+  babyTransport: boolean;
+  petTransport: boolean;
+  scheduledAt?: string | null;
+  estimatedPrice: number;
+  distanceKm: number;
+  estimatedDurationMinutes: number;
+  startedAt?: string | null;
+  pickup: LocationPoint;
+  dropoff: LocationPoint;
+  stops?: LocationPoint[];
+  passengers: PassengerInfo[];
+  driver?: DriverInfo;
+}
+
+export interface MessageResponse {
+  message: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -64,5 +102,26 @@ export class RideApiService {
       );
     }
     return this.http.post<OrderRideResponse>(`${this.env.getApiUrl()}/rides/order`, request);
+  }
+
+  // Driver methods
+  getActiveRideForDriver() {
+    return this.http.get<ActiveRideResponse>(`${this.env.getApiUrl()}/rides/active/driver`);
+  }
+
+  getActiveRideForPassenger() {
+    return this.http.get<ActiveRideResponse>(`${this.env.getApiUrl()}/rides/active/passenger`);
+  }
+
+  startRide(rideId: number) {
+    return this.http.post<MessageResponse>(`${this.env.getApiUrl()}/rides/${rideId}/start`, {});
+  }
+
+  completeRide(rideId: number) {
+    return this.http.post<MessageResponse>(`${this.env.getApiUrl()}/rides/${rideId}/stop`, {});
+  }
+
+  cancelRide(rideId: number, reason: string) {
+    return this.http.post<MessageResponse>(`${this.env.getApiUrl()}/rides/${rideId}/cancel`, { reason });
   }
 }

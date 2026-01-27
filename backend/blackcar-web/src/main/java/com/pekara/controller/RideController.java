@@ -7,6 +7,7 @@ import com.pekara.dto.request.WebOrderRideRequest;
 import com.pekara.dto.request.WebRideHistoryFilterRequest;
 import com.pekara.dto.request.WebRideLocationUpdateRequest;
 import com.pekara.dto.request.WebRideRatingRequest;
+import com.pekara.dto.response.WebActiveRideResponse;
 import com.pekara.dto.response.WebDriverRideHistoryResponse;
 import com.pekara.dto.response.WebMessageResponse;
 import com.pekara.dto.response.WebOrderRideResponse;
@@ -102,6 +103,40 @@ public class RideController {
 
         log.info("Ride {} cancelled successfully", rideId);
         return ResponseEntity.ok(new WebMessageResponse("Ride cancelled successfully."));
+    }
+
+    @Operation(summary = "Get active ride for driver", description = "Get the current active ride for the logged-in driver - Protected endpoint (Drivers only)")
+    @PreAuthorize("hasRole('DRIVER')")
+    @GetMapping("/active/driver")
+    public ResponseEntity<WebActiveRideResponse> getActiveRideForDriver(
+            @AuthenticationPrincipal String currentUserEmail) {
+        log.debug("Get active ride requested for driver: {}", currentUserEmail);
+
+        var activeRide = rideService.getActiveRideForDriver(currentUserEmail);
+        
+        if (activeRide.isEmpty()) {
+            return ResponseEntity.noContent().build();
+        }
+
+        WebActiveRideResponse response = rideMapper.toWebActiveRideResponse(activeRide.get());
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "Get active ride for passenger", description = "Get the current active ride for the logged-in passenger - Protected endpoint (Passengers only)")
+    @PreAuthorize("hasRole('PASSENGER')")
+    @GetMapping("/active/passenger")
+    public ResponseEntity<WebActiveRideResponse> getActiveRideForPassenger(
+            @AuthenticationPrincipal String currentUserEmail) {
+        log.debug("Get active ride requested for passenger: {}", currentUserEmail);
+
+        var activeRide = rideService.getActiveRideForPassenger(currentUserEmail);
+        
+        if (activeRide.isEmpty()) {
+            return ResponseEntity.noContent().build();
+        }
+
+        WebActiveRideResponse response = rideMapper.toWebActiveRideResponse(activeRide.get());
+        return ResponseEntity.ok(response);
     }
 
     /**
