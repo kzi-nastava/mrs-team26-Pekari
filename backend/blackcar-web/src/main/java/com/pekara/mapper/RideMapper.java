@@ -6,9 +6,11 @@ import com.pekara.dto.common.WebLocationPoint;
 import com.pekara.dto.request.EstimateRideRequest;
 import com.pekara.dto.request.OrderRideRequest;
 import com.pekara.dto.request.RideLocationUpdateRequest;
+import com.pekara.dto.request.StopRideEarlyRequest;
 import com.pekara.dto.request.WebEstimateRideRequest;
 import com.pekara.dto.request.WebOrderRideRequest;
 import com.pekara.dto.request.WebRideLocationUpdateRequest;
+import com.pekara.dto.request.WebStopRideEarlyRequest;
 import com.pekara.dto.response.ActiveRideResponse;
 import com.pekara.dto.response.RideTrackingResponse;
 import com.pekara.dto.response.WebActiveRideResponse;
@@ -50,6 +52,15 @@ public class RideMapper {
                 .heading(web.getHeading())
                 .speed(web.getSpeed())
                 .recordedAt(web.getRecordedAt())
+                .build();
+    }
+
+    public StopRideEarlyRequest toServiceStopRideEarlyRequest(WebStopRideEarlyRequest web) {
+        if (web == null) {
+            return null;
+        }
+        return StopRideEarlyRequest.builder()
+                .stopLocation(toLocation(web.getStopLocation()))
                 .build();
     }
 

@@ -111,6 +111,35 @@ export class PassengerHomeComponent implements OnInit, OnDestroy {
       this.estimate = undefined;
       this.error = undefined;
     });
+
+    // Check for active ride on init
+    this.checkForActiveRide();
+  }
+
+  private checkForActiveRide(): void {
+    this.rides.getActiveRideForPassenger().subscribe({
+      next: (activeRide) => {
+        if (activeRide) {
+          // Convert active ride to order result format to show the modal
+          this.orderResult = {
+            rideId: activeRide.rideId,
+            status: activeRide.status,
+            message: 'Active ride in progress',
+            estimatedPrice: activeRide.estimatedPrice,
+            scheduledAt: activeRide.scheduledAt,
+            assignedDriverEmail: activeRide.driver?.email
+          };
+          this.isRideActive = true;
+          this.form.disable();
+          this.cdr.detectChanges();
+        }
+      },
+      error: (err) => {
+        if (err?.status !== 404) {
+          console.error('Error checking for active ride:', err);
+        }
+      }
+    });
   }
 
   ngOnDestroy(): void {
@@ -486,17 +515,8 @@ export class PassengerHomeComponent implements OnInit, OnDestroy {
 
     this.rides.cancelRide(this.orderResult.rideId, reason).subscribe({
       next: (response) => {
-        // Mark ride as no longer active, but keep the modal visible
-        this.isRideActive = false;
-        this.form.enable();
-
-        // Update the order result to show cancelled status
-        this.orderResult = {
-          ...this.orderResult!,
-          status: 'CANCELLED',
-          message: response.message || 'Ride cancelled successfully'
-        };
-
+        // Automatically reset form after successful cancellation
+        this.resetForm();
         this.cdr.detectChanges();
       },
       error: (err) => {
