@@ -183,4 +183,10 @@ export class RideApiService {
       headers: token ? { 'Authorization': `Bearer ${token}` } : {}
     });
   }
+
+  reportInconsistency(rideId: number, description: string) {
+    return this.http.post<MessageResponse>(`${this.env.getApiUrl()}/rides/${rideId}/report-inconsistency`, {
+      description
+    });
+  }
 }
