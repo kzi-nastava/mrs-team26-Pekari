@@ -512,7 +512,36 @@ public class RideServiceImpl implements com.pekara.service.RideService {
             throw new IllegalArgumentException("Ride cannot be cancelled in current status: " + ride.getStatus());
         }
 
+        LocalDateTime now = LocalDateTime.now();
+
+        // Validation for PASSENGER cancellations
+        if (!isDriver) {
+            // For scheduled rides, must be at least 10 minutes before scheduled time
+            if (ride.getScheduledAt() != null) {
+                if (ride.getScheduledAt().minusMinutes(10).isBefore(now)) {
+                    throw new IllegalArgumentException("Cannot cancel scheduled ride less than 10 minutes before start time");
+                }
+            } else {
+                // For immediate rides, cannot cancel if already in progress
+                if (ride.getStatus() == RideStatus.IN_PROGRESS) {
+                    throw new IllegalArgumentException("Cannot cancel ride that is already in progress");
+                }
+            }
+        }
+
+        // Validation for DRIVER cancellations
+        if (isDriver) {
+            // Driver cannot cancel once passengers have entered the vehicle (ride is IN_PROGRESS)
+            if (ride.getStatus() == RideStatus.IN_PROGRESS) {
+                throw new IllegalArgumentException("Cannot cancel ride that is already in progress. Passengers are already in the vehicle.");
+            }
+        }
+
+        // Set cancellation details
         ride.setStatus(RideStatus.CANCELLED);
+        ride.setCancellationReason(reason);
+        ride.setCancelledBy(isDriver ? "DRIVER" : "PASSENGER");
+        ride.setCancelledAt(now);
         rideRepository.save(ride);
 
         // Update driver state - no longer busy
