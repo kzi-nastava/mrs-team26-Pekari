@@ -1,6 +1,7 @@
 package com.pekara.exception;
 
 import com.pekara.dto.response.WebErrorResponse;
+import com.pekara.exception.ActiveRideConflictException;
 import com.pekara.exception.InvalidScheduleTimeException;
 import com.pekara.exception.NoActiveDriversException;
 import com.pekara.exception.NoDriversAvailableException;
@@ -152,6 +153,17 @@ public class GlobalExceptionHandler {
     public ResponseEntity<WebErrorResponse> handleNoDrivers(RuntimeException ex) {
         WebErrorResponse error = new WebErrorResponse(
                 "NO_DRIVERS_AVAILABLE",
+                ex.getMessage()
+        );
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    @ExceptionHandler(ActiveRideConflictException.class)
+    public ResponseEntity<WebErrorResponse> handleActiveRideConflict(ActiveRideConflictException ex) {
+        log.warn("Active ride conflict: {}", ex.getMessage());
+
+        WebErrorResponse error = new WebErrorResponse(
+                "ACTIVE_RIDE_CONFLICT",
                 ex.getMessage()
         );
         return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
