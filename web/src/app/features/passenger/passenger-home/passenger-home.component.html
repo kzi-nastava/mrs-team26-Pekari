@@ -7,7 +7,8 @@
         [stops]="mapStops"
         [routePoints]="estimate ? [] : mapRoutePoints"
         [estimatedRoute]="estimate?.routePoints"
-        [locked]="isRideActive"
+        [driverLocation]="driverLocation"
+        [locked]="false"
         (mapClick)="onMapClick($event)"
       ></app-ride-map>
     </aside>
@@ -194,6 +195,42 @@
             </div>
             <div class="info-detail" *ngIf="orderResult.assignedDriverEmail">
               <span class="detail-label">Driver:</span> {{ orderResult.assignedDriverEmail }}
+            </div>
+
+            <!-- ETA display when tracking -->
+            <div class="info-row eta-row" *ngIf="isRideActive && estimatedTimeMinutes !== undefined">
+              <span>Estimated arrival</span>
+              <strong class="eta-value">{{ estimatedTimeMinutes }} min</strong>
+            </div>
+
+            <!-- Report inconsistency section -->
+            <div class="report-section" *ngIf="isRideActive">
+              <button
+                class="link report-link"
+                type="button"
+                (click)="toggleReportForm()"
+              >
+                {{ showReportForm ? 'Cancel Report' : 'Report Driver Inconsistency' }}
+              </button>
+
+              <div class="report-form" *ngIf="showReportForm">
+                <textarea
+                  class="input report-textarea"
+                  [(ngModel)]="reportText"
+                  placeholder="Describe the issue (min 10 characters)..."
+                  rows="3"
+                ></textarea>
+                <button
+                  class="secondary"
+                  type="button"
+                  [disabled]="reportSubmitting || reportText.trim().length < 10"
+                  (click)="submitReport()"
+                >
+                  {{ reportSubmitting ? 'Submitting...' : 'Submit Report' }}
+                </button>
+              </div>
+
+              <p class="success-message" *ngIf="reportSuccess">{{ reportSuccess }}</p>
             </div>
 
             <button

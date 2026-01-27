@@ -1,8 +1,10 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, OnInit, inject, ChangeDetectorRef, ViewChild, ViewChildren, QueryList } from '@angular/core';
-import { FormArray, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormArray, FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Subscription } from 'rxjs';
 import { RideApiService, OrderRideResponse, RideEstimateResponse, LocationPoint } from '../../../core/services/ride-api.service';
 import { GeocodingService } from '../../../core/services/geocoding.service';
+import { WebSocketService, RideTrackingUpdate } from '../../../core/services/websocket.service';
 import { AddressAutocompleteComponent, AddressSelection } from '../../../shared/components/address-autocomplete/address-autocomplete.component';
 import { RideMapComponent } from '../../../shared/components/ride-map/ride-map.component';
 
@@ -11,7 +13,7 @@ type FocusedInput = 'pickup' | 'dropoff' | { type: 'stop', index: number } | nul
 @Component({
   selector: 'app-passenger-home',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, AddressAutocompleteComponent, RideMapComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, AddressAutocompleteComponent, RideMapComponent],
   templateUrl: './passenger-home.component.html',
   styleUrl: './passenger-home.component.css'
 })
@@ -23,14 +25,24 @@ export class PassengerHomeComponent implements OnInit, OnDestroy {
   private fb = inject(FormBuilder);
   private rides = inject(RideApiService);
   private geocoding = inject(GeocodingService);
+  private wsService = inject(WebSocketService);
   private cdr = inject(ChangeDetectorRef);
 
   private focusedInput: FocusedInput = null;
+  private trackingSubscription?: Subscription;
 
   estimate?: RideEstimateResponse;
   orderResult?: OrderRideResponse;
   error?: string;
   isRideActive = false;
+
+  // Tracking state
+  driverLocation?: { latitude: number; longitude: number } | null = null;
+  estimatedTimeMinutes?: number;
+  showReportForm = false;
+  reportText = '';
+  reportSubmitting = false;
+  reportSuccess?: string;
 
   scheduledMin = '';
   scheduledMax = '';
@@ -111,41 +123,54 @@ export class PassengerHomeComponent implements OnInit, OnDestroy {
       this.estimate = undefined;
       this.error = undefined;
     });
-
-    // Check for active ride on init
-    this.checkForActiveRide();
-  }
-
-  private checkForActiveRide(): void {
-    this.rides.getActiveRideForPassenger().subscribe({
-      next: (activeRide) => {
-        if (activeRide) {
-          // Convert active ride to order result format to show the modal
-          this.orderResult = {
-            rideId: activeRide.rideId,
-            status: activeRide.status,
-            message: 'Active ride in progress',
-            estimatedPrice: activeRide.estimatedPrice,
-            scheduledAt: activeRide.scheduledAt,
-            assignedDriverEmail: activeRide.driver?.email
-          };
-          this.isRideActive = true;
-          this.form.disable();
-          this.cdr.detectChanges();
-        }
-      },
-      error: (err) => {
-        if (err?.status !== 404) {
-          console.error('Error checking for active ride:', err);
-        }
-      }
-    });
   }
 
   ngOnDestroy(): void {
     if (this.scheduleBoundsTimer) {
       window.clearInterval(this.scheduleBoundsTimer);
     }
+    this.stopTracking();
+  }
+
+  private startTracking(rideId: number): void {
+    this.stopTracking();
+    console.log('[PassengerHome] Starting tracking for ride:', rideId);
+    this.wsService.connect();
+
+    // Wait for connection before subscribing
+    const connectionSub = this.wsService.isConnected$.subscribe(connected => {
+      if (connected && !this.trackingSubscription) {
+        console.log('[PassengerHome] WebSocket connected, subscribing to tracking');
+        this.trackingSubscription = this.wsService.subscribeToRideTracking(rideId).subscribe({
+          next: (update: RideTrackingUpdate) => {
+            console.log('[PassengerHome] Received tracking update:', update);
+            this.driverLocation = {
+              latitude: update.vehicleLatitude,
+              longitude: update.vehicleLongitude
+            };
+            this.estimatedTimeMinutes = update.estimatedTimeToDestinationMinutes;
+            console.log('[PassengerHome] Driver location set to:', this.driverLocation);
+            this.cdr.detectChanges();
+          },
+          error: (err) => {
+            console.error('[PassengerHome] Tracking subscription error:', err);
+          }
+        });
+        connectionSub.unsubscribe();
+      }
+    });
+  }
+
+  private stopTracking(): void {
+    if (this.trackingSubscription) {
+      this.trackingSubscription.unsubscribe();
+      this.trackingSubscription = undefined;
+    }
+    if (this.orderResult?.rideId) {
+      this.wsService.unsubscribeFromRideTracking(this.orderResult.rideId);
+    }
+    this.driverLocation = null;
+    this.estimatedTimeMinutes = undefined;
   }
 
   get stops(): FormArray {
@@ -515,8 +540,20 @@ export class PassengerHomeComponent implements OnInit, OnDestroy {
 
     this.rides.cancelRide(this.orderResult.rideId, reason).subscribe({
       next: (response) => {
-        // Automatically reset form after successful cancellation
-        this.resetForm();
+        // Stop tracking
+        this.stopTracking();
+
+        // Mark ride as no longer active, but keep the modal visible
+        this.isRideActive = false;
+        this.form.enable();
+
+        // Update the order result to show cancelled status
+        this.orderResult = {
+          ...this.orderResult!,
+          status: 'CANCELLED',
+          message: response.message || 'Ride cancelled successfully'
+        };
+
         this.cdr.detectChanges();
       },
       error: (err) => {
@@ -529,9 +566,40 @@ export class PassengerHomeComponent implements OnInit, OnDestroy {
   }
 
   resetForm(): void {
+    this.stopTracking();
     this.isRideActive = false;
     this.form.enable();
     this.clearMessages();
+    this.showReportForm = false;
+    this.reportText = '';
+    this.reportSuccess = undefined;
     this.cdr.detectChanges();
+  }
+
+  toggleReportForm(): void {
+    this.showReportForm = !this.showReportForm;
+    this.reportSuccess = undefined;
+  }
+
+  submitReport(): void {
+    if (!this.orderResult?.rideId || !this.reportText.trim()) {
+      return;
+    }
+
+    this.reportSubmitting = true;
+    this.rides.reportInconsistency(this.orderResult.rideId, this.reportText.trim()).subscribe({
+      next: (response) => {
+        this.reportSubmitting = false;
+        this.reportSuccess = response.message || 'Report submitted successfully';
+        this.reportText = '';
+        this.showReportForm = false;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        this.reportSubmitting = false;
+        this.error = err?.error?.message || 'Failed to submit report';
+        this.cdr.detectChanges();
+      }
+    });
   }
 }

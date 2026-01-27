@@ -27,6 +27,7 @@ export class RideMapComponent implements AfterViewInit, OnDestroy, OnChanges {
   @Input() dropoffLocation?: { latitude: number; longitude: number } | null;
   @Input() stops: Array<{ latitude: number; longitude: number; label?: string }> = [];
   @Input() drivers: Array<{ latitude: number; longitude: number; busy?: boolean; popupContent: string }> = [];
+  @Input() driverLocation?: { latitude: number; longitude: number } | null;
   @Input() routePoints: Array<{ latitude: number; longitude: number }> = [];
   @Input() estimatedRoute?: LocationPoint[];
   @Input() locked = false;
@@ -40,6 +41,7 @@ export class RideMapComponent implements AfterViewInit, OnDestroy, OnChanges {
   private dropoffMarker?: L.Marker;
   private stopMarkers: L.Marker[] = [];
   private driverMarkers: L.Marker[] = [];
+  private trackingDriverMarker?: L.Marker;
   private routeLine?: L.Polyline;
 
   // Cache for icons to avoid recreating them
@@ -70,6 +72,10 @@ export class RideMapComponent implements AfterViewInit, OnDestroy, OnChanges {
 
     if (changes['drivers']) {
       updateTasks.push(() => this.updateDriverMarkers());
+    }
+
+    if (changes['driverLocation'] && !this.isSameLocation(changes['driverLocation'].previousValue, changes['driverLocation'].currentValue)) {
+      updateTasks.push(() => this.updateTrackingDriverMarker());
     }
 
     if (changes['routePoints'] || changes['estimatedRoute']) {
@@ -122,6 +128,7 @@ export class RideMapComponent implements AfterViewInit, OnDestroy, OnChanges {
     this.updateDropoffMarker();
     this.updateStopMarkers();
     this.updateDriverMarkers();
+    this.updateTrackingDriverMarker();
     this.updateRoutes();
   }
 
@@ -217,6 +224,26 @@ export class RideMapComponent implements AfterViewInit, OnDestroy, OnChanges {
         .addTo(this.map!);
       this.driverMarkers.push(marker);
     });
+  }
+
+  private updateTrackingDriverMarker(): void {
+    if (!this.map) return;
+
+    if (this.driverLocation) {
+      if (this.trackingDriverMarker) {
+        // Smoothly update existing marker position
+        this.trackingDriverMarker.setLatLng([this.driverLocation.latitude, this.driverLocation.longitude]);
+      } else {
+        this.trackingDriverMarker = L.marker([this.driverLocation.latitude, this.driverLocation.longitude], {
+          icon: this.getOrCreateIcon('car-green')
+        })
+          .bindPopup('Your Driver')
+          .addTo(this.map);
+      }
+    } else if (this.trackingDriverMarker) {
+      this.trackingDriverMarker.remove();
+      this.trackingDriverMarker = undefined;
+    }
   }
 
   private updateRoutes(): void {
