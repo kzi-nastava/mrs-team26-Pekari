@@ -140,7 +140,7 @@ public class RideTrackingServiceImpl implements RideTrackingService {
     }
 
     private boolean isActiveForTracking(RideStatus status) {
-        return status == RideStatus.ACCEPTED || status == RideStatus.IN_PROGRESS || status == RideStatus.SCHEDULED;
+        return status == RideStatus.ACCEPTED || status == RideStatus.IN_PROGRESS || status == RideStatus.SCHEDULED || status == RideStatus.STOP_REQUESTED;
     }
 
     private void validateDriver(Ride ride, String driverEmail) {

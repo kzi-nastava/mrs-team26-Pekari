@@ -35,6 +35,8 @@ export class PassengerHomeComponent implements OnInit, OnDestroy {
   orderResult?: OrderRideResponse;
   error?: string;
   isRideActive = false;
+  rideStatus?: string;
+  stopRequested = false;
 
   // Tracking state
   driverLocation?: { latitude: number; longitude: number } | null = null;
@@ -122,6 +124,36 @@ export class PassengerHomeComponent implements OnInit, OnDestroy {
     this.form.valueChanges.subscribe(() => {
       this.estimate = undefined;
       this.error = undefined;
+    });
+
+    // Check for active ride on init
+    this.checkForActiveRide();
+  }
+
+  private checkForActiveRide(): void {
+    this.rides.getActiveRideForPassenger().subscribe({
+      next: (activeRide) => {
+        if (activeRide) {
+          // Convert active ride to order result format to show the modal
+          this.orderResult = {
+            rideId: activeRide.rideId,
+            status: activeRide.status,
+            message: 'Active ride in progress',
+            estimatedPrice: activeRide.estimatedPrice,
+            scheduledAt: activeRide.scheduledAt,
+            assignedDriverEmail: activeRide.driver?.email
+          };
+          this.isRideActive = true;
+          this.rideStatus = activeRide.status;
+          this.form.disable();
+          this.cdr.detectChanges();
+        }
+      },
+      error: (err) => {
+        if (err?.status !== 404) {
+          console.error('Error checking for active ride:', err);
+        }
+      }
     });
   }
 
@@ -505,6 +537,7 @@ export class PassengerHomeComponent implements OnInit, OnDestroy {
           // Mark ride as active if successfully ordered
           if (resp.status === 'ACCEPTED' || resp.status === 'PENDING') {
             this.isRideActive = true;
+            this.rideStatus = resp.status;
             this.form.disable(); // Disable form when ride is active
           }
           this.cdr.detectChanges();
@@ -541,6 +574,7 @@ export class PassengerHomeComponent implements OnInit, OnDestroy {
     this.rides.cancelRide(this.orderResult.rideId, reason).subscribe({
       next: (response) => {
         // Stop tracking
+        this.resetForm();
         this.stopTracking();
 
         // Mark ride as no longer active, but keep the modal visible
@@ -565,9 +599,39 @@ export class PassengerHomeComponent implements OnInit, OnDestroy {
     });
   }
 
+  requestStopRide(): void {
+    if (!this.orderResult?.rideId) {
+      this.error = 'No active ride to stop.';
+      return;
+    }
+
+    this.rides.requestStopRide(this.orderResult.rideId).subscribe({
+      next: (response) => {
+        this.error = undefined;
+        this.stopRequested = true;
+        this.rideStatus = 'STOP_REQUESTED';
+        // Show message to user that stop was requested
+        if (this.orderResult) {
+          this.orderResult.status = 'STOP_REQUESTED';
+          this.orderResult.message = 'Stop requested. Driver will stop at the nearest safe location.';
+        }
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        const backendMsg = err?.error?.message;
+        const plainMsg = typeof err?.error === 'string' ? err.error : undefined;
+        this.error = backendMsg || plainMsg || err?.message || 'Failed to request stop';
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
   resetForm(): void {
     this.stopTracking();
     this.isRideActive = false;
+    this.rideStatus = undefined;
+    this.orderResult = undefined;
+    this.stopRequested = false;
     this.form.enable();
     this.clearMessages();
     this.showReportForm = false;

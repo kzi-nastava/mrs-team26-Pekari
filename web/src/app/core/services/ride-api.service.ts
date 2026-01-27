@@ -90,6 +90,10 @@ export interface MessageResponse {
   message: string;
 }
 
+export interface StopRideEarlyRequest {
+  stopLocation: LocationPoint;
+}
+
 export interface RideLocationUpdateRequest {
   latitude: number;
   longitude: number;
@@ -154,8 +158,13 @@ export class RideApiService {
     return this.http.post<MessageResponse>(`${this.env.getApiUrl()}/rides/${rideId}/start`, {});
   }
 
-  completeRide(rideId: number) {
-    return this.http.post<MessageResponse>(`${this.env.getApiUrl()}/rides/${rideId}/stop`, {});
+  completeRide(rideId: number, stopLocation?: LocationPoint) {
+    const body = stopLocation ? { stopLocation } : {};
+    return this.http.post<MessageResponse>(`${this.env.getApiUrl()}/rides/${rideId}/stop`, body);
+  }
+
+  requestStopRide(rideId: number) {
+    return this.http.post<MessageResponse>(`${this.env.getApiUrl()}/rides/${rideId}/request-stop`, {});
   }
 
   updateRideLocation(rideId: number, payload: RideLocationUpdateRequest) {

@@ -347,7 +347,7 @@ public class RideServiceImpl implements RideService {
         User driver = userRepository.findByEmail(driverEmail)
                 .orElseThrow(() -> new IllegalArgumentException("Driver not found"));
 
-        List<RideStatus> activeStatuses = List.of(RideStatus.ACCEPTED, RideStatus.SCHEDULED, RideStatus.IN_PROGRESS);
+        List<RideStatus> activeStatuses = List.of(RideStatus.ACCEPTED, RideStatus.SCHEDULED, RideStatus.IN_PROGRESS, RideStatus.STOP_REQUESTED);
         List<Ride> activeRides = rideRepository.findDriverActiveRides(driver.getId(), activeStatuses);
 
         if (activeRides.isEmpty()) {
@@ -364,7 +364,7 @@ public class RideServiceImpl implements RideService {
         User passenger = userRepository.findByEmail(passengerEmail)
                 .orElseThrow(() -> new IllegalArgumentException("Passenger not found"));
 
-        List<RideStatus> activeStatuses = List.of(RideStatus.ACCEPTED, RideStatus.SCHEDULED, RideStatus.IN_PROGRESS);
+        List<RideStatus> activeStatuses = List.of(RideStatus.ACCEPTED, RideStatus.SCHEDULED, RideStatus.IN_PROGRESS, RideStatus.STOP_REQUESTED);
         List<Ride> activeRides = rideRepository.findPassengerActiveRides(passenger.getId(), activeStatuses);
 
         if (activeRides.isEmpty()) {

@@ -35,6 +35,29 @@
   margin: 0;
 }
 
+/* Stop Request Notification */
+.stop-request-notification {
+  background: rgba(251, 191, 36, 0.1);
+  border: 2px solid #f59e0b;
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.stop-request-notification strong {
+  display: block;
+  color: #d97706;
+  font-size: 16px;
+  margin-bottom: 8px;
+}
+
+.stop-request-notification p {
+  color: #92400e;
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
 /* Error Message */
 .error-message {
   background: rgba(239, 68, 68, 0.1);
@@ -111,6 +134,11 @@
 .status-in-progress {
   background: rgba(34, 197, 94, 0.1);
   color: var(--accent);
+}
+
+.status-stop-requested {
+  background: rgba(251, 191, 36, 0.1);
+  color: #f59e0b;
 }
 
 .status-completed {
@@ -341,6 +369,16 @@
 .btn-complete:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.9);
   box-shadow: 0 4px 15px rgba(255, 255, 255, 0.2);
+}
+
+.btn-stop-early {
+  background: #f59e0b;
+  color: #fff;
+}
+
+.btn-stop-early:hover:not(:disabled) {
+  background: #d97706;
+  box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
 }
 
 .btn-cancel {

@@ -18,6 +18,7 @@ export class DriverHomeComponent implements OnInit, OnDestroy {
   private carMarker: L.Marker | null = null;
   private routePolyline: L.Polyline | null = null;
   private simulationTimer: ReturnType<typeof setInterval> | null = null;
+  private pollTimer: ReturnType<typeof setInterval> | null = null;
   private routePoints: L.LatLngTuple[] = [];
   private currentRouteIndex = 0;
   private readonly carIcon = L.divIcon({
@@ -31,13 +32,17 @@ export class DriverHomeComponent implements OnInit, OnDestroy {
   loading = signal(true);
   error = signal<string | null>(null);
   actionInProgress = signal(false);
+  stopRequested = signal(false);
+  currentLocation = signal<{ latitude: number; longitude: number } | null>(null);
 
   ngOnInit() {
     this.loadActiveRide();
+    this.startPolling();
   }
 
   ngOnDestroy() {
     this.stopSimulation();
+    this.stopPolling();
     this.destroyMap();
   }
 
@@ -48,6 +53,8 @@ export class DriverHomeComponent implements OnInit, OnDestroy {
     this.rideService.getActiveRideForDriver().subscribe({
       next: (ride) => {
         this.activeRide.set(ride);
+        // Update stopRequested flag based on status
+        this.stopRequested.set(ride?.status === 'STOP_REQUESTED');
         this.refreshTracking();
         this.loading.set(false);
       },
@@ -55,6 +62,7 @@ export class DriverHomeComponent implements OnInit, OnDestroy {
         if (err.status === 204) {
           // No active ride
           this.activeRide.set(null);
+          this.stopRequested.set(false);
           this.refreshTracking();
         } else {
           this.error.set('Failed to load active ride. Please try again.');
@@ -98,12 +106,44 @@ export class DriverHomeComponent implements OnInit, OnDestroy {
       this.rideService.completeRide(ride.rideId).subscribe({
         next: () => {
           this.actionInProgress.set(false);
+          this.stopRequested.set(false);
           this.loadActiveRide(); // Reload to check for new rides
         },
         error: (err) => {
           this.actionInProgress.set(false);
           this.error.set(err.error?.message || 'Failed to complete ride. Please try again.');
           console.error('Error completing ride:', err);
+        }
+      });
+    }
+  }
+
+  stopRideEarly() {
+    const ride = this.activeRide();
+    const location = this.currentLocation();
+    if (!ride || !location) {
+      this.error.set('Current location not available. Please try again.');
+      return;
+    }
+
+    if (confirm('Are you sure you want to stop the ride at this location?')) {
+      this.actionInProgress.set(true);
+      this.error.set(null);
+
+      this.rideService.completeRide(ride.rideId, {
+        address: `${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)}`,
+        latitude: location.latitude,
+        longitude: location.longitude
+      }).subscribe({
+        next: () => {
+          this.actionInProgress.set(false);
+          this.stopRequested.set(false);
+          this.loadActiveRide(); // Reload to check for new rides
+        },
+        error: (err) => {
+          this.actionInProgress.set(false);
+          this.error.set(err.error?.message || 'Failed to stop ride. Please try again.');
+          console.error('Error stopping ride:', err);
         }
       });
     }
@@ -139,7 +179,7 @@ export class DriverHomeComponent implements OnInit, OnDestroy {
 
   canCompleteRide(): boolean {
     const ride = this.activeRide();
-    return ride !== null && ride.status === 'IN_PROGRESS';
+    return ride !== null && (ride.status === 'IN_PROGRESS' || ride.status === 'STOP_REQUESTED');
   }
 
   canCancelRide(): boolean {
@@ -155,6 +195,8 @@ export class DriverHomeComponent implements OnInit, OnDestroy {
         return 'Scheduled';
       case 'IN_PROGRESS':
         return 'In Progress';
+      case 'STOP_REQUESTED':
+        return 'Stop Requested';
       case 'COMPLETED':
         return 'Completed';
       case 'CANCELLED':
@@ -172,6 +214,8 @@ export class DriverHomeComponent implements OnInit, OnDestroy {
         return 'status-scheduled';
       case 'IN_PROGRESS':
         return 'status-in-progress';
+      case 'STOP_REQUESTED':
+        return 'status-stop-requested';
       case 'COMPLETED':
         return 'status-completed';
       case 'CANCELLED':
@@ -181,9 +225,38 @@ export class DriverHomeComponent implements OnInit, OnDestroy {
     }
   }
 
+  private startPolling() {
+    // Poll every 5 seconds to check for stop requests
+    this.pollTimer = setInterval(() => {
+      const ride = this.activeRide();
+      if (ride && (ride.status === 'IN_PROGRESS' || ride.status === 'STOP_REQUESTED')) {
+        // Check ride status for any updates (including stop requests)
+        this.rideService.getActiveRideForDriver().subscribe({
+          next: (updatedRide) => {
+            if (updatedRide) {
+              this.activeRide.set(updatedRide);
+              // Update stopRequested flag based on status
+              this.stopRequested.set(updatedRide.status === 'STOP_REQUESTED');
+            }
+          },
+          error: (err) => {
+            console.error('Error polling for updates:', err);
+          }
+        });
+      }
+    }, 5000);
+  }
+
+  private stopPolling() {
+    if (this.pollTimer) {
+      clearInterval(this.pollTimer);
+      this.pollTimer = null;
+    }
+  }
+
   private refreshTracking() {
     const ride = this.activeRide();
-    if (!ride || ride.status !== 'IN_PROGRESS') {
+    if (!ride || (ride.status !== 'IN_PROGRESS' && ride.status !== 'STOP_REQUESTED')) {
       this.stopSimulation();
       this.destroyMap();
       return;
@@ -294,6 +367,9 @@ export class DriverHomeComponent implements OnInit, OnDestroy {
   }
 
   private sendLocationUpdate(rideId: number, point: L.LatLngTuple, heading: number | null) {
+    // Store current location for early stop
+    this.currentLocation.set({ latitude: point[0], longitude: point[1] });
+
     this.rideService.updateRideLocation(rideId, {
       latitude: point[0],
       longitude: point[1],
