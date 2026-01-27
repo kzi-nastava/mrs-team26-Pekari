@@ -4,9 +4,12 @@ import com.pekara.dto.common.LocationPointDto;
 import com.pekara.dto.request.EstimateRideRequest;
 import com.pekara.dto.request.OrderRideRequest;
 import com.pekara.dto.response.ActiveRideResponse;
+import com.pekara.dto.response.DriverRideHistoryResponse;
 import com.pekara.dto.response.OrderRideResponse;
 import com.pekara.dto.response.RideEstimateResponse;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 public interface RideService {
@@ -27,4 +30,6 @@ public interface RideService {
     void requestStopRide(Long rideId, String passengerEmail);
 
     void stopRideEarly(Long rideId, String driverEmail, LocationPointDto actualStopLocation);
+
+    List<DriverRideHistoryResponse> getDriverRideHistory(String driverEmail, LocalDateTime startDate, LocalDateTime endDate);
 }

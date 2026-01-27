@@ -146,6 +146,10 @@ export class PassengerHomeComponent implements OnInit, OnDestroy {
           this.isRideActive = true;
           this.rideStatus = activeRide.status;
           this.form.disable();
+
+          // Start tracking the active ride
+          this.startTracking(activeRide.rideId);
+
           this.cdr.detectChanges();
         }
       },
@@ -539,6 +543,9 @@ export class PassengerHomeComponent implements OnInit, OnDestroy {
             this.isRideActive = true;
             this.rideStatus = resp.status;
             this.form.disable(); // Disable form when ride is active
+
+            // Start tracking the ride
+            this.startTracking(resp.rideId);
           }
           this.cdr.detectChanges();
         },

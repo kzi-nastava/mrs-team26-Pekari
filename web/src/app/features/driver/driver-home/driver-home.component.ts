@@ -350,6 +350,8 @@ export class DriverHomeComponent implements OnInit, OnDestroy {
 
       if (this.currentRouteIndex >= this.routePoints.length - 1) {
         this.stopSimulation();
+        // Auto-complete the ride when route is finished
+        this.autoCompleteRide(rideId);
         return;
       }
 
@@ -364,6 +366,19 @@ export class DriverHomeComponent implements OnInit, OnDestroy {
       this.map?.panTo(nextPoint, { animate: true, duration: 0.7 });
       this.sendLocationUpdate(rideId, nextPoint, heading);
     }, 1500);
+  }
+
+  private autoCompleteRide(rideId: number): void {
+    this.rideService.completeRide(rideId).subscribe({
+      next: () => {
+        console.log('Ride auto-completed after reaching destination');
+        this.loadActiveRide();
+      },
+      error: (err) => {
+        console.error('Failed to auto-complete ride:', err);
+        this.error.set('Failed to complete ride automatically. Please complete manually.');
+      }
+    });
   }
 
   private sendLocationUpdate(rideId: number, point: L.LatLngTuple, heading: number | null) {

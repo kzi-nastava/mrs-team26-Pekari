@@ -33,6 +33,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -277,31 +278,33 @@ public class RideController {
 
     @Operation(summary = "Get driver ride history", description = "View driver's ride history with date filtering - Protected endpoint (Drivers only)")
     @PreAuthorize("hasRole('DRIVER')")
-    @PostMapping("/history/driver")
+    @GetMapping("/history/driver")
     public ResponseEntity<WebPaginatedResponse<WebDriverRideHistoryResponse>> getDriverRideHistory(
-            @Valid @RequestBody WebRideHistoryFilterRequest filterRequest,
+            @RequestParam String startDate,
+            @RequestParam String endDate,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
-            @AuthenticationPrincipal UserDetails currentUser) {
+            @AuthenticationPrincipal String currentUserEmail) {
 
-        log.debug("Driver ride history requested with filters: {} (page: {}, size: {})", filterRequest, page, size);
+        log.debug("Driver ride history requested with filters: startDate={}, endDate={} (page: {}, size: {})", startDate, endDate, page, size);
 
-        // TODO: Implement driver ride history retrieval via RideService
-        // - Get current driver ID from UserDetails
-        // - Fetch all rides where user was the driver
-        // - Filter by date range (startDate to endDate)
-        // - Apply pagination (page, size)
-        // - For each ride include:
-        //   * Start time and end time
-        //   * Pickup and dropoff locations
-        //   * Cancelled status and who cancelled (passenger name or "driver")
-        //   * Price
-        //   * Panic button activation status
-        //   * All passengers information
-        // - Sort by date (newest first by default)
+        var serviceResponse = rideService.getDriverRideHistory(
+                currentUserEmail,
+                LocalDateTime.parse(startDate + "T00:00:00"),
+                LocalDateTime.parse(endDate + "T23:59:59"));
 
-        List<WebDriverRideHistoryResponse> history = new ArrayList<>();
-        WebPaginatedResponse<WebDriverRideHistoryResponse> response = new WebPaginatedResponse<>(history, page, size, 0L);
+        List<WebDriverRideHistoryResponse> history = serviceResponse.stream()
+                .map(rideMapper::toWebDriverRideHistoryResponse)
+                .toList();
+
+        int start = page * size;
+        int end = Math.min(start + size, history.size());
+        List<WebDriverRideHistoryResponse> paginatedHistory = start < history.size()
+                ? history.subList(start, end)
+                : new ArrayList<>();
+
+        WebPaginatedResponse<WebDriverRideHistoryResponse> response = new WebPaginatedResponse<>(
+                paginatedHistory, page, size, (long) history.size());
 
         log.debug("Retrieved {} rides for driver", history.size());
         return ResponseEntity.ok(response);

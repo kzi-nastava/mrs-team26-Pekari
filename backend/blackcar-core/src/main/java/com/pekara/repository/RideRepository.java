@@ -34,4 +34,9 @@ public interface RideRepository extends JpaRepository<Ride, Long> {
     @Query("SELECT r FROM Ride r WHERE r.driver.id = :driverId AND r.status IN :statuses")
     List<Ride> findDriverActiveRides(@Param("driverId") Long driverId,
                                      @Param("statuses") List<RideStatus> statuses);
+
+    @Query("SELECT r FROM Ride r WHERE r.driver.id = :driverId AND r.createdAt BETWEEN :startDate AND :endDate ORDER BY r.createdAt DESC")
+    List<Ride> findDriverRideHistory(@Param("driverId") Long driverId,
+                                      @Param("startDate") LocalDateTime startDate,
+                                      @Param("endDate") LocalDateTime endDate);
 }
