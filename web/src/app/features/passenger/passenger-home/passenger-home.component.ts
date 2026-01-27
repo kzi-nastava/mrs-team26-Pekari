@@ -46,13 +46,13 @@ export class PassengerHomeComponent implements OnInit, AfterViewInit, OnDestroy 
   form = this.fb.group({
     pickup: this.fb.group({
       address: ['', Validators.required],
-      latitude: [45.2671, Validators.required],
-      longitude: [19.8335, Validators.required]
+      latitude: [null as number | null, Validators.required],
+      longitude: [null as number | null, Validators.required]
     }),
     dropoff: this.fb.group({
       address: ['', Validators.required],
-      latitude: [45.255, Validators.required],
-      longitude: [19.845, Validators.required]
+      latitude: [null as number | null, Validators.required],
+      longitude: [null as number | null, Validators.required]
     }),
     stops: this.fb.array([]),
     passengerEmails: [''],
@@ -100,14 +100,44 @@ export class PassengerHomeComponent implements OnInit, AfterViewInit, OnDestroy 
     this.stops.push(
       this.fb.group({
         address: ['', Validators.required],
-        latitude: [45.26, Validators.required],
-        longitude: [19.84, Validators.required]
+        latitude: [null as number | null, Validators.required],
+        longitude: [null as number | null, Validators.required]
       })
     );
   }
 
   removeStop(index: number) {
     this.stops.removeAt(index);
+    if (index < this.stopMarkers.length) {
+      this.stopMarkers[index].remove();
+      this.stopMarkers.splice(index, 1);
+    }
+  }
+
+  clearPickup() {
+    this.form.patchValue({
+      pickup: { address: '', latitude: null, longitude: null }
+    });
+    if (this.pickupAutocomplete) {
+      this.pickupAutocomplete.setAddress('');
+    }
+    if (this.pickupMarker) {
+      this.pickupMarker.remove();
+      this.pickupMarker = undefined;
+    }
+  }
+
+  clearDropoff() {
+    this.form.patchValue({
+      dropoff: { address: '', latitude: null, longitude: null }
+    });
+    if (this.dropoffAutocomplete) {
+      this.dropoffAutocomplete.setAddress('');
+    }
+    if (this.dropoffMarker) {
+      this.dropoffMarker.remove();
+      this.dropoffMarker = undefined;
+    }
   }
 
   setVehicleType(vehicleType: 'STANDARD' | 'VAN' | 'LUX') {

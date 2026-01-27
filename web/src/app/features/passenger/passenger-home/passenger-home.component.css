@@ -89,6 +89,16 @@
   gap: 10px;
 }
 
+.field-with-clear {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.field-with-clear app-address-autocomplete {
+  flex: 1;
+}
+
 .input {
   width: 100%;
   background: rgba(0, 0, 0, 0.35);
@@ -136,23 +146,6 @@ input[type='datetime-local']::-webkit-calendar-picker-indicator {
   opacity: 0.7;
 }
 
-.advanced {
-  margin-top: -2px;
-}
-
-.advanced summary {
-  cursor: pointer;
-  color: rgba(255, 255, 255, 0.4);
-  font-size: 12px;
-}
-
-.advanced-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  margin-top: 10px;
-}
-
 .stops {
   display: grid;
   gap: 10px;
@@ -161,15 +154,17 @@ input[type='datetime-local']::-webkit-calendar-picker-indicator {
 }
 
 .stop {
-  position: relative;
-  display: grid;
+  display: flex;
+  align-items: center;
   gap: 10px;
 }
 
+.stop app-address-autocomplete {
+  flex: 1;
+}
+
 .icon-btn {
-  position: absolute;
-  right: 10px;
-  top: 10px;
+  flex-shrink: 0;
   width: 34px;
   height: 34px;
   border-radius: 12px;
@@ -177,6 +172,10 @@ input[type='datetime-local']::-webkit-calendar-picker-indicator {
   background: rgba(255, 255, 255, 0.04);
   color: rgba(255, 255, 255, 0.8);
   cursor: pointer;
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .icon-btn:hover {
