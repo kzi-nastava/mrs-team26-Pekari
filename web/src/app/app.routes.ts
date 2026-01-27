@@ -7,6 +7,7 @@ import { ForgotPasswordComponent } from './features/auth/forgot-password/forgot-
 import { DriverHomeComponent } from './features/driver/driver-home/driver-home.component';
 import { DriverHistoryComponent } from './features/driver/driver-history/driver-history.component';
 import { PassengerHomeComponent } from './features/passenger/passenger-home/passenger-home.component';
+import { PassengerHistoryComponent } from './features/passenger/passenger-history/passenger-history.component';
 import { ProfileComponent } from './features/profile/profile.component';
 import { AddDriverComponent } from './features/admin/add-driver/add-driver.component';
 import { authGuard, roleGuard } from './core/guards/auth.guard';
@@ -31,6 +32,11 @@ export const routes: Routes = [
   {
     path: 'passenger-home',
     component: PassengerHomeComponent,
+    canActivate: [roleGuard(['passenger'])]
+  },
+  {
+    path: 'passenger-history',
+    component: PassengerHistoryComponent,
     canActivate: [roleGuard(['passenger'])]
   },
   {

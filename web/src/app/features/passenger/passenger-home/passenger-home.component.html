@@ -217,4 +217,48 @@
       </div>
     </section>
   </section>
+
+  <!-- Favorite Routes Modal -->
+  <div class="modal-overlay" *ngIf="showFavoriteRoutesModal" (click)="closeFavoriteRoutesModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Choose Favorite Route</h3>
+        <button class="icon-btn" type="button" (click)="closeFavoriteRoutesModal()" aria-label="Close">×</button>
+      </div>
+      <div class="modal-body">
+        <div *ngIf="favoriteRoutes.length === 0" class="empty-state">
+          <p>You don't have any favorite routes yet.</p>
+          <p class="muted">Complete a ride and add it to favorites from your ride history.</p>
+        </div>
+        <div class="favorite-routes-list" *ngIf="favoriteRoutes.length > 0">
+          <div 
+            class="favorite-route-item" 
+            *ngFor="let route of favoriteRoutes"
+            (click)="selectFavoriteRoute(route)"
+          >
+            <div class="route-name">{{ route.name || 'Unnamed Route' }}</div>
+            <div class="route-details">
+              <div class="route-location">
+                <span class="location-label">From:</span>
+                <span class="location-address">{{ route.pickup.address }}</span>
+              </div>
+              <div class="route-location" *ngIf="route.stops && route.stops.length > 0">
+                <span class="location-label">Stops:</span>
+                <span class="location-address">{{ route.stops.length }} stop(s)</span>
+              </div>
+              <div class="route-location">
+                <span class="location-label">To:</span>
+                <span class="location-address">{{ route.dropoff.address }}</span>
+              </div>
+              <div class="route-meta">
+                <span class="vehicle-type">{{ route.vehicleType }}</span>
+                <span class="badge" *ngIf="route.babyTransport">Baby Seat</span>
+                <span class="badge" *ngIf="route.petTransport">Pet Friendly</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </main>
