@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -20,6 +21,7 @@ public class MailServiceImpl implements MailService {
     @Value("${app.frontend.url:http://localhost:4200}")
     private String frontendUrl;
 
+    @Async
     @Override
     public void sendActivationEmail(String toEmail, String activationToken) {
         try {
@@ -48,6 +50,7 @@ public class MailServiceImpl implements MailService {
         }
     }
 
+    @Async
     @Override
     public void sendDriverActivationEmail(String toEmail, String activationToken, String driverName) {
         try {
@@ -78,6 +81,7 @@ public class MailServiceImpl implements MailService {
         }
     }
 
+    @Async
     @Override
     public void sendRideAssignedToDriver(String driverEmail, Long rideId, java.time.LocalDateTime scheduledAt) {
         String when = scheduledAt == null ? "now" : "scheduled for " + scheduledAt;
@@ -90,6 +94,7 @@ public class MailServiceImpl implements MailService {
         );
     }
 
+    @Async
     @Override
     public void sendRideOrderAccepted(String toEmail, Long rideId, String status) {
         sendPlainText(
@@ -102,6 +107,7 @@ public class MailServiceImpl implements MailService {
         );
     }
 
+    @Async
     @Override
     public void sendRideOrderRejected(String toEmail, String reason) {
         sendPlainText(
@@ -113,6 +119,7 @@ public class MailServiceImpl implements MailService {
         );
     }
 
+    @Async
     @Override
     public void sendRideDetailsShared(String toEmail, Long rideId, String creatorEmail) {
         sendPlainText(
@@ -124,6 +131,7 @@ public class MailServiceImpl implements MailService {
         );
     }
 
+    @Async
     @Override
     public void sendRideReminder(String toEmail, Long rideId, java.time.LocalDateTime scheduledAt) {
         sendPlainText(
