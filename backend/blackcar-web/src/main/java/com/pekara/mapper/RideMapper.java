@@ -120,6 +120,7 @@ public class RideMapper {
                 .distanceKm(response.getDistanceKm())
                 .estimatedDurationMinutes(response.getEstimatedDurationMinutes())
                 .startedAt(response.getStartedAt())
+                .routeCoordinates(response.getRouteCoordinates())
                 .pickup(toWebLocationFromDto(response.getPickup()))
                 .dropoff(toWebLocationFromDto(response.getDropoff()))
                 .stops(response.getStops() == null ? null : 

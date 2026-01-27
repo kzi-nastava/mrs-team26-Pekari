@@ -26,6 +26,7 @@ public class ActiveRideResponse {
     private Double distanceKm;
     private Integer estimatedDurationMinutes;
     private LocalDateTime startedAt;
+    private String routeCoordinates;
     private LocationPointDto pickup;
     private LocationPointDto dropoff;
     private List<LocationPointDto> stops;

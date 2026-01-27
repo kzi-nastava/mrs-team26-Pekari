@@ -24,6 +24,7 @@ public class WebActiveRideResponse {
     private Double distanceKm;
     private Integer estimatedDurationMinutes;
     private LocalDateTime startedAt;
+    private String routeCoordinates;
     private LocationPoint pickup;
     private LocationPoint dropoff;
     private List<LocationPoint> stops;

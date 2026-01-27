@@ -1,5 +1,7 @@
 package com.pekara.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pekara.constant.RideStatus;
 import com.pekara.dto.common.LocationPointDto;
 import com.pekara.dto.request.EstimateRideRequest;
@@ -51,6 +53,7 @@ public class RideServiceImpl implements com.pekara.service.RideService {
     private final MailService mailService;
     private final RoutingService routingService;
     private final EntityManager entityManager;
+    private final ObjectMapper objectMapper;
 
     @Override
     @Transactional(readOnly = true)
@@ -146,6 +149,7 @@ public class RideServiceImpl implements com.pekara.service.RideService {
         double distanceKm = routeData.getDistanceKm();
         int estimatedDurationMinutes = routeData.getDurationMinutes();
         BigDecimal estimatedPrice = calculatePrice(request.getVehicleType(), distanceKm);
+        String routeCoordinates = serializeRouteCoordinates(routeData.getRoutePoints());
 
         // Select driver candidate (returns ID only to avoid locking conflicts)
         Long candidateDriverId = selectDriverIdForRide(request, now);
@@ -197,6 +201,7 @@ public class RideServiceImpl implements com.pekara.service.RideService {
                 .estimatedPrice(estimatedPrice)
                 .distanceKm(roundKm(distanceKm))
                 .estimatedDurationMinutes(estimatedDurationMinutes)
+                .routeCoordinates(routeCoordinates)
                 .build();
 
         // Add passengers: creator + linked passengers (if they exist)
@@ -441,6 +446,21 @@ public class RideServiceImpl implements com.pekara.service.RideService {
 
     private Double roundKm(double km) {
         return BigDecimal.valueOf(km).setScale(3, RoundingMode.HALF_UP).doubleValue();
+    }
+
+    private String serializeRouteCoordinates(List<LocationPointDto> routePoints) {
+        if (routePoints == null || routePoints.isEmpty()) {
+            return null;
+        }
+        List<double[]> coordinates = routePoints.stream()
+                .map(point -> new double[] {point.getLatitude(), point.getLongitude()})
+                .toList();
+        try {
+            return objectMapper.writeValueAsString(coordinates);
+        } catch (JsonProcessingException e) {
+            log.warn("Failed to serialize route coordinates", e);
+            return null;
+        }
     }
 
     @Override
@@ -716,6 +736,7 @@ public class RideServiceImpl implements com.pekara.service.RideService {
                 .distanceKm(ride.getDistanceKm())
                 .estimatedDurationMinutes(ride.getEstimatedDurationMinutes())
                 .startedAt(ride.getStartedAt())
+                .routeCoordinates(ride.getRouteCoordinates())
                 .pickup(pickup)
                 .dropoff(dropoff)
                 .stops(intermediateStops)
