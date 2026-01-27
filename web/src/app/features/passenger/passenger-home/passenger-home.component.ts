@@ -423,13 +423,6 @@ export class PassengerHomeComponent implements OnInit, OnDestroy {
 
     const value = this.form.getRawValue();
 
-    // Order endpoint is authenticated. Give an immediate, clear error if user isn't logged in.
-    const token = localStorage.getItem('auth_token');
-    if (!token) {
-      this.error = 'Please log in to request a ride.';
-      return;
-    }
-
     const passengerEmails = (value.passengerEmails || '')
       .split(',')
       .map((e) => e.trim())

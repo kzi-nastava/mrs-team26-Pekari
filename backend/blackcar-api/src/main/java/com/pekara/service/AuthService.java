@@ -14,4 +14,5 @@ public interface AuthService {
     AuthResponse activateAccount(String token);
     AuthResponse setNewPassword(String token, String newPassword);
     AuthResponse login(String email, String password);
+    AuthResponse getCurrentUser(String email);
 }

@@ -101,7 +101,7 @@ environments/
 
 **Key Features**:
 - Signal-based current user state: `currentUserSignal`
-- Stores JWT token, email, role in localStorage
+- Stores JWT token, email, role in HTTP-only cookies
 - Auto-loads session on app init via `checkSession()`
 
 **Methods**:
@@ -167,11 +167,11 @@ environments/
 ## Authentication Flow
 
 ### Session Management
-1. **Login**: POST `/auth/login` → Receive JWT token
-2. **Store**: Save to localStorage: `auth_token`, `auth_email`, `auth_role`
-3. **Restore**: On app init, `AuthService.checkSession()` reads localStorage and restores user signal
+1. **Login**: POST `/auth/login` → Receive JWT token stored in HTTP-only cookies
+2. **Store**: Backend sets cookies: `auth_token`, `auth_email`, `auth_role`
+3. **Restore**: On app init, `AuthService.checkSession()` reads cookies and restores user signal
 4. **Intercept**: `authInterceptor` adds `Authorization: Bearer {token}` to all HTTP requests
-5. **Logout**: Clear localStorage and reset signal
+5. **Logout**: Clear cookies and reset signal
 
 ### Registration Flows
 - **Passenger Registration**: Self-service at `/register` → Email activation required
@@ -199,7 +199,7 @@ environments/
 
 ### Interceptors
 - **authInterceptor** (`core/interceptors/auth.interceptor.ts`):
-  - Adds JWT from localStorage to all requests
+  - Adds JWT from cookies to all requests
   - Excludes `/auth/login` and `/auth/register` endpoints
 
 ### RxJS Patterns

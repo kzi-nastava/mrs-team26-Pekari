@@ -13,11 +13,14 @@ import com.pekara.mapper.AuthMapper;
 import com.pekara.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 @Slf4j
@@ -33,10 +36,18 @@ public class AuthController {
 
     @Operation(summary = "User login", description = "Authenticate user with email and password")
     @PostMapping("/login")
-    public ResponseEntity<WebAuthResponse> login(@Valid @RequestBody WebLoginRequest request) {
+    public ResponseEntity<WebAuthResponse> login(@Valid @RequestBody WebLoginRequest request, HttpServletResponse response) {
         log.debug("Login attempt for email: {}", request.getEmail());
 
         var serviceResponse = authService.login(request.getEmail(), request.getPassword());
+
+        // Set JWT as HTTP-only cookie
+        Cookie jwtCookie = new Cookie("jwt", serviceResponse.getToken());
+        jwtCookie.setHttpOnly(true);
+        jwtCookie.setSecure(false);
+        jwtCookie.setPath("/");
+        jwtCookie.setMaxAge(24 * 60 * 60); // 24 hours
+        response.addCookie(jwtCookie);
 
         WebAuthResponse webResponse = authMapper.toWebAuthResponse(serviceResponse);
 
@@ -115,14 +126,35 @@ public class AuthController {
         return ResponseEntity.ok(new WebMessageResponse(serviceResponse.getMessage()));
     }
 
+    @Operation(summary = "Get current user session", description = "Get current authenticated user from session")
+    @GetMapping("/me")
+    public ResponseEntity<WebAuthResponse> getCurrentUser(Authentication authentication) {
+        log.debug("Getting current user session");
+
+        String email = authentication.getName();
+        var serviceResponse = authService.getCurrentUser(email);
+
+        WebAuthResponse webResponse = authMapper.toWebAuthResponse(serviceResponse);
+
+        log.info("Current user session retrieved: {}", email);
+        return ResponseEntity.ok(webResponse);
+    }
+
     @PostMapping("/logout")
-    public ResponseEntity<WebMessageResponse> logout() {
+    public ResponseEntity<WebMessageResponse> logout(HttpServletResponse response) {
         log.debug("Logout request received");
 
-        // TODO: Implement logout logic
+        // Clear JWT cookie
+        Cookie jwtCookie = new Cookie("jwt", null);
+        jwtCookie.setHttpOnly(true);
+        jwtCookie.setSecure(false); // Set to true in production with HTTPS
+        jwtCookie.setPath("/");
+        jwtCookie.setMaxAge(0); // Expire immediately
+        response.addCookie(jwtCookie);
+
+        // TODO: Implement additional logout logic
         // - For drivers: check if they have active ride
         // - If driver is marked inactive during ride, become inactive after ride ends
-        // - Clear session/token
 
         log.debug("User logged out successfully");
         return ResponseEntity.ok(new WebMessageResponse("Logged out successfully."));

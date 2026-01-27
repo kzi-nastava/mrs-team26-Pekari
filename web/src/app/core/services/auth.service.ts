@@ -47,11 +47,6 @@ export class AuthService {
             throw new Error('Unsupported role');
           }
 
-          // Store JWT token in localStorage
-          if (resp.token) {
-            localStorage.setItem('auth_token', resp.token);
-          }
-
           const user: User = {
             id: resp.id || resp.userId || resp.email,
             email: resp.email,
@@ -108,12 +103,10 @@ export class AuthService {
     }).pipe(
       map(() => {
         this.currentUserSignal.set(null);
-        localStorage.removeItem('auth_token');
       }),
       catchError(err => {
         // Even if logout fails, clear the user locally
         this.currentUserSignal.set(null);
-        localStorage.removeItem('auth_token');
         return of(void 0);
       })
     );
@@ -121,6 +114,32 @@ export class AuthService {
 
   isAuthenticated(): boolean {
     return this.currentUserSignal() !== null;
+  }
+
+  checkSession(): Observable<User | null> {
+    return this.http.get<{ id?: string; userId?: string; email: string; role: string }>(`${this.env.getApiUrl()}/auth/me`, {
+      withCredentials: true
+    }).pipe(
+      map((resp) => {
+        const role = this.normalizeRole(resp.role);
+        if (!role) {
+          return null;
+        }
+
+        const user: User = {
+          id: resp.id || resp.userId || resp.email,
+          email: resp.email,
+          username: resp.email,
+          role
+        };
+        this.currentUserSignal.set(user);
+        return user;
+      }),
+      catchError(() => {
+        this.currentUserSignal.set(null);
+        return of(null);
+      })
+    );
   }
 
   forgotPassword(email: string): Observable<void> {
