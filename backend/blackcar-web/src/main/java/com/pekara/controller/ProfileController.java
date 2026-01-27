@@ -1,16 +1,18 @@
 package com.pekara.controller;
 
 import com.pekara.dto.request.WebChangePasswordRequest;
+import com.pekara.dto.request.WebCreateFavoriteRouteRequest;
 import com.pekara.dto.request.WebUpdateProfileRequest;
 import com.pekara.dto.response.WebDriverProfileResponse;
 import com.pekara.dto.response.WebFavouriteRouteResponse;
 import com.pekara.dto.response.WebMessageResponse;
-import com.pekara.dto.response.WebPaginatedResponse;
 import com.pekara.dto.response.WebPassengerProfileResponse;
+import com.pekara.mapper.FavoriteRouteMapper;
 import com.pekara.model.Driver;
 import com.pekara.model.User;
 import com.pekara.repository.DriverRepository;
 import com.pekara.repository.UserRepository;
+import com.pekara.service.FavoriteRouteService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -34,6 +36,8 @@ public class ProfileController {
     private final UserRepository userRepository;
     private final DriverRepository driverRepository;
     private final PasswordEncoder passwordEncoder;
+    private final FavoriteRouteService favoriteRouteService;
+    private final FavoriteRouteMapper favoriteRouteMapper;
 
     @Operation(summary = "Get driver profile", description = "Get the currently authenticated driver's profile information")
     @PreAuthorize("hasRole('DRIVER')")
@@ -226,33 +230,55 @@ public class ProfileController {
     }
 
     @Operation(summary = "Get favourite routes", description = "Fetch the current user's favourite/saved routes")
+    @PreAuthorize("hasRole('PASSENGER')")
     @GetMapping("/favourite-routes")
-    public ResponseEntity<WebPaginatedResponse<WebFavouriteRouteResponse>> getFavouriteRoutes(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
+    public ResponseEntity<List<WebFavouriteRouteResponse>> getFavouriteRoutes(
+            @AuthenticationPrincipal String email) {
 
-        log.debug("Favourite routes requested (page: {}, size: {})", page, size);
+        log.debug("Favourite routes requested for user: {}", email);
 
-        // TODO: Implement favourite routes retrieval via ProfileService / RouteService
-        // - Identify current authenticated user from security context
-        // - Fetch stored favourite routes for the user
-        // - Apply pagination (page, size)
-        // - Each route should preserve ordered stops
+        var routes = favoriteRouteService.getFavoriteRoutes(email);
+        List<WebFavouriteRouteResponse> response = routes.stream()
+                .map(favoriteRouteMapper::toWebResponse)
+                .collect(java.util.stream.Collectors.toList());
 
-        List<WebFavouriteRouteResponse> routes = List.of(
-                new WebFavouriteRouteResponse(
-                        1L,
-                        "Home  Airport",
-                        "Bulevar Osloboenja 1",
-                        List.of("Trg slobode"),
-                        "Aerodrom",
-                        "STANDARD",
-                        false,
-                        false
-                )
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "Create favourite route", description = "Save a route as favourite")
+    @PreAuthorize("hasRole('PASSENGER')")
+    @PostMapping("/favourite-routes")
+    public ResponseEntity<WebFavouriteRouteResponse> createFavouriteRoute(
+            @AuthenticationPrincipal String email,
+            @Valid @RequestBody WebCreateFavoriteRouteRequest request) {
+
+        log.debug("Create favourite route requested for user: {}", email);
+
+        var route = favoriteRouteService.createFavoriteRoute(
+                email,
+                request.getName(),
+                favoriteRouteMapper.toLocationPointDto(request.getPickup()),
+                favoriteRouteMapper.toLocationPointDtoList(request.getStops()),
+                favoriteRouteMapper.toLocationPointDto(request.getDropoff()),
+                request.getVehicleType(),
+                request.getBabyTransport(),
+                request.getPetTransport()
         );
 
-        WebPaginatedResponse<WebFavouriteRouteResponse> response = new WebPaginatedResponse<>(routes, page, size, 1L);
-        return ResponseEntity.ok(response);
+        WebFavouriteRouteResponse response = favoriteRouteMapper.toWebResponse(route);
+        return ResponseEntity.status(201).body(response);
+    }
+
+    @Operation(summary = "Delete favourite route", description = "Remove a route from favourites")
+    @PreAuthorize("hasRole('PASSENGER')")
+    @DeleteMapping("/favourite-routes/{id}")
+    public ResponseEntity<WebMessageResponse> deleteFavouriteRoute(
+            @AuthenticationPrincipal String email,
+            @PathVariable Long id) {
+
+        log.debug("Delete favourite route {} requested for user: {}", id, email);
+
+        favoriteRouteService.deleteFavoriteRoute(email, id);
+        return ResponseEntity.ok(new WebMessageResponse("Favourite route deleted successfully"));
     }
 }

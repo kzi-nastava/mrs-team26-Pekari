@@ -1,0 +1,172 @@
+<div class="driver-home-container">
+  <h1 class="page-title">Driver Dashboard</h1>
+
+  @if (loading()) {
+    <div class="loading">
+      <p>Loading active ride...</p>
+    </div>
+  }
+
+  @if (error()) {
+    <div class="error-message">
+      <p>{{ error() }}</p>
+      <button (click)="loadActiveRide()" class="btn-retry">Retry</button>
+    </div>
+  }
+
+  @if (!loading() && !activeRide()) {
+    <div class="no-active-ride">
+      <h2>No Active Ride</h2>
+      <p>You currently have no active rides. New ride requests will appear here.</p>
+    </div>
+  }
+
+  @if (activeRide()) {
+    <div class="active-ride-card">
+      <div class="ride-header">
+        <h2>Active Ride #{{ activeRide()!.rideId }}</h2>
+        <span class="status-badge" [class]="getStatusClass(activeRide()!.status)">
+          {{ getStatusLabel(activeRide()!.status) }}
+        </span>
+      </div>
+
+      <div class="ride-details">
+        @if (activeRide()!.status === 'IN_PROGRESS') {
+          <div class="detail-section">
+            <h3>Live Tracking</h3>
+            <div class="map-shell">
+              <div id="driver-map" class="driver-map"></div>
+              @if (!activeRide()!.routeCoordinates) {
+                <p class="map-empty">Route coordinates unavailable for this ride.</p>
+              }
+            </div>
+          </div>
+        }
+
+        <div class="detail-section">
+          <h3>Route Information</h3>
+          <div class="location-info">
+            <div class="location pickup">
+              <span class="location-icon">🟢</span>
+              <div>
+                <strong>Pickup:</strong>
+                <p>{{ activeRide()!.pickup.address }}</p>
+              </div>
+            </div>
+
+            @if (activeRide()!.stops && activeRide()!.stops!.length > 0) {
+              @for (stop of activeRide()!.stops; track $index) {
+                <div class="location intermediate">
+                  <span class="location-icon">📍</span>
+                  <div>
+                    <strong>Stop {{ $index + 1 }}:</strong>
+                    <p>{{ stop.address }}</p>
+                  </div>
+                </div>
+              }
+            }
+
+            <div class="location dropoff">
+              <span class="location-icon">🔴</span>
+              <div>
+                <strong>Dropoff:</strong>
+                <p>{{ activeRide()!.dropoff.address }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="detail-section">
+          <h3>Ride Details</h3>
+          <div class="ride-info-grid">
+            <div class="info-item">
+              <span class="label">Vehicle Type:</span>
+              <span class="value">{{ activeRide()!.vehicleType }}</span>
+            </div>
+            <div class="info-item">
+              <span class="label">Distance:</span>
+              <span class="value">{{ activeRide()!.distanceKm.toFixed(2) }} km</span>
+            </div>
+            <div class="info-item">
+              <span class="label">Estimated Duration:</span>
+              <span class="value">{{ activeRide()!.estimatedDurationMinutes }} min</span>
+            </div>
+            <div class="info-item">
+              <span class="label">Estimated Price:</span>
+              <span class="value">{{ activeRide()!.estimatedPrice }} RSD</span>
+            </div>
+            @if (activeRide()!.babyTransport) {
+              <div class="info-item">
+                <span class="label">Baby Transport:</span>
+                <span class="value">✓ Yes</span>
+              </div>
+            }
+            @if (activeRide()!.petTransport) {
+              <div class="info-item">
+                <span class="label">Pet Transport:</span>
+                <span class="value">✓ Yes</span>
+              </div>
+            }
+            @if (activeRide()!.scheduledAt) {
+              <div class="info-item">
+                <span class="label">Scheduled For:</span>
+                <span class="value">{{ activeRide()!.scheduledAt | date: 'short' }}</span>
+              </div>
+            }
+            @if (activeRide()!.startedAt) {
+              <div class="info-item">
+                <span class="label">Started At:</span>
+                <span class="value">{{ activeRide()!.startedAt | date: 'short' }}</span>
+              </div>
+            }
+          </div>
+        </div>
+
+        <div class="detail-section">
+          <h3>Passengers ({{ activeRide()!.passengers.length }})</h3>
+          <div class="passengers-list">
+            @for (passenger of activeRide()!.passengers; track passenger.id) {
+              <div class="passenger-card">
+                <div class="passenger-avatar">{{ passenger.name.charAt(0) }}</div>
+                <div class="passenger-info">
+                  <strong>{{ passenger.name }}</strong>
+                  <p>{{ passenger.phoneNumber }}</p>
+                  <p class="passenger-email">{{ passenger.email }}</p>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+
+      <div class="ride-actions">
+        @if (canStartRide()) {
+          <button 
+            (click)="startRide()" 
+            class="btn btn-start"
+            [disabled]="actionInProgress()">
+            {{ actionInProgress() ? 'Starting...' : 'Start Ride' }}
+          </button>
+        }
+
+        @if (canCompleteRide()) {
+          <button 
+            (click)="completeRide()" 
+            class="btn btn-complete"
+            [disabled]="actionInProgress()">
+            {{ actionInProgress() ? 'Completing...' : 'Complete Ride' }}
+          </button>
+        }
+
+        @if (canCancelRide()) {
+          <button 
+            (click)="cancelRide()" 
+            class="btn btn-cancel"
+            [disabled]="actionInProgress()">
+            {{ actionInProgress() ? 'Cancelling...' : 'Cancel Ride' }}
+          </button>
+        }
+      </div>
+    </div>
+  }
+</div>

@@ -1,11 +1,15 @@
 package com.pekara.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pekara.constant.RideStatus;
 import com.pekara.dto.common.LocationPointDto;
 import com.pekara.dto.request.EstimateRideRequest;
 import com.pekara.dto.request.OrderRideRequest;
+import com.pekara.dto.response.ActiveRideResponse;
 import com.pekara.dto.response.OrderRideResponse;
 import com.pekara.dto.response.RideEstimateResponse;
+import com.pekara.exception.ActiveRideConflictException;
 import com.pekara.exception.InvalidScheduleTimeException;
 import com.pekara.exception.NoActiveDriversException;
 import com.pekara.exception.NoDriversAvailableException;
@@ -32,6 +36,8 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -47,6 +53,7 @@ public class RideServiceImpl implements com.pekara.service.RideService {
     private final MailService mailService;
     private final RoutingService routingService;
     private final EntityManager entityManager;
+    private final ObjectMapper objectMapper;
 
     @Override
     @Transactional(readOnly = true)
@@ -85,6 +92,32 @@ public class RideServiceImpl implements com.pekara.service.RideService {
     public OrderRideResponse orderRide(String creatorEmail, OrderRideRequest request) {
         LocalDateTime now = LocalDateTime.now();
         
+        // Validate that passenger doesn't have an active ride
+        User creator = userRepository.findByEmail(creatorEmail)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        
+        // Flush any pending changes to ensure we get the latest data from DB
+        entityManager.flush();
+        
+        List<RideStatus> activeStatuses = List.of(RideStatus.ACCEPTED, RideStatus.SCHEDULED, RideStatus.IN_PROGRESS);
+        List<Ride> activeRides = rideRepository.findPassengerActiveRides(creator.getId(), activeStatuses);
+        
+        if (!activeRides.isEmpty()) {
+            Ride conflictingRide = activeRides.get(0);
+            log.warn("User {} has {} active ride(s). Ride IDs: {}, Statuses: {}", 
+                    creatorEmail, 
+                    activeRides.size(),
+                    activeRides.stream().map(Ride::getId).toList(),
+                    activeRides.stream().map(r -> r.getStatus().name()).toList());
+            
+            String errorMessage = String.format(
+                "You cannot order a new ride while you have an active ride (ID: %d, Status: %s). Please complete or cancel your current ride first.",
+                conflictingRide.getId(),
+                conflictingRide.getStatus().name()
+            );
+            throw new ActiveRideConflictException(errorMessage);
+        }
+        
         // Validate schedule time
         if (request.getScheduledAt() != null) {
             if (request.getScheduledAt().isBefore(now)) {
@@ -116,6 +149,7 @@ public class RideServiceImpl implements com.pekara.service.RideService {
         double distanceKm = routeData.getDistanceKm();
         int estimatedDurationMinutes = routeData.getDurationMinutes();
         BigDecimal estimatedPrice = calculatePrice(request.getVehicleType(), distanceKm);
+        String routeCoordinates = serializeRouteCoordinates(routeData.getRoutePoints());
 
         // Select driver candidate (returns ID only to avoid locking conflicts)
         Long candidateDriverId = selectDriverIdForRide(request, now);
@@ -131,7 +165,7 @@ public class RideServiceImpl implements com.pekara.service.RideService {
         entityManager.clear();
 
         // Fetch fresh managed entities after clear
-        User creator = userRepository.findByEmail(creatorEmail)
+        creator = userRepository.findByEmail(creatorEmail)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
         // Lock and assign driver
@@ -167,6 +201,7 @@ public class RideServiceImpl implements com.pekara.service.RideService {
                 .estimatedPrice(estimatedPrice)
                 .distanceKm(roundKm(distanceKm))
                 .estimatedDurationMinutes(estimatedDurationMinutes)
+                .routeCoordinates(routeCoordinates)
                 .build();
 
         // Add passengers: creator + linked passengers (if they exist)
@@ -413,6 +448,21 @@ public class RideServiceImpl implements com.pekara.service.RideService {
         return BigDecimal.valueOf(km).setScale(3, RoundingMode.HALF_UP).doubleValue();
     }
 
+    private String serializeRouteCoordinates(List<LocationPointDto> routePoints) {
+        if (routePoints == null || routePoints.isEmpty()) {
+            return null;
+        }
+        List<double[]> coordinates = routePoints.stream()
+                .map(point -> new double[] {point.getLatitude(), point.getLongitude()})
+                .toList();
+        try {
+            return objectMapper.writeValueAsString(coordinates);
+        } catch (JsonProcessingException e) {
+            log.warn("Failed to serialize route coordinates", e);
+            return null;
+        }
+    }
+
     @Override
     @Transactional
     public void startRide(Long rideId, String driverEmail) {
@@ -580,5 +630,118 @@ public class RideServiceImpl implements com.pekara.service.RideService {
         } catch (Exception e) {
             log.warn("Failed to send cancellation notification: {}", e.getMessage());
         }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<ActiveRideResponse> getActiveRideForDriver(String driverEmail) {
+        User driver = userRepository.findByEmail(driverEmail)
+                .orElseThrow(() -> new IllegalArgumentException("Driver not found"));
+
+        List<RideStatus> activeStatuses = List.of(RideStatus.ACCEPTED, RideStatus.SCHEDULED, RideStatus.IN_PROGRESS);
+        List<Ride> activeRides = rideRepository.findDriverActiveRides(driver.getId(), activeStatuses);
+
+        if (activeRides.isEmpty()) {
+            return Optional.empty();
+        }
+
+        // Return the first active ride (there should only be one)
+        Ride ride = activeRides.get(0);
+        return Optional.of(mapToActiveRideResponse(ride));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<ActiveRideResponse> getActiveRideForPassenger(String passengerEmail) {
+        User passenger = userRepository.findByEmail(passengerEmail)
+                .orElseThrow(() -> new IllegalArgumentException("Passenger not found"));
+
+        List<RideStatus> activeStatuses = List.of(RideStatus.ACCEPTED, RideStatus.SCHEDULED, RideStatus.IN_PROGRESS);
+        List<Ride> activeRides = rideRepository.findPassengerActiveRides(passenger.getId(), activeStatuses);
+
+        if (activeRides.isEmpty()) {
+            return Optional.empty();
+        }
+
+        // Return the first active ride (there should only be one)
+        Ride ride = activeRides.get(0);
+        return Optional.of(mapToActiveRideResponse(ride));
+    }
+
+    private ActiveRideResponse mapToActiveRideResponse(Ride ride) {
+        List<RideStop> stops = ride.getStops();
+        LocationPointDto pickup = null;
+        LocationPointDto dropoff = null;
+        List<LocationPointDto> intermediateStops = new ArrayList<>();
+
+        if (!stops.isEmpty()) {
+            // First stop is pickup
+            RideStop firstStop = stops.get(0);
+            pickup = LocationPointDto.builder()
+                    .address(firstStop.getAddress())
+                    .latitude(firstStop.getLatitude())
+                    .longitude(firstStop.getLongitude())
+                    .build();
+
+            // Last stop is dropoff
+            RideStop lastStop = stops.get(stops.size() - 1);
+            dropoff = LocationPointDto.builder()
+                    .address(lastStop.getAddress())
+                    .latitude(lastStop.getLatitude())
+                    .longitude(lastStop.getLongitude())
+                    .build();
+
+            // Intermediate stops
+            if (stops.size() > 2) {
+                intermediateStops = stops.subList(1, stops.size() - 1).stream()
+                        .map(stop -> LocationPointDto.builder()
+                                .address(stop.getAddress())
+                                .latitude(stop.getLatitude())
+                                .longitude(stop.getLongitude())
+                                .build())
+                        .collect(Collectors.toList());
+            }
+        }
+
+        List<ActiveRideResponse.PassengerInfo> passengers = ride.getPassengers().stream()
+                .map(p -> ActiveRideResponse.PassengerInfo.builder()
+                        .id(p.getId())
+                        .name(p.getFirstName() + " " + p.getLastName())
+                        .email(p.getEmail())
+                        .phoneNumber(p.getPhoneNumber())
+                        .build())
+                .collect(Collectors.toList());
+
+        ActiveRideResponse.DriverInfo driverInfo = null;
+        if (ride.getDriver() != null) {
+            Driver driver = ride.getDriver();
+            driverInfo = ActiveRideResponse.DriverInfo.builder()
+                    .id(driver.getId())
+                    .name(driver.getFirstName() + " " + driver.getLastName())
+                    .email(driver.getEmail())
+                    .phoneNumber(driver.getPhoneNumber())
+                    .vehicleType(driver.getVehicleType())
+                    .licensePlate(driver.getLicensePlate())
+                    .build();
+        }
+
+        return ActiveRideResponse.builder()
+                .rideId(ride.getId())
+                .status(ride.getStatus())
+                .vehicleType(ride.getVehicleType())
+                .babyTransport(ride.getBabyTransport())
+                .petTransport(ride.getPetTransport())
+                .scheduledAt(ride.getScheduledAt())
+                .estimatedPrice(ride.getEstimatedPrice())
+                .distanceKm(ride.getDistanceKm())
+                .estimatedDurationMinutes(ride.getEstimatedDurationMinutes())
+                .startedAt(ride.getStartedAt())
+                .routeCoordinates(ride.getRouteCoordinates())
+                .pickup(pickup)
+                .dropoff(dropoff)
+                .stops(intermediateStops)
+                .passengers(passengers)
+                .driver(driverInfo)
+                .build();
     }
 }

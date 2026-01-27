@@ -5,7 +5,9 @@ import com.pekara.dto.request.WebEstimateRideRequest;
 import com.pekara.dto.request.WebInconsistencyReportRequest;
 import com.pekara.dto.request.WebOrderRideRequest;
 import com.pekara.dto.request.WebRideHistoryFilterRequest;
+import com.pekara.dto.request.WebRideLocationUpdateRequest;
 import com.pekara.dto.request.WebRideRatingRequest;
+import com.pekara.dto.response.WebActiveRideResponse;
 import com.pekara.dto.response.WebDriverRideHistoryResponse;
 import com.pekara.dto.response.WebMessageResponse;
 import com.pekara.dto.response.WebOrderRideResponse;
@@ -17,10 +19,13 @@ import com.pekara.dto.response.WebRideEstimateResponse;
 import com.pekara.dto.response.WebRideTrackingResponse;
 import com.pekara.mapper.RideMapper;
 import com.pekara.service.RideService;
+import com.pekara.service.RideTrackingService;
+import lombok.RequiredArgsConstructor;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -34,15 +39,13 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/rides")
 @Tag(name = "Rides", description = "Ride management endpoints")
+@RequiredArgsConstructor
 public class RideController {
 
     private final RideService rideService;
+    private final RideTrackingService rideTrackingService;
     private final RideMapper rideMapper;
-
-    public RideController(RideService rideService, RideMapper rideMapper) {
-        this.rideService = rideService;
-        this.rideMapper = rideMapper;
-    }
+    private final SimpMessagingTemplate messagingTemplate;
 
     @Operation(summary = "Estimate ride", description = "Calculate ride estimation (price, duration, distance) - Public endpoint")
     @PostMapping("/estimate")
@@ -102,6 +105,40 @@ public class RideController {
         return ResponseEntity.ok(new WebMessageResponse("Ride cancelled successfully."));
     }
 
+    @Operation(summary = "Get active ride for driver", description = "Get the current active ride for the logged-in driver - Protected endpoint (Drivers only)")
+    @PreAuthorize("hasRole('DRIVER')")
+    @GetMapping("/active/driver")
+    public ResponseEntity<WebActiveRideResponse> getActiveRideForDriver(
+            @AuthenticationPrincipal String currentUserEmail) {
+        log.debug("Get active ride requested for driver: {}", currentUserEmail);
+
+        var activeRide = rideService.getActiveRideForDriver(currentUserEmail);
+        
+        if (activeRide.isEmpty()) {
+            return ResponseEntity.noContent().build();
+        }
+
+        WebActiveRideResponse response = rideMapper.toWebActiveRideResponse(activeRide.get());
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "Get active ride for passenger", description = "Get the current active ride for the logged-in passenger - Protected endpoint (Passengers only)")
+    @PreAuthorize("hasRole('PASSENGER')")
+    @GetMapping("/active/passenger")
+    public ResponseEntity<WebActiveRideResponse> getActiveRideForPassenger(
+            @AuthenticationPrincipal String currentUserEmail) {
+        log.debug("Get active ride requested for passenger: {}", currentUserEmail);
+
+        var activeRide = rideService.getActiveRideForPassenger(currentUserEmail);
+        
+        if (activeRide.isEmpty()) {
+            return ResponseEntity.noContent().build();
+        }
+
+        WebActiveRideResponse response = rideMapper.toWebActiveRideResponse(activeRide.get());
+        return ResponseEntity.ok(response);
+    }
+
     /**
      * 2.6.1 Start Ride
      * Protected endpoint - drivers only
@@ -141,29 +178,30 @@ public class RideController {
     @Operation(summary = "Track ride", description = "Get real-time tracking information for an active ride - Protected endpoint")
     @PreAuthorize("hasAnyRole('PASSENGER', 'DRIVER')")
     @GetMapping("/{rideId}/track")
-    public ResponseEntity<WebRideTrackingResponse> trackRide(@PathVariable Long rideId) {
+    public ResponseEntity<WebRideTrackingResponse> trackRide(
+            @PathVariable Long rideId,
+            @AuthenticationPrincipal String currentUserEmail) {
         log.debug("Ride tracking requested for rideId: {}", rideId);
 
-        // TODO: Implement ride tracking via RideService
-        // - Verify user is a passenger or driver on this ride
-        // - Fetch current vehicle location
-        // - Calculate distance to next stop and final destination
-        // - Calculate estimated time to destination (updates as vehicle moves)
-        // - Return real-time tracking information
-
-        WebRideTrackingResponse response = new WebRideTrackingResponse(
-                rideId,
-                45.2671,
-                19.8335,
-                12,
-                4.5,
-                "IN_PROGRESS",
-                "Trg Slobode",
-                5,
-                new WebRideTrackingResponse.VehicleInfo(1L, "STANDARD", "NS-123-AB")
-        );
-
+        var tracking = rideTrackingService.getTracking(rideId, currentUserEmail);
+        WebRideTrackingResponse response = rideMapper.toWebRideTrackingResponse(tracking);
         return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "Update ride location", description = "Driver location ping for active ride - Protected endpoint (Drivers only)")
+    @PreAuthorize("hasRole('DRIVER')")
+    @PostMapping("/{rideId}/location")
+    public ResponseEntity<WebMessageResponse> updateRideLocation(
+            @PathVariable Long rideId,
+            @Valid @RequestBody WebRideLocationUpdateRequest request,
+            @AuthenticationPrincipal String currentUserEmail) {
+
+        log.debug("Ride {} location update by driver {}", rideId, currentUserEmail);
+        rideTrackingService.updateLocation(rideId, currentUserEmail, rideMapper.toServiceRideLocationUpdateRequest(request));
+        var tracking = rideTrackingService.getTracking(rideId, currentUserEmail);
+        WebRideTrackingResponse payload = rideMapper.toWebRideTrackingResponse(tracking);
+        messagingTemplate.convertAndSend("/topic/rides/" + rideId + "/tracking", payload);
+        return ResponseEntity.ok(new WebMessageResponse("Location updated."));
     }
 
     @Operation(summary = "Report inconsistency", description = "Report driver inconsistency during an active ride - Protected endpoint (Passengers only)")

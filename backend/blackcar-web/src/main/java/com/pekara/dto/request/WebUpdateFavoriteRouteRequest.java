@@ -1,6 +1,8 @@
-package com.pekara.dto.response;
+package com.pekara.dto.request;
 
 import com.pekara.dto.common.WebLocationPoint;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -12,22 +14,18 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class WebFavouriteRouteResponse {
+public class WebUpdateFavoriteRouteRequest {
 
-    private Long id;
-
-    /**
-     * Optional user-defined label for the route (e.g., "Home → Airport").
-     */
     private String name;
 
+    @NotNull(message = "Pickup location is required")
+    @Valid
     private WebLocationPoint pickup;
 
-    /**
-     * Optional intermediate stops (order matters).
-     */
-    private List<WebLocationPoint> stops;
+    private List<@Valid WebLocationPoint> stops;
 
+    @NotNull(message = "Dropoff location is required")
+    @Valid
     private WebLocationPoint dropoff;
 
     private String vehicleType;

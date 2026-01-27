@@ -2,6 +2,8 @@ package com.pekara.model;
 
 import com.pekara.constant.RideStatus;
 import jakarta.persistence.*;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -59,6 +61,9 @@ public class Ride {
     @Column(name = "estimated_duration_minutes")
     private Integer estimatedDurationMinutes;
 
+    @Column(name = "route_coordinates", columnDefinition = "text")
+    private String routeCoordinates;
+
     @Column(name = "started_at")
     private LocalDateTime startedAt;
 
@@ -84,6 +89,7 @@ public class Ride {
     private LocalDateTime cancelledAt;
 
     @ManyToMany
+    @OnDelete(action = OnDeleteAction.CASCADE)
     @JoinTable(
             name = "ride_passengers",
             joinColumns = @JoinColumn(name = "ride_id"),

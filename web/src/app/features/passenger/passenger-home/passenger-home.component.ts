@@ -381,7 +381,7 @@ export class PassengerHomeComponent implements OnInit, OnDestroy {
     const dropoff = value.dropoff;
 
     if (!pickup?.latitude || !pickup?.longitude || !pickup?.address ||
-        !dropoff?.latitude || !dropoff?.longitude || !dropoff?.address) {
+      !dropoff?.latitude || !dropoff?.longitude || !dropoff?.address) {
       this.error = 'Please fill all required location fields.';
       return;
     }
