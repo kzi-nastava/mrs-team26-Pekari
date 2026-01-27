@@ -9,11 +9,14 @@ import com.pekara.dto.request.RideLocationUpdateRequest;
 import com.pekara.dto.request.WebEstimateRideRequest;
 import com.pekara.dto.request.WebOrderRideRequest;
 import com.pekara.dto.request.WebRideLocationUpdateRequest;
+import com.pekara.dto.response.ActiveRideResponse;
 import com.pekara.dto.response.RideTrackingResponse;
+import com.pekara.dto.response.WebActiveRideResponse;
 import com.pekara.dto.response.WebRideTrackingResponse;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Component
 public class RideMapper {
@@ -98,6 +101,69 @@ public class RideMapper {
                 .address(dto.getAddress())
                 .latitude(dto.getLatitude())
                 .longitude(dto.getLongitude())
+                .build();
+    }
+
+    public WebActiveRideResponse toWebActiveRideResponse(ActiveRideResponse response) {
+        if (response == null) {
+            return null;
+        }
+
+        return WebActiveRideResponse.builder()
+                .rideId(response.getRideId())
+                .status(response.getStatus() != null ? response.getStatus().name() : null)
+                .vehicleType(response.getVehicleType())
+                .babyTransport(response.getBabyTransport())
+                .petTransport(response.getPetTransport())
+                .scheduledAt(response.getScheduledAt())
+                .estimatedPrice(response.getEstimatedPrice())
+                .distanceKm(response.getDistanceKm())
+                .estimatedDurationMinutes(response.getEstimatedDurationMinutes())
+                .startedAt(response.getStartedAt())
+                .pickup(toWebLocationFromDto(response.getPickup()))
+                .dropoff(toWebLocationFromDto(response.getDropoff()))
+                .stops(response.getStops() == null ? null : 
+                       response.getStops().stream().map(this::toWebLocationFromDto).collect(Collectors.toList()))
+                .passengers(response.getPassengers() == null ? null :
+                           response.getPassengers().stream().map(this::toWebPassengerInfo).collect(Collectors.toList()))
+                .driver(toWebDriverInfo(response.getDriver()))
+                .build();
+    }
+
+    private WebActiveRideResponse.LocationPoint toWebLocationFromDto(LocationPointDto dto) {
+        if (dto == null) {
+            return null;
+        }
+        return WebActiveRideResponse.LocationPoint.builder()
+                .address(dto.getAddress())
+                .latitude(dto.getLatitude())
+                .longitude(dto.getLongitude())
+                .build();
+    }
+
+    private WebActiveRideResponse.PassengerInfo toWebPassengerInfo(ActiveRideResponse.PassengerInfo passenger) {
+        if (passenger == null) {
+            return null;
+        }
+        return WebActiveRideResponse.PassengerInfo.builder()
+                .id(passenger.getId())
+                .name(passenger.getName())
+                .email(passenger.getEmail())
+                .phoneNumber(passenger.getPhoneNumber())
+                .build();
+    }
+
+    private WebActiveRideResponse.DriverInfo toWebDriverInfo(ActiveRideResponse.DriverInfo driver) {
+        if (driver == null) {
+            return null;
+        }
+        return WebActiveRideResponse.DriverInfo.builder()
+                .id(driver.getId())
+                .name(driver.getName())
+                .email(driver.getEmail())
+                .phoneNumber(driver.getPhoneNumber())
+                .vehicleType(driver.getVehicleType())
+                .licensePlate(driver.getLicensePlate())
                 .build();
     }
 }
