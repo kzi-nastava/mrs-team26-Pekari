@@ -1,7 +1,15 @@
 <main class="ride-page">
   <section class="ride-split">
     <aside class="map-panel" aria-label="Map panel">
-      <div class="map-container" #mapContainer></div>
+      <app-ride-map
+        [pickupLocation]="mapPickup"
+        [dropoffLocation]="mapDropoff"
+        [stops]="mapStops"
+        [routePoints]="estimate ? [] : mapRoutePoints"
+        [estimatedRoute]="estimate?.routePoints"
+        [locked]="isRideActive"
+        (mapClick)="onMapClick($event)"
+      ></app-ride-map>
     </aside>
 
     <section class="form-panel" aria-label="Ride request">
@@ -9,170 +17,201 @@
         <h2 class="ride-title">Request Ride</h2>
 
         <form [formGroup]="form" class="ride-form">
-          <div class="block">
-            <div class="block-label">Pickup & destinations</div>
+          <!-- Show form only when no order result exists -->
+          <ng-container *ngIf="!orderResult">
+            <div class="block">
+              <div class="block-label">Pickup & destinations</div>
 
-            <div class="field-with-clear">
-              <app-address-autocomplete
-                #pickupAutocomplete
-                placeholder="Pickup location"
-                [initialValue]="form.get('pickup.address')?.value || ''"
-                (addressSelected)="onPickupSelected($event)"
-                (focused)="onPickupFocus()"
-              ></app-address-autocomplete>
-              <button
-                *ngIf="form.get('pickup.address')?.value"
-                class="icon-btn"
-                type="button"
-                (click)="clearPickup()"
-              >×</button>
-            </div>
-
-            <div class="stops" formArrayName="stops">
-              <div class="stop" *ngFor="let stop of stops.controls; let i = index" [formGroupName]="i">
+              <div class="field-with-clear">
                 <app-address-autocomplete
-                  #stopAutocomplete
-                  placeholder="Stop {{ i + 1 }}"
-                  [initialValue]="stop.get('address')?.value || ''"
-                  (addressSelected)="onStopSelected(i, $event)"
-                  (focused)="onStopFocus(i)"
+                  #pickupAutocomplete
+                  placeholder="Pickup location"
+                  [initialValue]="form.get('pickup.address')?.value || ''"
+                  (addressSelected)="onPickupSelected($event)"
+                  (focused)="onPickupFocus()"
                 ></app-address-autocomplete>
-                <button class="icon-btn" type="button" (click)="removeStop(i)">×</button>
+                <button
+                  *ngIf="form.get('pickup.address')?.value"
+                  class="icon-btn"
+                  type="button"
+                  (click)="clearPickup()"
+                >×</button>
               </div>
 
-              <button class="ghost-btn" type="button" (click)="addStop()">Add Stop</button>
-            </div>
+              <div class="stops" formArrayName="stops">
+                <div class="stop" *ngFor="let stop of stops.controls; let i = index" [formGroupName]="i">
+                  <app-address-autocomplete
+                    #stopAutocomplete
+                    placeholder="Stop {{ i + 1 }}"
+                    [initialValue]="stop.get('address')?.value || ''"
+                    (addressSelected)="onStopSelected(i, $event)"
+                    (focused)="onStopFocus(i)"
+                  ></app-address-autocomplete>
+                  <button class="icon-btn" type="button" (click)="removeStop(i)">×</button>
+                </div>
 
-            <div class="field-with-clear">
-              <app-address-autocomplete
-                #dropoffAutocomplete
-                placeholder="Final destination"
-                [initialValue]="form.get('dropoff.address')?.value || ''"
-                (addressSelected)="onDropoffSelected($event)"
-                (focused)="onDropoffFocus()"
-              ></app-address-autocomplete>
-              <button
-                *ngIf="form.get('dropoff.address')?.value"
-                class="icon-btn"
-                type="button"
-                (click)="clearDropoff()"
-              >×</button>
-            </div>
-          </div>
+                <button class="ghost-btn" type="button" (click)="addStop()">Add Stop</button>
+              </div>
 
-          <div class="block">
-            <div class="block-label">Linked passengers (emails)</div>
-            <input
-              class="input"
-              formControlName="passengerEmails"
-              placeholder="Enter emails separated by comma"
-              autocomplete="email"
-            />
-          </div>
-
-          <div class="row-2">
-            <div class="block compact">
-              <div class="block-label center">Vehicle type</div>
-              <div class="segmented" role="group" aria-label="Vehicle type">
+              <div class="field-with-clear">
+                <app-address-autocomplete
+                  #dropoffAutocomplete
+                  placeholder="Final destination"
+                  [initialValue]="form.get('dropoff.address')?.value || ''"
+                  (addressSelected)="onDropoffSelected($event)"
+                  (focused)="onDropoffFocus()"
+                ></app-address-autocomplete>
                 <button
+                  *ngIf="form.get('dropoff.address')?.value"
+                  class="icon-btn"
                   type="button"
-                  class="seg-btn"
-                  [class.active]="form.get('vehicleType')?.value === 'STANDARD'"
-                  (click)="setVehicleType('STANDARD')"
-                >
-                  Standard
-                </button>
-                <button
-                  type="button"
-                  class="seg-btn"
-                  [class.active]="form.get('vehicleType')?.value === 'VAN'"
-                  (click)="setVehicleType('VAN')"
-                >
-                  Van
-                </button>
-                <button
-                  type="button"
-                  class="seg-btn"
-                  [class.active]="form.get('vehicleType')?.value === 'LUX'"
-                  (click)="setVehicleType('LUX')"
-                >
-                  Lux
-                </button>
+                  (click)="clearDropoff()"
+                >×</button>
               </div>
             </div>
 
-            <div class="block compact">
-              <div class="block-label center">Schedule for later</div>
+            <div class="block">
+              <div class="block-label">Linked passengers (emails)</div>
               <input
                 class="input"
-                type="datetime-local"
-                formControlName="scheduledAt"
-                [min]="scheduledMin"
-                [max]="scheduledMax"
-                step="60"
+                formControlName="passengerEmails"
+                placeholder="Enter emails separated by comma"
+                autocomplete="email"
               />
             </div>
-          </div>
 
-          <div class="toggles">
-            <label class="toggle">
-              <input type="checkbox" formControlName="babyTransport" />
-              <span>Baby Seat</span>
-            </label>
-            <label class="toggle">
-              <input type="checkbox" formControlName="petTransport" />
-              <span>Pet Friendly</span>
-            </label>
-          </div>
+            <div class="row-2">
+              <div class="block compact">
+                <div class="block-label center">Vehicle type</div>
+                <div class="segmented" role="group" aria-label="Vehicle type">
+                  <button
+                    type="button"
+                    class="seg-btn"
+                    [class.active]="form.get('vehicleType')?.value === 'STANDARD'"
+                    (click)="setVehicleType('STANDARD')"
+                  >
+                    Standard
+                  </button>
+                  <button
+                    type="button"
+                    class="seg-btn"
+                    [class.active]="form.get('vehicleType')?.value === 'VAN'"
+                    (click)="setVehicleType('VAN')"
+                  >
+                    Van
+                  </button>
+                  <button
+                    type="button"
+                    class="seg-btn"
+                    [class.active]="form.get('vehicleType')?.value === 'LUX'"
+                    (click)="setVehicleType('LUX')"
+                  >
+                    Lux
+                  </button>
+                </div>
+              </div>
 
-          <button
-            class="primary"
-            type="button"
-            (click)="orderRide()"
-          >
-            Request Now
-          </button>
-          <button
-            class="secondary"
-            type="button"
-            (click)="chooseFavoriteRoute()"
-          >
-            Choose Favorite Route
-          </button>
+              <div class="block compact">
+                <div class="block-label center">Schedule for later</div>
+                <input
+                  class="input"
+                  type="datetime-local"
+                  formControlName="scheduledAt"
+                  [min]="scheduledMin"
+                  [max]="scheduledMax"
+                  step="60"
+                />
+              </div>
+            </div>
 
-          <button
-            class="link"
-            type="button"
-            (click)="estimateRide()"
-          >
-            Estimate price
-          </button>
+            <div class="toggles">
+              <label class="toggle">
+                <input type="checkbox" formControlName="babyTransport" />
+                <span>Baby Seat</span>
+              </label>
+              <label class="toggle">
+                <input type="checkbox" formControlName="petTransport" />
+                <span>Pet Friendly</span>
+              </label>
+            </div>
 
-          <p class="error" *ngIf="error">{{ error }}</p>
+            <button
+              class="primary"
+              type="button"
+              (click)="orderRide()"
+            >
+              Request Now
+            </button>
+            <button
+              class="secondary"
+              type="button"
+              (click)="chooseFavoriteRoute()"
+            >
+              Choose Favorite Route
+            </button>
 
-          <div class="result" *ngIf="estimate">
-            <div class="result-row">
+            <button
+              class="link"
+              type="button"
+              (click)="estimateRide()"
+            >
+              Estimate price
+            </button>
+          </ng-container>
+
+          <!-- Single info modal: show either error, estimate, or order result -->
+          <p class="error" *ngIf="error && !estimate && !orderResult">{{ error }}</p>
+
+          <div class="info-modal" *ngIf="estimate && !orderResult">
+            <div class="modal-title">Price Estimate</div>
+            <div class="info-row">
               <span>Estimated price</span>
               <strong>{{ estimate.estimatedPrice }} RSD</strong>
             </div>
-            <div class="result-row">
+            <div class="info-row">
               <span>Distance</span>
               <strong>{{ estimate.distanceKm }} km</strong>
             </div>
-            <div class="result-row">
+            <div class="info-row">
               <span>Duration</span>
               <strong>{{ estimate.estimatedDurationMinutes }} min</strong>
             </div>
           </div>
 
-          <div class="result" *ngIf="orderResult">
-            <div class="result-row">
+          <div class="info-modal" *ngIf="orderResult && !error">
+            <div class="modal-title">Ride Details</div>
+            <div class="info-row">
               <span>Status</span>
-              <strong>{{ orderResult.status }}</strong>
+              <strong
+                [class.status-success]="orderResult.status === 'ACCEPTED' || orderResult.status === 'PENDING'"
+                [class.status-cancelled]="orderResult.status === 'CANCELLED'">
+                {{ orderResult.status }}
+              </strong>
             </div>
-            <div class="muted">{{ orderResult.message }}</div>
-            <div class="muted" *ngIf="orderResult.rideId">Ride ID: {{ orderResult.rideId }}</div>
-            <div class="muted" *ngIf="orderResult.assignedDriverEmail">Driver: {{ orderResult.assignedDriverEmail }}</div>
+            <div class="info-message">{{ orderResult.message }}</div>
+            <div class="info-detail" *ngIf="orderResult.rideId">
+              <span class="detail-label">Ride ID:</span> {{ orderResult.rideId }}
+            </div>
+            <div class="info-detail" *ngIf="orderResult.assignedDriverEmail">
+              <span class="detail-label">Driver:</span> {{ orderResult.assignedDriverEmail }}
+            </div>
+
+            <button
+              *ngIf="isRideActive"
+              class="danger-btn"
+              type="button"
+              (click)="cancelRide()"
+            >
+              Cancel Ride
+            </button>
+            <button
+              *ngIf="!isRideActive"
+              class="secondary"
+              type="button"
+              (click)="resetForm()"
+            >
+              Request Another Ride
+            </button>
           </div>
         </form>
       </div>
