@@ -43,6 +43,14 @@ export interface OrderRideResponse {
   assignedDriverEmail?: string | null;
 }
 
+export interface CancelRideRequest {
+  reason: string;
+}
+
+export interface CancelRideResponse {
+  message: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -64,5 +72,20 @@ export class RideApiService {
       );
     }
     return this.http.post<OrderRideResponse>(`${this.env.getApiUrl()}/rides/order`, request);
+  }
+
+  cancelRide(rideId: number, reason: string) {
+    const token = localStorage.getItem('auth_token');
+    if (token) {
+      return this.http.post<CancelRideResponse>(
+        `${this.env.getApiUrl()}/rides/${rideId}/cancel`,
+        { reason },
+        { headers: { 'Authorization': `Bearer ${token}` } }
+      );
+    }
+    return this.http.post<CancelRideResponse>(
+      `${this.env.getApiUrl()}/rides/${rideId}/cancel`,
+      { reason }
+    );
   }
 }

@@ -1,7 +1,15 @@
 <main class="ride-page">
   <section class="ride-split">
     <aside class="map-panel">
-      <div class="map-container" #mapContainer></div>
+      <app-ride-map
+        [pickupLocation]="mapPickup"
+        [dropoffLocation]="mapDropoff"
+        [stops]="mapStops"
+        [drivers]="mapDrivers"
+        [routePoints]="mapRoutePoints"
+        [estimatedRoute]="estimate?.routePoints"
+        (mapClick)="onMapClick($event)"
+      ></app-ride-map>
     </aside>
 
     <section class="form-panel">
