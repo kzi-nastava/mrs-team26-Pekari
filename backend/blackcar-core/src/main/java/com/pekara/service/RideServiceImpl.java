@@ -551,4 +551,46 @@ public class RideServiceImpl implements RideService {
             throw new IllegalArgumentException(errorMessage);
         }
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<com.pekara.dto.response.DriverRideHistoryResponse> getDriverRideHistory(String driverEmail, LocalDateTime startDate, LocalDateTime endDate) {
+        User driver = userRepository.findByEmail(driverEmail)
+                .orElseThrow(() -> new IllegalArgumentException("Driver not found"));
+
+        List<Ride> rides = rideRepository.findDriverRideHistory(driver.getId(), startDate, endDate);
+
+        return rides.stream()
+                .map(this::mapToDriverRideHistoryResponse)
+                .collect(Collectors.toList());
+    }
+
+    private com.pekara.dto.response.DriverRideHistoryResponse mapToDriverRideHistoryResponse(Ride ride) {
+        List<RideStop> stops = ride.getStops();
+        String pickupLocation = !stops.isEmpty() ? stops.get(0).getAddress() : null;
+        String dropoffLocation = stops.size() > 1 ? stops.get(stops.size() - 1).getAddress() : null;
+
+        List<com.pekara.dto.response.DriverRideHistoryResponse.PassengerInfo> passengers = ride.getPassengers().stream()
+                .map(p -> com.pekara.dto.response.DriverRideHistoryResponse.PassengerInfo.builder()
+                        .id(p.getId())
+                        .firstName(p.getFirstName())
+                        .lastName(p.getLastName())
+                        .email(p.getEmail())
+                        .build())
+                .collect(Collectors.toList());
+
+        return com.pekara.dto.response.DriverRideHistoryResponse.builder()
+                .id(ride.getId())
+                .startTime(ride.getStartedAt())
+                .endTime(ride.getCompletedAt())
+                .pickupLocation(pickupLocation)
+                .dropoffLocation(dropoffLocation)
+                .cancelled(ride.getStatus() == RideStatus.CANCELLED)
+                .cancelledBy(ride.getCancelledBy())
+                .price(ride.getEstimatedPrice())
+                .panicActivated(false)
+                .status(ride.getStatus().name())
+                .passengers(passengers)
+                .build();
+    }
 }
