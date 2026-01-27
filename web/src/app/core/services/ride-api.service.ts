@@ -123,6 +123,39 @@ export interface CreateFavoriteRouteRequest {
   petTransport?: boolean;
 }
 
+export interface DriverRideHistoryResponse {
+  id: number;
+  startTime: string | null;
+  endTime: string | null;
+  pickupLocation: string;
+  dropoffLocation: string;
+  cancelled: boolean;
+  cancelledBy: string | null;
+  price: number;
+  panicActivated: boolean;
+  status: string;
+  passengers: PassengerHistoryInfo[];
+}
+
+export interface PassengerHistoryInfo {
+  id: number;
+  firstName: string;
+  lastName: string;
+  email: string;
+}
+
+export interface RideHistoryFilterRequest {
+  startDate: string;
+  endDate: string;
+}
+
+export interface PaginatedResponse<T> {
+  content: T[];
+  page: number;
+  size: number;
+  totalElements: number;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -197,5 +230,11 @@ export class RideApiService {
     return this.http.post<MessageResponse>(`${this.env.getApiUrl()}/rides/${rideId}/report-inconsistency`, {
       description
     });
+  }
+
+  getDriverRideHistory(startDate: string, endDate: string, page: number = 0, size: number = 20) {
+    return this.http.get<PaginatedResponse<DriverRideHistoryResponse>>(
+      `${this.env.getApiUrl()}/rides/history/driver?startDate=${startDate}&endDate=${endDate}&page=${page}&size=${size}`
+    );
   }
 }
