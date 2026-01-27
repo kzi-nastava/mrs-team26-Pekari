@@ -74,6 +74,15 @@ public class Ride {
     @Column(name = "last_reminder_sent_at")
     private LocalDateTime lastReminderSentAt;
 
+    @Column(name = "cancellation_reason", length = 500)
+    private String cancellationReason;
+
+    @Column(name = "cancelled_by", length = 20)
+    private String cancelledBy;
+
+    @Column(name = "cancelled_at")
+    private LocalDateTime cancelledAt;
+
     @ManyToMany
     @JoinTable(
             name = "ride_passengers",
