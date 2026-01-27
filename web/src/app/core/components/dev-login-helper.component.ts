@@ -33,7 +33,7 @@ import { Router } from '@angular/router';
     .dev-helper {
       position: fixed;
       bottom: 20px;
-      right: 20px;
+      left: 20px;
       display: flex;
       flex-direction: column;
       gap: 10px;

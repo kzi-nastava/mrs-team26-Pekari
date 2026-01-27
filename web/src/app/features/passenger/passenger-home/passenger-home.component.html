@@ -10,9 +10,9 @@
 
         <form [formGroup]="form" class="ride-form">
           <div class="block">
-            <div class="block-label">Pickup &amp; destinations (in order)</div>
+            <div class="block-label">Pickup & destinations</div>
 
-            <div class="field" formGroupName="pickup">
+            <div class="field-with-clear">
               <app-address-autocomplete
                 #pickupAutocomplete
                 placeholder="Pickup location"
@@ -20,18 +20,15 @@
                 (addressSelected)="onPickupSelected($event)"
                 (focused)="onPickupFocus()"
               ></app-address-autocomplete>
-              <details class="advanced">
-                <summary>Advanced coordinates</summary>
-                <div class="advanced-grid">
-                  <input class="input" type="number" step="0.000001" formControlName="latitude" placeholder="Latitude" />
-                  <input class="input" type="number" step="0.000001" formControlName="longitude" placeholder="Longitude" />
-                </div>
-              </details>
+              <button
+                *ngIf="form.get('pickup.address')?.value"
+                class="icon-btn"
+                type="button"
+                (click)="clearPickup()"
+              >×</button>
             </div>
 
             <div class="stops" formArrayName="stops">
-              <button class="ghost-btn" type="button" (click)="addStop()">Add Stop</button>
-
               <div class="stop" *ngFor="let stop of stops.controls; let i = index" [formGroupName]="i">
                 <app-address-autocomplete
                   #stopAutocomplete
@@ -40,20 +37,13 @@
                   (addressSelected)="onStopSelected(i, $event)"
                   (focused)="onStopFocus(i)"
                 ></app-address-autocomplete>
-
-                <details class="advanced">
-                  <summary>Advanced coordinates</summary>
-                  <div class="advanced-grid">
-                    <input class="input" type="number" step="0.000001" formControlName="latitude" placeholder="Latitude" />
-                    <input class="input" type="number" step="0.000001" formControlName="longitude" placeholder="Longitude" />
-                  </div>
-                </details>
-
-                <button class="icon-btn" type="button" (click)="removeStop(i)" aria-label="Remove stop">×</button>
+                <button class="icon-btn" type="button" (click)="removeStop(i)">×</button>
               </div>
+
+              <button class="ghost-btn" type="button" (click)="addStop()">Add Stop</button>
             </div>
 
-            <div class="field" formGroupName="dropoff">
+            <div class="field-with-clear">
               <app-address-autocomplete
                 #dropoffAutocomplete
                 placeholder="Final destination"
@@ -61,13 +51,12 @@
                 (addressSelected)="onDropoffSelected($event)"
                 (focused)="onDropoffFocus()"
               ></app-address-autocomplete>
-              <details class="advanced">
-                <summary>Advanced coordinates</summary>
-                <div class="advanced-grid">
-                  <input class="input" type="number" step="0.000001" formControlName="latitude" placeholder="Latitude" />
-                  <input class="input" type="number" step="0.000001" formControlName="longitude" placeholder="Longitude" />
-                </div>
-              </details>
+              <button
+                *ngIf="form.get('dropoff.address')?.value"
+                class="icon-btn"
+                type="button"
+                (click)="clearDropoff()"
+              >×</button>
             </div>
           </div>
 
