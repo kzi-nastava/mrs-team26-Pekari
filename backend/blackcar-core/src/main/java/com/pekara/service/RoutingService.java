@@ -7,4 +7,6 @@ import java.util.List;
 
 public interface RoutingService {
     RouteDto calculateRoute(List<LocationPointDto> waypoints);
+
+    Double calculateActualDistanceFromRoute(String routeCoordinatesJson, LocationPointDto stopLocation);
 }

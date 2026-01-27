@@ -1,0 +1,13 @@
+package com.pekara.service;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+public interface RideNotificationService {
+
+    void sendRideOrderNotifications(String driverEmail, String creatorEmail, Long rideId, String rideStatus, LocalDateTime scheduledAt, List<String> passengerEmails);
+
+    void sendRejectionNotification(String email, String reason);
+
+    void sendCancellationNotifications(String driverEmail, String creatorEmail, boolean isDriver, boolean isCreator, String reason);
+}

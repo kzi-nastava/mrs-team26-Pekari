@@ -7,6 +7,7 @@ import com.pekara.dto.request.WebOrderRideRequest;
 import com.pekara.dto.request.WebRideHistoryFilterRequest;
 import com.pekara.dto.request.WebRideLocationUpdateRequest;
 import com.pekara.dto.request.WebRideRatingRequest;
+import com.pekara.dto.request.WebStopRideEarlyRequest;
 import com.pekara.dto.response.WebActiveRideResponse;
 import com.pekara.dto.response.WebDriverRideHistoryResponse;
 import com.pekara.dto.response.WebMessageResponse;
@@ -158,6 +159,24 @@ public class RideController {
     }
 
     /**
+     * Request early stop - called by passenger
+     * Protected endpoint - passengers only
+     */
+    @Operation(summary = "Request stop", description = "Passenger requests to stop the ride early - Protected endpoint (Passengers only)")
+    @PreAuthorize("hasRole('PASSENGER')")
+    @PostMapping("/{rideId}/request-stop")
+    public ResponseEntity<WebMessageResponse> requestStopRide(
+            @PathVariable Long rideId,
+            @AuthenticationPrincipal String currentUserEmail) {
+        log.debug("Stop requested by passenger for rideId: {}", rideId);
+
+        rideService.requestStopRide(rideId, currentUserEmail);
+
+        log.info("Ride {} stop requested successfully", rideId);
+        return ResponseEntity.ok(new WebMessageResponse("Stop request sent to driver."));
+    }
+
+    /**
      * 2.6.5 Stop Ride in Progress (Complete the ride)
      * Protected endpoint - drivers only
      */
@@ -166,11 +185,20 @@ public class RideController {
     @PostMapping("/{rideId}/stop")
     public ResponseEntity<WebMessageResponse> stopRide(
             @PathVariable Long rideId,
+            @Valid @RequestBody(required = false) WebStopRideEarlyRequest request,
             @AuthenticationPrincipal String currentUserEmail) {
         log.debug("Stop ride requested for rideId: {}", rideId);
 
-        rideService.completeRide(rideId, currentUserEmail);
+        // If stop location provided, handle early stop with new location
+        if (request != null && request.getStopLocation() != null) {
+            var serviceRequest = rideMapper.toServiceStopRideEarlyRequest(request);
+            rideService.stopRideEarly(rideId, currentUserEmail, serviceRequest.getStopLocation());
+            log.info("Ride {} stopped early at new location", rideId);
+            return ResponseEntity.ok(new WebMessageResponse("Ride completed at new location."));
+        }
 
+        // Otherwise, complete ride normally at original destination
+        rideService.completeRide(rideId, currentUserEmail);
         log.info("Ride {} stopped and completed successfully", rideId);
         return ResponseEntity.ok(new WebMessageResponse("Ride completed successfully."));
     }
