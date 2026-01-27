@@ -1,0 +1,95 @@
+<div class="main-container">
+  <div class="page-header">
+    <h1 class="page-title">Ride history</h1>
+  </div>
+  <div class="card filter-section">
+    <div class="filter-row">
+      <div class="filter-group">
+        <label>From</label>
+        <input type="date" id="dateFrom" value="2024-01-01">
+      </div>
+      <div class="filter-group">
+        <label>To</label>
+        <input type="date" id="dateTo" value="2024-12-31">
+      </div>
+      <button class="filter-btn">Filter</button>
+      <button class="filter-btn reset-btn">Reset</button>
+    </div>
+  </div>
+  
+  <p class="error" *ngIf="error" style="margin: 16px 0; color: #ef4444; text-align: center;">{{ error }}</p>
+
+  <div class="rides-list">
+    <div *ngFor="let ride of ridesList" class="ride-card">
+      <div class="ride-header">
+        <div class="ride-date-time">
+          <div class="ride-date">{{ ride.date }}</div>
+          <div class="ride-time">{{ ride.time }}</div>
+        </div>
+        <div class="ride-status">
+          <span *ngIf="ride.status.includes('completed')" class="status-badge status-completed">Done</span>
+          <span *ngIf="ride.status.includes('panic')" class="status-badge status-panic">⚠️ PANIC</span>
+          <span *ngIf="ride.status.includes('cancelled-driver')" class="status-badge status-cancelled">Canceled - Driver</span>
+          <span *ngIf="ride.status.includes('cancelled-passenger')" class="status-badge status-cancelled">Canceled - Passenger</span>
+          <button 
+            class="favorite-btn" 
+            [class.favorited]="isFavorite(ride)"
+            (click)="toggleFavorite(ride)"
+            [disabled]="loading"
+            [attr.aria-label]="isFavorite(ride) ? 'Remove from favorites' : 'Add to favorites'"
+            title="{{ isFavorite(ride) ? 'Remove from favorites' : 'Add to favorites' }}"
+          >
+            {{ isFavorite(ride) ? '★' : '☆' }}
+          </button>
+        </div>
+      </div>
+      <div class="ride-content">
+        <div class="ride-locations">
+          <div *ngFor="let loc of ride.locations" class="location-item">
+            <div class="location-icon" [ngClass]="loc.type">
+              <img
+                [src]="loc.type === 'start'
+                  ? 'red-line.png'
+                  : 'green-flag.png'"
+              />
+            </div>
+            <div class="location-details">
+              <div class="location-label">{{ loc.label }}</div>
+              <div class="location-address">{{ loc.address }}</div>
+            </div>
+          </div>
+          <div *ngFor="let stop of ride.stops; let i = index" class="location-item">
+            <div class="location-icon stop">
+              <span>📍</span>
+            </div>
+            <div class="location-details">
+              <div class="location-label">Stop {{ i + 1 }}</div>
+              <div class="location-address">{{ stop.address }}</div>
+            </div>
+          </div>
+        </div>
+        <div class="ride-info">
+          <div *ngIf="ride.distance" class="info-item">
+            <span class="info-label">Distance</span>
+            <span class="info-value">{{ ride.distance }}</span>
+          </div>
+          <div *ngIf="ride.price" class="info-item">
+            <span class="info-label">Price</span>
+            <span class="info-value price">{{ ride.price }}</span>
+          </div>
+          <div *ngIf="ride.vehicleType" class="info-item">
+            <span class="info-label">Vehicle</span>
+            <span class="info-value">{{ ride.vehicleType }}</span>
+          </div>
+          <div *ngIf="ride.babyTransport || ride.petTransport" class="info-item">
+            <span class="info-label">Options</span>
+            <span class="info-value">
+              <span *ngIf="ride.babyTransport" class="option-badge">Baby Seat</span>
+              <span *ngIf="ride.petTransport" class="option-badge">Pet Friendly</span>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

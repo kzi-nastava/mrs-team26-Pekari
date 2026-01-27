@@ -81,6 +81,27 @@ export interface MessageResponse {
   message: string;
 }
 
+export interface FavoriteRoute {
+  id: number;
+  name?: string;
+  pickup: LocationPoint;
+  stops?: LocationPoint[];
+  dropoff: LocationPoint;
+  vehicleType: string;
+  babyTransport: boolean;
+  petTransport: boolean;
+}
+
+export interface CreateFavoriteRouteRequest {
+  name?: string;
+  pickup: LocationPoint;
+  stops?: LocationPoint[];
+  dropoff: LocationPoint;
+  vehicleType?: string;
+  babyTransport?: boolean;
+  petTransport?: boolean;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -123,5 +144,27 @@ export class RideApiService {
 
   cancelRide(rideId: number, reason: string) {
     return this.http.post<MessageResponse>(`${this.env.getApiUrl()}/rides/${rideId}/cancel`, { reason });
+  }
+
+  // Favorite routes methods
+  getFavoriteRoutes() {
+    const token = localStorage.getItem('auth_token');
+    return this.http.get<FavoriteRoute[]>(`${this.env.getApiUrl()}/profile/favourite-routes`, {
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+    });
+  }
+
+  createFavoriteRoute(request: CreateFavoriteRouteRequest) {
+    const token = localStorage.getItem('auth_token');
+    return this.http.post<FavoriteRoute>(`${this.env.getApiUrl()}/profile/favourite-routes`, request, {
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+    });
+  }
+
+  deleteFavoriteRoute(id: number) {
+    const token = localStorage.getItem('auth_token');
+    return this.http.delete<MessageResponse>(`${this.env.getApiUrl()}/profile/favourite-routes/${id}`, {
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+    });
   }
 }

@@ -40,8 +40,9 @@ export class App {
       );
     } else if (user.role === 'passenger') {
       links.push(
-        { label: 'Profile', path: '/profile' },
         { label: 'Home', path: '/passenger-home' },
+        { label: 'History', path: '/passenger-history' },
+        { label: 'Profile', path: '/profile' },
         { label: 'Logout', onClick: () => this.handleLogout() }
       );
     } else if (user.role === 'admin') {
