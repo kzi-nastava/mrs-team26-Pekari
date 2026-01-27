@@ -7,6 +7,7 @@ import com.pekara.dto.request.OrderRideRequest;
 import com.pekara.dto.response.ActiveRideResponse;
 import com.pekara.dto.response.OrderRideResponse;
 import com.pekara.dto.response.RideEstimateResponse;
+import com.pekara.exception.ActiveRideConflictException;
 import com.pekara.exception.InvalidScheduleTimeException;
 import com.pekara.exception.NoActiveDriversException;
 import com.pekara.exception.NoDriversAvailableException;
@@ -92,11 +93,26 @@ public class RideServiceImpl implements com.pekara.service.RideService {
         User creator = userRepository.findByEmail(creatorEmail)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
         
+        // Flush any pending changes to ensure we get the latest data from DB
+        entityManager.flush();
+        
         List<RideStatus> activeStatuses = List.of(RideStatus.ACCEPTED, RideStatus.SCHEDULED, RideStatus.IN_PROGRESS);
         List<Ride> activeRides = rideRepository.findPassengerActiveRides(creator.getId(), activeStatuses);
         
         if (!activeRides.isEmpty()) {
-            throw new IllegalStateException("You cannot order a new ride while you have an active ride. Please complete or cancel your current ride first.");
+            Ride conflictingRide = activeRides.get(0);
+            log.warn("User {} has {} active ride(s). Ride IDs: {}, Statuses: {}", 
+                    creatorEmail, 
+                    activeRides.size(),
+                    activeRides.stream().map(Ride::getId).toList(),
+                    activeRides.stream().map(r -> r.getStatus().name()).toList());
+            
+            String errorMessage = String.format(
+                "You cannot order a new ride while you have an active ride (ID: %d, Status: %s). Please complete or cancel your current ride first.",
+                conflictingRide.getId(),
+                conflictingRide.getStatus().name()
+            );
+            throw new ActiveRideConflictException(errorMessage);
         }
         
         // Validate schedule time
