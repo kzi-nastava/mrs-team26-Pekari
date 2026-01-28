@@ -148,8 +148,8 @@
 
       <div class="ride-actions">
         @if (canStartRide()) {
-          <button 
-            (click)="startRide()" 
+          <button
+            (click)="startRide()"
             class="btn btn-start"
             [disabled]="actionInProgress()">
             {{ actionInProgress() ? 'Starting...' : 'Start Ride' }}
@@ -174,9 +174,18 @@
           </button>
         }
 
+        @if (canActivatePanic()) {
+          <button
+            (click)="activatePanic()"
+            class="btn btn-panic"
+            [disabled]="actionInProgress() || panicActivated()">
+            {{ panicActivated() ? '🚨 PANIC ACTIVATED' : '🚨 PANIC' }}
+          </button>
+        }
+
         @if (canCancelRide()) {
-          <button 
-            (click)="cancelRide()" 
+          <button
+            (click)="cancelRide()"
             class="btn btn-cancel"
             [disabled]="actionInProgress()">
             {{ actionInProgress() ? 'Cancelling...' : 'Cancel Ride' }}

@@ -597,7 +597,8 @@ public class RideServiceImpl implements RideService {
                 .cancelled(ride.getStatus() == RideStatus.CANCELLED)
                 .cancelledBy(ride.getCancelledBy())
                 .price(ride.getEstimatedPrice())
-                .panicActivated(false)
+                .panicActivated(ride.getPanicActivated())
+                .panickedBy(ride.getPanickedBy())
                 .status(ride.getStatus().name())
                 .passengers(passengers)
                 .build();
@@ -605,6 +606,36 @@ public class RideServiceImpl implements RideService {
 
     @Override
     @Transactional
+    public void activatePanic(Long rideId, String userEmail) {
+        Ride ride = rideRepository.findById(rideId)
+                .orElseThrow(() -> new IllegalArgumentException("Ride not found with id: " + rideId));
+
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        // Verify ride is in progress or stop requested
+        if (ride.getStatus() != RideStatus.IN_PROGRESS && ride.getStatus() != RideStatus.STOP_REQUESTED) {
+            throw new IllegalStateException("Panic can only be activated for active rides");
+        }
+
+        // Verify user is either driver or passenger on this ride
+        boolean isDriver = ride.getDriver() != null && ride.getDriver().getId().equals(user.getId());
+        boolean isPassenger = ride.getPassengers().stream().anyMatch(p -> p.getId().equals(user.getId()));
+
+        if (!isDriver && !isPassenger) {
+            throw new IllegalArgumentException("User is not authorized to activate panic for this ride");
+        }
+
+        // Determine who activated panic
+        String panickedBy = isDriver ? "driver" : "passenger";
+
+        ride.setPanicActivated(true);
+        ride.setPanickedBy(panickedBy);
+        rideRepository.save(ride);
+
+        log.warn("PANIC ACTIVATED - Ride ID: {}, Activated by: {}, User: {}", rideId, panickedBy, userEmail);
+
+        // TODO: Send notifications to admin/support team
     public void rateRide(Long rideId, String passengerEmail, RideRatingRequest request) {
         // Get passenger user
         User passenger = userRepository.findByEmail(passengerEmail)
@@ -672,6 +703,14 @@ public class RideServiceImpl implements RideService {
 
     @Override
     @Transactional(readOnly = true)
+    public List<com.pekara.dto.response.DriverRideHistoryResponse> getActivePanicRides() {
+        List<RideStatus> activeStatuses = List.of(RideStatus.IN_PROGRESS, RideStatus.STOP_REQUESTED);
+        List<Ride> panicRides = rideRepository.findActivePanicRides(activeStatuses);
+
+        return panicRides.stream()
+                .map(this::mapToDriverRideHistoryResponse)
+                .collect(Collectors.toList());
+      
     public Optional<ActiveRideResponse> getNextScheduledRideForDriver(String driverEmail) {
         User driver = userRepository.findByEmail(driverEmail)
                 .orElseThrow(() -> new IllegalArgumentException("Driver not found"));

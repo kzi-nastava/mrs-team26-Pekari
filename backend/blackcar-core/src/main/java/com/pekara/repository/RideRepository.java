@@ -39,4 +39,7 @@ public interface RideRepository extends JpaRepository<Ride, Long> {
     List<Ride> findDriverRideHistory(@Param("driverId") Long driverId,
                                       @Param("startDate") LocalDateTime startDate,
                                       @Param("endDate") LocalDateTime endDate);
+
+    @Query("SELECT r FROM Ride r WHERE r.panicActivated = true AND r.status IN :statuses ORDER BY r.updatedAt DESC")
+    List<Ride> findActivePanicRides(@Param("statuses") List<RideStatus> statuses);
 }

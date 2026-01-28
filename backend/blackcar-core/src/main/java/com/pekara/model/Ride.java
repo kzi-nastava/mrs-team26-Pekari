@@ -88,6 +88,13 @@ public class Ride {
     @Column(name = "cancelled_at")
     private LocalDateTime cancelledAt;
 
+    @Column(name = "panic_activated", nullable = false, columnDefinition = "BOOLEAN DEFAULT false")
+    @Builder.Default
+    private Boolean panicActivated = false;
+
+    @Column(name = "panicked_by", length = 20)
+    private String panickedBy;
+
     @ManyToMany
     @OnDelete(action = OnDeleteAction.CASCADE)
     @JoinTable(

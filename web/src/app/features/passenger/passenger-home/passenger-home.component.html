@@ -242,6 +242,15 @@
               Request Stop
             </button>
             <button
+              *ngIf="isRideActive && (rideStatus === 'IN_PROGRESS' || rideStatus === 'STOP_REQUESTED')"
+              class="panic-btn"
+              type="button"
+              [disabled]="panicActivated"
+              (click)="activatePanic()"
+            >
+              {{ panicActivated ? '🚨 PANIC ACTIVATED' : '🚨 PANIC' }}
+            </button>
+            <button
               *ngIf="isRideActive && rideStatus !== 'IN_PROGRESS' && rideStatus !== 'STOP_REQUESTED' && !stopRequested"
               class="danger-btn"
               type="button"

@@ -133,6 +133,7 @@ export interface DriverRideHistoryResponse {
   cancelledBy: string | null;
   price: number;
   panicActivated: boolean;
+  panickedBy: string | null;
   status: string;
   passengers: PassengerHistoryInfo[];
 }
@@ -244,6 +245,14 @@ export class RideApiService {
     );
   }
 
+  // Panic mode methods
+  activatePanic(rideId: number) {
+    return this.http.post<MessageResponse>(`${this.env.getApiUrl()}/rides/${rideId}/panic`, {});
+  }
+
+  getActivePanicRides() {
+    return this.http.get<DriverRideHistoryResponse[]>(`${this.env.getApiUrl()}/rides/panic/active`);
+    
   rateRide(rideId: number, rating: RideRatingRequest) {
     return this.http.post<MessageResponse>(`${this.env.getApiUrl()}/rides/${rideId}/rate`, rating);
   }

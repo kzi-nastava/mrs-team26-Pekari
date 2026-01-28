@@ -33,6 +33,7 @@ export class DriverHomeComponent implements OnInit, OnDestroy {
   error = signal<string | null>(null);
   actionInProgress = signal(false);
   stopRequested = signal(false);
+  panicActivated = signal(false);
   currentLocation = signal<{ latitude: number; longitude: number } | null>(null);
 
   ngOnInit() {
@@ -77,45 +78,41 @@ export class DriverHomeComponent implements OnInit, OnDestroy {
     const ride = this.activeRide();
     if (!ride) return;
 
-    if (confirm('Are you sure all passengers have boarded the vehicle?')) {
-      this.actionInProgress.set(true);
-      this.error.set(null);
+    this.actionInProgress.set(true);
+    this.error.set(null);
 
-      this.rideService.startRide(ride.rideId).subscribe({
-        next: () => {
-          this.actionInProgress.set(false);
-          this.loadActiveRide(); // Reload to get updated status
-        },
-        error: (err) => {
-          this.actionInProgress.set(false);
-          this.error.set(err.error?.message || 'Failed to start ride. Please try again.');
-          console.error('Error starting ride:', err);
-        }
-      });
-    }
+    this.rideService.startRide(ride.rideId).subscribe({
+      next: () => {
+        this.actionInProgress.set(false);
+        this.loadActiveRide(); // Reload to get updated status
+      },
+      error: (err) => {
+        this.actionInProgress.set(false);
+        this.error.set(err.error?.message || 'Failed to start ride. Please try again.');
+        console.error('Error starting ride:', err);
+      }
+    });
   }
 
   completeRide() {
     const ride = this.activeRide();
     if (!ride) return;
 
-    if (confirm('Are you sure you want to complete this ride?')) {
-      this.actionInProgress.set(true);
-      this.error.set(null);
+    this.actionInProgress.set(true);
+    this.error.set(null);
 
-      this.rideService.completeRide(ride.rideId).subscribe({
-        next: () => {
-          this.actionInProgress.set(false);
-          this.stopRequested.set(false);
-          this.loadActiveRide(); // Reload to check for new rides
-        },
-        error: (err) => {
-          this.actionInProgress.set(false);
-          this.error.set(err.error?.message || 'Failed to complete ride. Please try again.');
-          console.error('Error completing ride:', err);
-        }
-      });
-    }
+    this.rideService.completeRide(ride.rideId).subscribe({
+      next: () => {
+        this.actionInProgress.set(false);
+        this.stopRequested.set(false);
+        this.loadActiveRide(); // Reload to check for new rides
+      },
+      error: (err) => {
+        this.actionInProgress.set(false);
+        this.error.set(err.error?.message || 'Failed to complete ride. Please try again.');
+        console.error('Error completing ride:', err);
+      }
+    });
   }
 
   stopRideEarly() {
@@ -126,50 +123,45 @@ export class DriverHomeComponent implements OnInit, OnDestroy {
       return;
     }
 
-    if (confirm('Are you sure you want to stop the ride at this location?')) {
-      this.actionInProgress.set(true);
-      this.error.set(null);
+    this.actionInProgress.set(true);
+    this.error.set(null);
 
-      this.rideService.completeRide(ride.rideId, {
-        address: `${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)}`,
-        latitude: location.latitude,
-        longitude: location.longitude
-      }).subscribe({
-        next: () => {
-          this.actionInProgress.set(false);
-          this.stopRequested.set(false);
-          this.loadActiveRide(); // Reload to check for new rides
-        },
-        error: (err) => {
-          this.actionInProgress.set(false);
-          this.error.set(err.error?.message || 'Failed to stop ride. Please try again.');
-          console.error('Error stopping ride:', err);
-        }
-      });
-    }
+    this.rideService.completeRide(ride.rideId, {
+      address: `${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)}`,
+      latitude: location.latitude,
+      longitude: location.longitude
+    }).subscribe({
+      next: () => {
+        this.actionInProgress.set(false);
+        this.stopRequested.set(false);
+        this.loadActiveRide(); // Reload to check for new rides
+      },
+      error: (err) => {
+        this.actionInProgress.set(false);
+        this.error.set(err.error?.message || 'Failed to stop ride. Please try again.');
+        console.error('Error stopping ride:', err);
+      }
+    });
   }
 
   cancelRide() {
     const ride = this.activeRide();
     if (!ride) return;
 
-    const reason = prompt('Please provide a reason for cancellation:');
-    if (reason && reason.trim()) {
-      this.actionInProgress.set(true);
-      this.error.set(null);
+    this.actionInProgress.set(true);
+    this.error.set(null);
 
-      this.rideService.cancelRide(ride.rideId, reason).subscribe({
-        next: () => {
-          this.actionInProgress.set(false);
-          this.loadActiveRide(); // Reload to check for new rides
-        },
-        error: (err) => {
-          this.actionInProgress.set(false);
-          this.error.set(err.error?.message || 'Failed to cancel ride. Please try again.');
-          console.error('Error cancelling ride:', err);
-        }
-      });
-    }
+    this.rideService.cancelRide(ride.rideId, 'Cancelled by driver').subscribe({
+      next: () => {
+        this.actionInProgress.set(false);
+        this.loadActiveRide(); // Reload to check for new rides
+      },
+      error: (err) => {
+        this.actionInProgress.set(false);
+        this.error.set(err.error?.message || 'Failed to cancel ride. Please try again.');
+        console.error('Error cancelling ride:', err);
+      }
+    });
   }
 
   canStartRide(): boolean {
@@ -185,6 +177,31 @@ export class DriverHomeComponent implements OnInit, OnDestroy {
   canCancelRide(): boolean {
     const ride = this.activeRide();
     return ride !== null && ride.status !== 'COMPLETED' && ride.status !== 'CANCELLED';
+  }
+
+  canActivatePanic(): boolean {
+    const ride = this.activeRide();
+    return ride !== null && (ride.status === 'IN_PROGRESS' || ride.status === 'STOP_REQUESTED');
+  }
+
+  activatePanic() {
+    const ride = this.activeRide();
+    if (!ride) return;
+
+    this.actionInProgress.set(true);
+    this.error.set(null);
+
+    this.rideService.activatePanic(ride.rideId).subscribe({
+      next: (response) => {
+        this.actionInProgress.set(false);
+        this.panicActivated.set(true);
+      },
+      error: (err) => {
+        this.actionInProgress.set(false);
+        this.error.set(err.error?.message || 'Failed to activate panic. Please try again.');
+        console.error('Error activating panic:', err);
+      }
+    });
   }
 
   getStatusLabel(status: string): string {

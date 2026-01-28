@@ -37,6 +37,7 @@ export class PassengerHomeComponent implements OnInit, OnDestroy {
   isRideActive = false;
   rideStatus?: string;
   stopRequested = false;
+  panicActivated = false;
 
   // Tracking state
   driverLocation?: { latitude: number; longitude: number } | null = null;
@@ -694,6 +695,21 @@ export class PassengerHomeComponent implements OnInit, OnDestroy {
     });
   }
 
+  activatePanic(): void {
+    if (!this.orderResult?.rideId) {
+      this.error = 'No active ride to report panic.';
+      return;
+    }
+
+    this.rides.activatePanic(this.orderResult.rideId).subscribe({
+      next: (response) => {
+        this.panicActivated = true;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        const backendMsg = err?.error?.message;
+        const plainMsg = typeof err?.error === 'string' ? err.error : undefined;
+        this.error = backendMsg || plainMsg || err?.message || 'Failed to activate panic';
   private handleRideCompletion(rideId: number): void {
     this.stopTracking();
     this.isRideActive = false;

@@ -292,6 +292,36 @@ public class RideController {
         return ResponseEntity.ok(new WebMessageResponse("Ride rated successfully."));
     }
 
+    @Operation(summary = "Activate panic", description = "Activate panic button during an active ride - Protected endpoint (Drivers and Passengers only)")
+    @PreAuthorize("hasAnyRole('DRIVER', 'PASSENGER')")
+    @PostMapping("/{rideId}/panic")
+    public ResponseEntity<WebMessageResponse> activatePanic(
+            @PathVariable Long rideId,
+            @AuthenticationPrincipal String currentUserEmail) {
+
+        log.warn("Panic activation requested for rideId: {} by user: {}", rideId, currentUserEmail);
+
+        rideService.activatePanic(rideId, currentUserEmail);
+
+        log.warn("Panic activated successfully for ride {}", rideId);
+        return ResponseEntity.ok(new WebMessageResponse("Panic activated. Emergency support has been notified."));
+    }
+
+    @Operation(summary = "Get active panic rides (Admin)", description = "Get all active rides with panic activated - Protected endpoint (Admins only)")
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/panic/active")
+    public ResponseEntity<List<WebDriverRideHistoryResponse>> getActivePanicRides() {
+        log.debug("Admin requesting active panic rides");
+
+        var serviceResponse = rideService.getActivePanicRides();
+        List<WebDriverRideHistoryResponse> panicRides = serviceResponse.stream()
+                .map(rideMapper::toWebDriverRideHistoryResponse)
+                .toList();
+
+        log.debug("Retrieved {} active panic rides", panicRides.size());
+        return ResponseEntity.ok(panicRides);
+    }
+
     @Operation(summary = "Get driver ride history", description = "View driver's ride history with date filtering - Protected endpoint (Drivers only)")
     @PreAuthorize("hasRole('DRIVER')")
     @GetMapping("/history/driver")

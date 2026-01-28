@@ -22,6 +22,7 @@ public class WebDriverRideHistoryResponse {
     private String cancelledBy; // passenger name or "driver"
     private BigDecimal price;
     private Boolean panicActivated;
+    private String panickedBy; // "DRIVER" or "PASSENGER"
     private String status;
 
     // Driver sees all passengers in history
