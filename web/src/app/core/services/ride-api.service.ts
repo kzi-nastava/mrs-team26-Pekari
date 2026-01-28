@@ -156,6 +156,12 @@ export interface PaginatedResponse<T> {
   totalElements: number;
 }
 
+export interface RideRatingRequest {
+  vehicleRating: number;
+  driverRating: number;
+  comment?: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -236,5 +242,9 @@ export class RideApiService {
     return this.http.get<PaginatedResponse<DriverRideHistoryResponse>>(
       `${this.env.getApiUrl()}/rides/history/driver?startDate=${startDate}&endDate=${endDate}&page=${page}&size=${size}`
     );
+  }
+
+  rateRide(rideId: number, rating: RideRatingRequest) {
+    return this.http.post<MessageResponse>(`${this.env.getApiUrl()}/rides/${rideId}/rate`, rating);
   }
 }
