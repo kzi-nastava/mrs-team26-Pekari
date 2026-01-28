@@ -66,4 +66,23 @@ public class RideNotificationServiceImpl implements RideNotificationService {
             log.warn("Failed to send cancellation notification: {}", e.getMessage());
         }
     }
+
+    @Override
+    public void sendRideCompletionNotifications(Long rideId, List<String> passengerEmails, java.math.BigDecimal finalPrice) {
+        if (passengerEmails == null || passengerEmails.isEmpty()) {
+            return;
+        }
+
+        for (String email : passengerEmails) {
+            if (email == null || email.isBlank()) {
+                continue;
+            }
+            try {
+                mailService.sendRideCompleted(email, rideId, finalPrice);
+                log.info("Sent ride completion notification to {}", email);
+            } catch (Exception e) {
+                log.warn("Failed to send ride completion email to {}: {}", email, e.getMessage());
+            }
+        }
+    }
 }

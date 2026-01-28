@@ -11,6 +11,7 @@ export interface RideTrackingUpdate {
   estimatedTimeToDestinationMinutes?: number;
   distanceToDestinationKm?: number;
   status?: string;
+  rideStatus?: string; // Added to handle COMPLETED status
   nextStopName?: string;
   nextStopEta?: number;
   updatedAt?: string;
