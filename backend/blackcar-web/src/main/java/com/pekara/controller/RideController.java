@@ -276,6 +276,21 @@ public class RideController {
         return ResponseEntity.ok(new WebMessageResponse("Ride rated successfully."));
     }
 
+    @Operation(summary = "Activate panic", description = "Activate panic button during an active ride - Protected endpoint (Drivers and Passengers only)")
+    @PreAuthorize("hasAnyRole('DRIVER', 'PASSENGER')")
+    @PostMapping("/{rideId}/panic")
+    public ResponseEntity<WebMessageResponse> activatePanic(
+            @PathVariable Long rideId,
+            @AuthenticationPrincipal String currentUserEmail) {
+
+        log.warn("Panic activation requested for rideId: {} by user: {}", rideId, currentUserEmail);
+
+        rideService.activatePanic(rideId, currentUserEmail);
+
+        log.warn("Panic activated successfully for ride {}", rideId);
+        return ResponseEntity.ok(new WebMessageResponse("Panic activated. Emergency support has been notified."));
+    }
+
     @Operation(summary = "Get driver ride history", description = "View driver's ride history with date filtering - Protected endpoint (Drivers only)")
     @PreAuthorize("hasRole('DRIVER')")
     @GetMapping("/history/driver")

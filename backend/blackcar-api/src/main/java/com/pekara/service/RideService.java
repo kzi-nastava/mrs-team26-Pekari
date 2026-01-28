@@ -32,4 +32,6 @@ public interface RideService {
     void stopRideEarly(Long rideId, String driverEmail, LocationPointDto actualStopLocation);
 
     List<DriverRideHistoryResponse> getDriverRideHistory(String driverEmail, LocalDateTime startDate, LocalDateTime endDate);
+
+    void activatePanic(Long rideId, String userEmail);
 }
