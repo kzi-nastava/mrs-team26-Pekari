@@ -156,21 +156,21 @@
           </button>
         }
 
-        @if (canCompleteRide() && stopRequested()) {
-          <button
-            (click)="stopRideEarly()"
-            class="btn btn-stop-early"
-            [disabled]="actionInProgress()">
-            {{ actionInProgress() ? 'Stopping...' : 'Stop Ride Early' }}
-          </button>
-        }
-
         @if (canCompleteRide() && !stopRequested()) {
           <button
             (click)="completeRide()"
             class="btn btn-complete"
             [disabled]="actionInProgress()">
             {{ actionInProgress() ? 'Completing...' : 'Complete Ride' }}
+          </button>
+        }
+
+        @if (canCompleteRide()) {
+          <button
+            (click)="stopRideEarly()"
+            class="btn btn-stop-early"
+            [disabled]="actionInProgress()">
+            {{ actionInProgress() ? 'Stopping...' : 'Stop Ride Early' }}
           </button>
         }
 

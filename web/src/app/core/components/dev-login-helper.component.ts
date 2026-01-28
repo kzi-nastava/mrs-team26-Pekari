@@ -145,7 +145,7 @@ export class DevLoginHelperComponent {
       next: (user) => {
         // Navigate based on role
         if (user.role === 'driver') {
-          this.router.navigate(['/driver-history']);
+          this.router.navigate(['/driver-home']);
         } else if (user.role === 'passenger') {
           this.router.navigate(['/passenger-home']);
         } else if (user.role === 'admin') {
