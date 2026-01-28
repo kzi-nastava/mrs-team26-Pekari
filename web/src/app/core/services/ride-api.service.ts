@@ -133,6 +133,7 @@ export interface DriverRideHistoryResponse {
   cancelledBy: string | null;
   price: number;
   panicActivated: boolean;
+  panickedBy: string | null;
   status: string;
   passengers: PassengerHistoryInfo[];
 }

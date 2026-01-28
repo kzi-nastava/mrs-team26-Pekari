@@ -24,6 +24,7 @@ public class DriverRideHistoryResponse {
     private String cancelledBy;
     private BigDecimal price;
     private Boolean panicActivated;
+    private String panickedBy;
     private String status;
     private List<PassengerInfo> passengers;
 

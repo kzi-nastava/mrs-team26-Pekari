@@ -205,6 +205,7 @@ public class RideMapper {
                 response.getCancelledBy(),
                 response.getPrice(),
                 response.getPanicActivated(),
+                response.getPanickedBy(),
                 response.getStatus(),
                 passengers
         );

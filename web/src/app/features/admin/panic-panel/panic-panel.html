@@ -1,8 +1,8 @@
 <div class="panic-panel-container">
   <div class="panic-header">
     <h1 class="page-title">🚨 Panic Alert Dashboard</h1>
-    <button class="btn-refresh" (click)="loadPanicRides()" [disabled]="loading">
-      {{ loading ? 'Loading...' : 'Refresh' }}
+    <button class="btn-refresh" (click)="loadPanicRides()">
+      Refresh
     </button>
   </div>
 
@@ -13,13 +13,7 @@
     </div>
   }
 
-  @if (loading && panicRides.length === 0) {
-    <div class="loading">
-      <p>Loading panic alerts...</p>
-    </div>
-  }
-
-  @if (!loading && panicRides.length === 0 && !error) {
+  @if (panicRides.length === 0 && !error) {
     <div class="no-panic-rides">
       <div class="empty-icon">✓</div>
       <h2>All Clear</h2>
@@ -76,10 +70,12 @@
                   <span class="detail-label">Start Time:</span>
                   <span class="detail-value">{{ formatDateTime(ride.startTime) }}</span>
                 </div>
-                <div class="detail-item">
-                  <span class="detail-label">Price:</span>
-                  <span class="detail-value">{{ ride.price }} RSD</span>
-                </div>
+                @if (ride.panickedBy) {
+                  <div class="detail-item">
+                    <span class="detail-label">🚨 Panic Activated By:</span>
+                    <span class="detail-value panic-by">{{ ride.panickedBy }}</span>
+                  </div>
+                }
                 @if (ride.cancelled) {
                   <div class="detail-item">
                     <span class="detail-label">Cancelled By:</span>

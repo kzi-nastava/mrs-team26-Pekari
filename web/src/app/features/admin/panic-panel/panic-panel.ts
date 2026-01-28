@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RideApiService, DriverRideHistoryResponse } from '../../../core/services/ride-api.service';
 
@@ -11,12 +11,12 @@ import { RideApiService, DriverRideHistoryResponse } from '../../../core/service
 })
 export class PanicPanel implements OnInit, OnDestroy {
   private rideService = inject(RideApiService);
+  private cdr = inject(ChangeDetectorRef);
   private pollTimer: ReturnType<typeof setInterval> | null = null;
   private audioContext: AudioContext | null = null;
   private audio: HTMLAudioElement | null = null;
 
   panicRides: DriverRideHistoryResponse[] = [];
-  loading = false;
   error: string | null = null;
 
   ngOnInit() {
@@ -80,25 +80,24 @@ export class PanicPanel implements OnInit, OnDestroy {
   }
 
   loadPanicRides() {
-    this.loading = true;
     this.error = null;
 
     this.rideService.getActivePanicRides().subscribe({
       next: (rides) => {
         const previousCount = this.panicRides.length;
         this.panicRides = rides;
-        this.loading = false;
 
-        // If new panic rides detected, play sound and show notification
-        if (rides.length > previousCount && previousCount >= 0) {
+        // If new panic rides detected (and not initial load), play sound and show notification
+        if (previousCount > 0 && rides.length > previousCount) {
           this.playNotificationSound();
           this.showBrowserNotification(rides.length - previousCount);
         }
+        this.cdr.detectChanges();
       },
       error: (err) => {
         this.error = 'Failed to load panic rides. Please try again.';
         console.error('Error loading panic rides:', err);
-        this.loading = false;
+        this.cdr.detectChanges();
       }
     });
   }
@@ -124,7 +123,7 @@ export class PanicPanel implements OnInit, OnDestroy {
   }
 
   private startPolling() {
-    // Poll every 5 seconds for new panic activations
+    // Poll every 3 seconds for new panic activations
     this.pollTimer = setInterval(() => {
       this.rideService.getActivePanicRides().subscribe({
         next: (rides) => {
@@ -136,12 +135,13 @@ export class PanicPanel implements OnInit, OnDestroy {
             this.playNotificationSound();
             this.showBrowserNotification(rides.length - previousCount);
           }
+          this.cdr.detectChanges();
         },
         error: (err) => {
           console.error('Error polling for panic rides:', err);
         }
       });
-    }, 5000);
+    }, 3000);
   }
 
   private stopPolling() {

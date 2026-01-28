@@ -681,20 +681,17 @@ export class PassengerHomeComponent implements OnInit, OnDestroy {
       return;
     }
 
-    if (confirm('⚠️ Are you sure you want to activate the PANIC button? This will notify administrators immediately.')) {
-      this.rides.activatePanic(this.orderResult.rideId).subscribe({
-        next: (response) => {
-          this.panicActivated = true;
-          alert('🚨 PANIC activated! Emergency support has been notified.');
-          this.cdr.detectChanges();
-        },
-        error: (err) => {
-          const backendMsg = err?.error?.message;
-          const plainMsg = typeof err?.error === 'string' ? err.error : undefined;
-          this.error = backendMsg || plainMsg || err?.message || 'Failed to activate panic';
-          this.cdr.detectChanges();
-        }
-      });
-    }
+    this.rides.activatePanic(this.orderResult.rideId).subscribe({
+      next: (response) => {
+        this.panicActivated = true;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        const backendMsg = err?.error?.message;
+        const plainMsg = typeof err?.error === 'string' ? err.error : undefined;
+        this.error = backendMsg || plainMsg || err?.message || 'Failed to activate panic';
+        this.cdr.detectChanges();
+      }
+    });
   }
 }

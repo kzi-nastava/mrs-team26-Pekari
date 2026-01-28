@@ -589,6 +589,7 @@ public class RideServiceImpl implements RideService {
                 .cancelledBy(ride.getCancelledBy())
                 .price(ride.getEstimatedPrice())
                 .panicActivated(ride.getPanicActivated())
+                .panickedBy(ride.getPanickedBy())
                 .status(ride.getStatus().name())
                 .passengers(passengers)
                 .build();
