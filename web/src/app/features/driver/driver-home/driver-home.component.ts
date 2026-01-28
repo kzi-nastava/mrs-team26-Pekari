@@ -46,6 +46,28 @@ export class DriverHomeComponent implements OnInit, OnDestroy {
     this.destroyMap();
   }
 
+  checkForNextScheduledRide() {
+    this.rideService.getNextScheduledRideForDriver().subscribe({
+      next: (nextRide) => {
+        if (nextRide) {
+          // Show notification about next ride
+          alert(`You have a scheduled ride at ${new Date(nextRide.scheduledAt!).toLocaleString()}. Loading ride details...`);
+          this.activeRide.set(nextRide);
+          this.stopRequested.set(false);
+          this.refreshTracking();
+        } else {
+          // No scheduled ride, driver is now available
+          this.activeRide.set(null);
+          alert('Ride completed! You are now available for new rides.');
+        }
+      },
+      error: (err) => {
+        console.error('Error checking for next scheduled ride:', err);
+        this.loadActiveRide(); // Fallback to regular load
+      }
+    });
+  }
+
   loadActiveRide() {
     this.loading.set(true);
     this.error.set(null);
@@ -107,7 +129,9 @@ export class DriverHomeComponent implements OnInit, OnDestroy {
         next: () => {
           this.actionInProgress.set(false);
           this.stopRequested.set(false);
-          this.loadActiveRide(); // Reload to check for new rides
+
+          // Check for next scheduled ride
+          this.checkForNextScheduledRide();
         },
         error: (err) => {
           this.actionInProgress.set(false);
@@ -138,7 +162,9 @@ export class DriverHomeComponent implements OnInit, OnDestroy {
         next: () => {
           this.actionInProgress.set(false);
           this.stopRequested.set(false);
-          this.loadActiveRide(); // Reload to check for new rides
+
+          // Check for next scheduled ride
+          this.checkForNextScheduledRide();
         },
         error: (err) => {
           this.actionInProgress.set(false);

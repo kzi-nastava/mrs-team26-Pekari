@@ -237,4 +237,8 @@ export class RideApiService {
       `${this.env.getApiUrl()}/rides/history/driver?startDate=${startDate}&endDate=${endDate}&page=${page}&size=${size}`
     );
   }
+
+  getNextScheduledRideForDriver() {
+    return this.http.get<ActiveRideResponse>(`${this.env.getApiUrl()}/rides/next-scheduled/driver`);
+  }
 }
