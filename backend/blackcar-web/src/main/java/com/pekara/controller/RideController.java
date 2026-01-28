@@ -132,12 +132,29 @@ public class RideController {
         log.debug("Get active ride requested for passenger: {}", currentUserEmail);
 
         var activeRide = rideService.getActiveRideForPassenger(currentUserEmail);
-        
+
         if (activeRide.isEmpty()) {
             return ResponseEntity.noContent().build();
         }
 
         WebActiveRideResponse response = rideMapper.toWebActiveRideResponse(activeRide.get());
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "Get next scheduled ride for driver", description = "Get the next scheduled ride for the logged-in driver - Protected endpoint (Drivers only)")
+    @PreAuthorize("hasRole('DRIVER')")
+    @GetMapping("/next-scheduled/driver")
+    public ResponseEntity<WebActiveRideResponse> getNextScheduledRideForDriver(
+            @AuthenticationPrincipal String currentUserEmail) {
+        log.debug("Get next scheduled ride requested for driver: {}", currentUserEmail);
+
+        var nextRide = rideService.getNextScheduledRideForDriver(currentUserEmail);
+
+        if (nextRide.isEmpty()) {
+            return ResponseEntity.noContent().build();
+        }
+
+        WebActiveRideResponse response = rideMapper.toWebActiveRideResponse(nextRide.get());
         return ResponseEntity.ok(response);
     }
 
@@ -186,7 +203,7 @@ public class RideController {
     @PostMapping("/{rideId}/stop")
     public ResponseEntity<WebMessageResponse> stopRide(
             @PathVariable Long rideId,
-            @Valid @RequestBody(required = false) WebStopRideEarlyRequest request,
+            @RequestBody(required = false) WebStopRideEarlyRequest request,
             @AuthenticationPrincipal String currentUserEmail) {
         log.debug("Stop ride requested for rideId: {}", rideId);
 

@@ -1,5 +1,6 @@
 package com.pekara.service;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -10,4 +11,6 @@ public interface RideNotificationService {
     void sendRejectionNotification(String email, String reason);
 
     void sendCancellationNotifications(String driverEmail, String creatorEmail, boolean isDriver, boolean isCreator, String reason);
+
+    void sendRideCompletionNotifications(Long rideId, List<String> passengerEmails, BigDecimal finalPrice);
 }

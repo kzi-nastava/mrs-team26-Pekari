@@ -1,5 +1,6 @@
 package com.pekara.service;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 public interface MailService {
@@ -16,4 +17,6 @@ public interface MailService {
     void sendRideDetailsShared(String toEmail, Long rideId, String creatorEmail);
 
     void sendRideReminder(String toEmail, Long rideId, LocalDateTime scheduledAt);
+
+    void sendRideCompleted(String toEmail, Long rideId, BigDecimal finalPrice);
 }

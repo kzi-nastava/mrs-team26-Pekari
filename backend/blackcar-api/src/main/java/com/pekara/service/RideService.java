@@ -27,6 +27,8 @@ public interface RideService {
 
     Optional<ActiveRideResponse> getActiveRideForPassenger(String passengerEmail);
 
+    Optional<ActiveRideResponse> getNextScheduledRideForDriver(String driverEmail);
+
     void requestStopRide(Long rideId, String passengerEmail);
 
     void stopRideEarly(Long rideId, String driverEmail, LocationPointDto actualStopLocation);

@@ -279,7 +279,13 @@ public class RideServiceImpl implements RideService {
         driverStateManagementService.releaseDriverAfterRide(ride.getDriver().getId());
         rideWorkLogService.completeWorkLog(rideId, now);
 
-        log.info("Ride {} completed by driver {}", rideId, driverEmail);
+        // Send completion notifications to all passengers
+        List<String> passengerEmails = ride.getPassengers().stream()
+                .map(passenger -> passenger.getEmail())
+                .collect(Collectors.toList());
+        rideNotificationService.sendRideCompletionNotifications(rideId, passengerEmails, ride.getEstimatedPrice());
+
+        log.info("Ride {} completed by driver {}, notifications sent to {} passengers", rideId, driverEmail, passengerEmails.size());
     }
 
     @Override
@@ -373,6 +379,27 @@ public class RideServiceImpl implements RideService {
 
         Ride ride = activeRides.get(0);
         return Optional.of(mapToActiveRideResponse(ride));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<ActiveRideResponse> getNextScheduledRideForDriver(String driverEmail) {
+        User driver = userRepository.findByEmail(driverEmail)
+                .orElseThrow(() -> new IllegalArgumentException("Driver not found"));
+
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime maxScheduledTime = now.plusHours(24);
+
+        // Find scheduled rides for this driver starting from now up to 24 hours ahead
+        List<Ride> scheduledRides = rideRepository.findScheduledRidesStartingBefore(
+                RideStatus.SCHEDULED, now, maxScheduledTime);
+
+        // Filter for this specific driver
+        Optional<Ride> nextRide = scheduledRides.stream()
+                .filter(ride -> ride.getDriver() != null && ride.getDriver().getId().equals(driver.getId()))
+                .min((r1, r2) -> r1.getScheduledAt().compareTo(r2.getScheduledAt()));
+
+        return nextRide.map(this::mapToActiveRideResponse);
     }
 
     private ActiveRideResponse mapToActiveRideResponse(Ride ride) {

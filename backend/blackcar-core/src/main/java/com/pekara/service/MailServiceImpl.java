@@ -155,4 +155,34 @@ public class MailServiceImpl implements MailService {
             throw new RuntimeException("Failed to send email", e);
         }
     }
+
+    @Async
+    @Override
+    public void sendRideCompleted(String toEmail, Long rideId, java.math.BigDecimal finalPrice) {
+        try {
+            String rideDetailsLink = frontendUrl + "/rides/" + rideId;
+
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(fromEmail);
+            message.setTo(toEmail);
+            message.setSubject("Ride #" + rideId + " Completed");
+            message.setText(
+                    "Your ride has been completed!\n\n" +
+                    "Ride ID: " + rideId + "\n" +
+                    "Final Price: " + (finalPrice != null ? finalPrice + " RSD" : "N/A") + "\n\n" +
+                    "You can now rate your ride and driver at:\n" +
+                    rideDetailsLink + "\n\n" +
+                    "Thank you for choosing BlackCar!\n\n" +
+                    "Best regards,\n" +
+                    "BlackCar Team"
+            );
+
+            mailSender.send(message);
+            log.info("Ride completion email sent successfully to: {} for ride: {}", toEmail, rideId);
+
+        } catch (Exception e) {
+            log.error("Failed to send ride completion email to: {} for ride: {}", toEmail, rideId, e);
+            throw new RuntimeException("Failed to send ride completion email", e);
+        }
+    }
 }
