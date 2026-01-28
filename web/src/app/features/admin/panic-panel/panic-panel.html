@@ -1,0 +1,117 @@
+<div class="panic-panel-container">
+  <div class="panic-header">
+    <h1 class="page-title">🚨 Panic Alert Dashboard</h1>
+    <button class="btn-refresh" (click)="loadPanicRides()" [disabled]="loading">
+      {{ loading ? 'Loading...' : 'Refresh' }}
+    </button>
+  </div>
+
+  @if (error) {
+    <div class="error-message">
+      <p>{{ error }}</p>
+      <button (click)="loadPanicRides()" class="btn-retry">Retry</button>
+    </div>
+  }
+
+  @if (loading && panicRides.length === 0) {
+    <div class="loading">
+      <p>Loading panic alerts...</p>
+    </div>
+  }
+
+  @if (!loading && panicRides.length === 0 && !error) {
+    <div class="no-panic-rides">
+      <div class="empty-icon">✓</div>
+      <h2>All Clear</h2>
+      <p>No active panic alerts at this time.</p>
+    </div>
+  }
+
+  @if (panicRides.length > 0) {
+    <div class="panic-count-badge">
+      <span class="count">{{ panicRides.length }}</span>
+      <span class="label">Active Panic {{ panicRides.length === 1 ? 'Alert' : 'Alerts' }}</span>
+    </div>
+
+    <div class="panic-rides-grid">
+      @for (ride of panicRides; track ride.id) {
+        <div class="panic-ride-card">
+          <div class="card-header">
+            <div class="ride-id-section">
+              <span class="panic-icon">🚨</span>
+              <div>
+                <h3>Ride #{{ ride.id }}</h3>
+                <span class="status-badge" [class]="getStatusClass(ride.status)">
+                  {{ getStatusLabel(ride.status) }}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div class="card-body">
+            <div class="info-section">
+              <h4>Route Information</h4>
+              <div class="route-info">
+                <div class="route-point">
+                  <span class="route-icon">🟢</span>
+                  <div>
+                    <strong>Pickup:</strong>
+                    <p>{{ ride.pickupLocation }}</p>
+                  </div>
+                </div>
+                <div class="route-point">
+                  <span class="route-icon">🔴</span>
+                  <div>
+                    <strong>Dropoff:</strong>
+                    <p>{{ ride.dropoffLocation }}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="info-section">
+              <h4>Ride Details</h4>
+              <div class="details-grid">
+                <div class="detail-item">
+                  <span class="detail-label">Start Time:</span>
+                  <span class="detail-value">{{ formatDateTime(ride.startTime) }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Price:</span>
+                  <span class="detail-value">{{ ride.price }} RSD</span>
+                </div>
+                @if (ride.cancelled) {
+                  <div class="detail-item">
+                    <span class="detail-label">Cancelled By:</span>
+                    <span class="detail-value cancelled">{{ ride.cancelledBy || 'Unknown' }}</span>
+                  </div>
+                }
+              </div>
+            </div>
+
+            @if (ride.passengers && ride.passengers.length > 0) {
+              <div class="info-section">
+                <h4>Passengers ({{ ride.passengers.length }})</h4>
+                <div class="passengers-list">
+                  @for (passenger of ride.passengers; track passenger.id) {
+                    <div class="passenger-item">
+                      <div class="passenger-avatar">{{ passenger.firstName.charAt(0) }}</div>
+                      <div class="passenger-info">
+                        <strong>{{ passenger.firstName }} {{ passenger.lastName }}</strong>
+                        <p>{{ passenger.email }}</p>
+                      </div>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+
+          <div class="card-footer">
+            <p class="emergency-notice">⚠️ Emergency support required. Contact driver and passengers immediately.</p>
+          </div>
+        </div>
+      }
+    </div>
+  }
+</div>
