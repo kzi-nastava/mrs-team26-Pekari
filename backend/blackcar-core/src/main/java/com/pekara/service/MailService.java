@@ -15,4 +15,6 @@ public interface MailService {
     void sendRideDetailsShared(String toEmail, Long rideId, String creatorEmail);
 
     void sendRideReminder(String toEmail, Long rideId, java.time.LocalDateTime scheduledAt);
+
+    void sendRideCompleted(String toEmail, Long rideId, java.math.BigDecimal finalPrice);
 }

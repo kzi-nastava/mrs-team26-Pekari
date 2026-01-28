@@ -6,10 +6,12 @@ import com.pekara.dto.common.WebLocationPoint;
 import com.pekara.dto.request.EstimateRideRequest;
 import com.pekara.dto.request.OrderRideRequest;
 import com.pekara.dto.request.RideLocationUpdateRequest;
+import com.pekara.dto.request.RideRatingRequest;
 import com.pekara.dto.request.StopRideEarlyRequest;
 import com.pekara.dto.request.WebEstimateRideRequest;
 import com.pekara.dto.request.WebOrderRideRequest;
 import com.pekara.dto.request.WebRideLocationUpdateRequest;
+import com.pekara.dto.request.WebRideRatingRequest;
 import com.pekara.dto.request.WebStopRideEarlyRequest;
 import com.pekara.dto.response.ActiveRideResponse;
 import com.pekara.dto.response.DriverRideHistoryResponse;
@@ -83,6 +85,7 @@ public class RideMapper {
                 .estimatedTimeToDestinationMinutes(etaMinutes)
                 .distanceToDestinationKm(response.getDistanceToDestinationKm())
                 .status(response.getRideStatus() != null ? response.getRideStatus().name() : null)
+                .rideStatus(response.getRideStatus() != null ? response.getRideStatus().name() : null)
                 .nextStopName(response.getNextStopAddress())
                 .nextStopEta(etaMinutes)
                 .updatedAt(response.getUpdatedAt())
@@ -208,5 +211,16 @@ public class RideMapper {
                 response.getStatus(),
                 passengers
         );
+    }
+
+    public RideRatingRequest toServiceRideRatingRequest(WebRideRatingRequest web) {
+        if (web == null) {
+            return null;
+        }
+        return RideRatingRequest.builder()
+                .vehicleRating(web.getVehicleRating())
+                .driverRating(web.getDriverRating())
+                .comment(web.getComment())
+                .build();
     }
 }

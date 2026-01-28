@@ -3,6 +3,7 @@ package com.pekara.service;
 import com.pekara.dto.common.LocationPointDto;
 import com.pekara.dto.request.EstimateRideRequest;
 import com.pekara.dto.request.OrderRideRequest;
+import com.pekara.dto.request.RideRatingRequest;
 import com.pekara.dto.response.ActiveRideResponse;
 import com.pekara.dto.response.DriverRideHistoryResponse;
 import com.pekara.dto.response.OrderRideResponse;
@@ -32,4 +33,8 @@ public interface RideService {
     void stopRideEarly(Long rideId, String driverEmail, LocationPointDto actualStopLocation);
 
     List<DriverRideHistoryResponse> getDriverRideHistory(String driverEmail, LocalDateTime startDate, LocalDateTime endDate);
+
+    void rateRide(Long rideId, String passengerEmail, RideRatingRequest request);
+
+    Optional<ActiveRideResponse> getNextScheduledRideForDriver(String driverEmail);
 }

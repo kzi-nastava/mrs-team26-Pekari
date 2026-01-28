@@ -19,6 +19,7 @@ public class WebRideTrackingResponse {
     private Integer estimatedTimeToDestinationMinutes;
     private Double distanceToDestinationKm;
     private String status; // IN_PROGRESS, APPROACHING, ARRIVING
+    private String rideStatus; // ACCEPTED, IN_PROGRESS, COMPLETED, etc.
     private String nextStopName;
     private Integer nextStopEta; // minutes
     private LocalDateTime updatedAt;
