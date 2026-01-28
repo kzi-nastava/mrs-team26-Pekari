@@ -30,6 +30,7 @@ export class PassengerHomeComponent implements OnInit, OnDestroy {
 
   private focusedInput: FocusedInput = null;
   private trackingSubscription?: Subscription;
+  private pollTimer?: ReturnType<typeof setInterval>;
 
   estimate?: RideEstimateResponse;
   orderResult?: OrderRideResponse;
@@ -164,6 +165,7 @@ export class PassengerHomeComponent implements OnInit, OnDestroy {
 
           // Start tracking the active ride
           this.startTracking(activeRide.rideId);
+          this.startPolling();
 
           this.cdr.detectChanges();
         }
@@ -176,11 +178,61 @@ export class PassengerHomeComponent implements OnInit, OnDestroy {
     });
   }
 
+  private startPolling(): void {
+    this.stopPolling();
+    // Poll every 5 seconds to check for ride status updates
+    this.pollTimer = setInterval(() => {
+      if (this.isRideActive && this.orderResult?.rideId) {
+        this.rides.getActiveRideForPassenger().subscribe({
+          next: (updatedRide) => {
+            if (updatedRide) {
+              // Update status
+              this.rideStatus = updatedRide.status;
+              this.stopRequested = updatedRide.status === 'STOP_REQUESTED';
+
+              // Update order result
+              this.orderResult = {
+                ...this.orderResult!,
+                status: updatedRide.status,
+                assignedDriverEmail: updatedRide.driver?.email
+              };
+
+              // Check for completion
+              if (updatedRide.status === 'COMPLETED') {
+                this.handleRideCompletion(updatedRide.rideId);
+              }
+
+              this.cdr.detectChanges();
+            } else {
+              // No active ride - might have been cancelled or completed
+              this.stopPolling();
+            }
+          },
+          error: (err) => {
+            if (err?.status === 404 || err?.status === 204) {
+              // No active ride
+              this.stopPolling();
+            }
+            console.error('Error polling for ride updates:', err);
+          }
+        });
+      }
+    }, 5000);
+  }
+
+  private stopPolling(): void {
+    if (this.pollTimer) {
+      clearInterval(this.pollTimer);
+      this.pollTimer = undefined;
+    }
+  }
+
   ngOnDestroy(): void {
     if (this.scheduleBoundsTimer) {
       window.clearInterval(this.scheduleBoundsTimer);
     }
     this.stopTracking();
+    this.stopPolling();
   }
 
   private startTracking(rideId: number): void {
@@ -670,6 +722,7 @@ export class PassengerHomeComponent implements OnInit, OnDestroy {
 
             // Start tracking the ride
             this.startTracking(resp.rideId);
+            this.startPolling();
           }
           this.cdr.detectChanges();
         },
@@ -759,6 +812,7 @@ export class PassengerHomeComponent implements OnInit, OnDestroy {
 
   resetForm(): void {
     this.stopTracking();
+    this.stopPolling();
     this.isRideActive = false;
     this.rideStatus = undefined;
     this.orderResult = undefined;
