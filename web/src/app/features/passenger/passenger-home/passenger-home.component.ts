@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, OnInit, inject, ChangeDetectorRef, ViewChild, ViewChildren, QueryList } from '@angular/core';
 import { FormArray, FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Subscription } from 'rxjs';
-import { RideApiService, OrderRideResponse, RideEstimateResponse, LocationPoint } from '../../../core/services/ride-api.service';
+import { RideApiService, OrderRideResponse, RideEstimateResponse, LocationPoint, FavoriteRoute } from '../../../core/services/ride-api.service';
 import { GeocodingService } from '../../../core/services/geocoding.service';
 import { WebSocketService, RideTrackingUpdate } from '../../../core/services/websocket.service';
 import { AddressAutocompleteComponent, AddressSelection } from '../../../shared/components/address-autocomplete/address-autocomplete.component';
@@ -38,6 +38,8 @@ export class PassengerHomeComponent implements OnInit, OnDestroy {
   rideStatus?: string;
   stopRequested = false;
   panicActivated = false;
+  favoriteRoutes: FavoriteRoute[] = [];
+  showFavoriteRoutesModal = false;
 
   // Tracking state
   driverLocation?: { latitude: number; longitude: number } | null = null;
@@ -138,6 +140,9 @@ export class PassengerHomeComponent implements OnInit, OnDestroy {
 
     // Check for active ride on init
     this.checkForActiveRide();
+
+    // Load favorite routes
+    this.loadFavoriteRoutes();
   }
 
   private checkForActiveRide(): void {
@@ -286,8 +291,106 @@ export class PassengerHomeComponent implements OnInit, OnDestroy {
     this.focusedInput = { type: 'stop', index };
   }
 
+  loadFavoriteRoutes() {
+    const token = localStorage.getItem('auth_token');
+    if (!token) {
+      return;
+    }
+
+    this.rides.getFavoriteRoutes().subscribe({
+      next: (routes) => {
+        this.favoriteRoutes = routes;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        // Silently fail - user might not have any favorite routes yet
+        console.debug('Failed to load favorite routes:', err);
+      }
+    });
+  }
+
   chooseFavoriteRoute() {
-    this.error = 'Favorite routes are not implemented yet.';
+    if (this.favoriteRoutes.length === 0) {
+      this.error = 'You don\'t have any favorite routes yet. Complete a ride and add it to favorites from your ride history.';
+      return;
+    }
+    this.showFavoriteRoutesModal = true;
+    this.cdr.detectChanges();
+  }
+
+  selectFavoriteRoute(route: FavoriteRoute) {
+    this.showFavoriteRoutesModal = false;
+    this.error = undefined;
+
+    // Clear existing stops
+    while (this.stops.length > 0) {
+      this.stops.removeAt(0);
+    }
+
+    // Set pickup
+    this.form.patchValue({
+      pickup: {
+        address: route.pickup.address,
+        latitude: route.pickup.latitude,
+        longitude: route.pickup.longitude
+      }
+    });
+
+    // Set stops
+    if (route.stops && route.stops.length > 0) {
+      route.stops.forEach(stop => {
+        this.stops.push(
+          this.fb.group({
+            address: [stop.address, Validators.required],
+            latitude: [stop.latitude, Validators.required],
+            longitude: [stop.longitude, Validators.required]
+          })
+        );
+      });
+    }
+
+    // Set dropoff
+    this.form.patchValue({
+      dropoff: {
+        address: route.dropoff.address,
+        latitude: route.dropoff.latitude,
+        longitude: route.dropoff.longitude
+      }
+    });
+
+    // Set vehicle type and options
+    this.form.patchValue({
+      vehicleType: route.vehicleType || 'STANDARD',
+      babyTransport: route.babyTransport || false,
+      petTransport: route.petTransport || false
+    });
+
+    // Update autocomplete components
+    if (this.pickupAutocomplete) {
+      this.pickupAutocomplete.setAddress(route.pickup.address);
+    }
+    if (this.dropoffAutocomplete) {
+      this.dropoffAutocomplete.setAddress(route.dropoff.address);
+    }
+
+    // Update stop autocompletes
+    setTimeout(() => {
+      if (this.stopAutocompletes && route.stops) {
+        route.stops.forEach((stop, index) => {
+          const autocomplete = this.stopAutocompletes?.toArray()[index];
+          if (autocomplete) {
+            autocomplete.setAddress(stop.address);
+          }
+        });
+      }
+    }, 0);
+
+    this.cdr.detectChanges();
+  }
+
+  closeFavoriteRoutesModal() {
+    this.showFavoriteRoutesModal = false;
+    this.cdr.detectChanges();
   }
 
   onMapClick(event: { latitude: number; longitude: number }): void {
