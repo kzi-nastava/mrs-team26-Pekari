@@ -10,6 +10,7 @@ import { PassengerHomeComponent } from './features/passenger/passenger-home/pass
 import { PassengerHistoryComponent } from './features/passenger/passenger-history/passenger-history.component';
 import { ProfileComponent } from './features/profile/profile.component';
 import { AddDriverComponent } from './features/admin/add-driver/add-driver.component';
+import { PanicPanel } from './features/admin/panic-panel/panic-panel';
 import { authGuard, roleGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
@@ -42,6 +43,11 @@ export const routes: Routes = [
   {
     path: 'admin/add-driver',
     component: AddDriverComponent,
+    canActivate: [roleGuard(['admin'])]
+  },
+  {
+    path: 'admin/panic-panel',
+    component: PanicPanel,
     canActivate: [roleGuard(['admin'])]
   }
 ];

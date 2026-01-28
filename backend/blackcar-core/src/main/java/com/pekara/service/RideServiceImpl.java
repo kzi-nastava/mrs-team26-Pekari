@@ -627,4 +627,15 @@ public class RideServiceImpl implements RideService {
 
         // TODO: Send notifications to admin/support team
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<com.pekara.dto.response.DriverRideHistoryResponse> getActivePanicRides() {
+        List<RideStatus> activeStatuses = List.of(RideStatus.IN_PROGRESS, RideStatus.STOP_REQUESTED);
+        List<Ride> panicRides = rideRepository.findActivePanicRides(activeStatuses);
+
+        return panicRides.stream()
+                .map(this::mapToDriverRideHistoryResponse)
+                .collect(Collectors.toList());
+    }
 }

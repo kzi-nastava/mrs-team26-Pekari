@@ -237,4 +237,13 @@ export class RideApiService {
       `${this.env.getApiUrl()}/rides/history/driver?startDate=${startDate}&endDate=${endDate}&page=${page}&size=${size}`
     );
   }
+
+  // Panic mode methods
+  activatePanic(rideId: number) {
+    return this.http.post<MessageResponse>(`${this.env.getApiUrl()}/rides/${rideId}/panic`, {});
+  }
+
+  getActivePanicRides() {
+    return this.http.get<DriverRideHistoryResponse[]>(`${this.env.getApiUrl()}/rides/panic/active`);
+  }
 }

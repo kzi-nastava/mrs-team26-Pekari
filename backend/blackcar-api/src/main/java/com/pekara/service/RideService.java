@@ -34,4 +34,6 @@ public interface RideService {
     List<DriverRideHistoryResponse> getDriverRideHistory(String driverEmail, LocalDateTime startDate, LocalDateTime endDate);
 
     void activatePanic(Long rideId, String userEmail);
+
+    List<DriverRideHistoryResponse> getActivePanicRides();
 }

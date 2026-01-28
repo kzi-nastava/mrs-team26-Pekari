@@ -33,6 +33,7 @@ export class DriverHomeComponent implements OnInit, OnDestroy {
   error = signal<string | null>(null);
   actionInProgress = signal(false);
   stopRequested = signal(false);
+  panicActivated = signal(false);
   currentLocation = signal<{ latitude: number; longitude: number } | null>(null);
 
   ngOnInit() {
@@ -185,6 +186,34 @@ export class DriverHomeComponent implements OnInit, OnDestroy {
   canCancelRide(): boolean {
     const ride = this.activeRide();
     return ride !== null && ride.status !== 'COMPLETED' && ride.status !== 'CANCELLED';
+  }
+
+  canActivatePanic(): boolean {
+    const ride = this.activeRide();
+    return ride !== null && (ride.status === 'IN_PROGRESS' || ride.status === 'STOP_REQUESTED');
+  }
+
+  activatePanic() {
+    const ride = this.activeRide();
+    if (!ride) return;
+
+    if (confirm('⚠️ Are you sure you want to activate the PANIC button? This will notify administrators immediately.')) {
+      this.actionInProgress.set(true);
+      this.error.set(null);
+
+      this.rideService.activatePanic(ride.rideId).subscribe({
+        next: (response) => {
+          this.actionInProgress.set(false);
+          this.panicActivated.set(true);
+          alert('🚨 PANIC activated! Emergency support has been notified.');
+        },
+        error: (err) => {
+          this.actionInProgress.set(false);
+          this.error.set(err.error?.message || 'Failed to activate panic. Please try again.');
+          console.error('Error activating panic:', err);
+        }
+      });
+    }
   }
 
   getStatusLabel(status: string): string {
