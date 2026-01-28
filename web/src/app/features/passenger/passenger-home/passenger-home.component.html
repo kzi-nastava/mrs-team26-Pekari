@@ -271,4 +271,79 @@
       </div>
     </section>
   </section>
+
+  <!-- Rating Modal -->
+  <div class="modal-overlay" *ngIf="showRatingModal" (click)="skipRating()">
+    <div class="modal-content rating-modal" (click)="$event.stopPropagation()">
+      <h2 class="modal-title">Rate Your Ride</h2>
+      <p class="modal-subtitle">How was your experience?</p>
+
+      <div class="rating-section">
+        <div class="rating-group">
+          <label class="rating-label">Vehicle Rating</label>
+          <div class="star-rating">
+            <button
+              *ngFor="let star of [1, 2, 3, 4, 5]"
+              type="button"
+              class="star-btn"
+              [class.active]="star <= vehicleRating"
+              (click)="setVehicleRating(star)"
+            >
+              ★
+            </button>
+          </div>
+        </div>
+
+        <div class="rating-group">
+          <label class="rating-label">Driver Rating</label>
+          <div class="star-rating">
+            <button
+              *ngFor="let star of [1, 2, 3, 4, 5]"
+              type="button"
+              class="star-btn"
+              [class.active]="star <= driverRating"
+              (click)="setDriverRating(star)"
+            >
+              ★
+            </button>
+          </div>
+        </div>
+
+        <div class="rating-group">
+          <label class="rating-label">Comments (Optional)</label>
+          <textarea
+            class="input rating-textarea"
+            [(ngModel)]="ratingComment"
+            placeholder="Share your feedback..."
+            rows="3"
+            maxlength="500"
+          ></textarea>
+        </div>
+      </div>
+
+      <p class="error-message" *ngIf="error">{{ error }}</p>
+      <p class="success-message" *ngIf="ratingSuccess">{{ ratingSuccess }}</p>
+
+      <div class="modal-actions">
+        <button
+          class="secondary"
+          type="button"
+          (click)="skipRating()"
+          [disabled]="ratingSubmitting"
+        >
+          Skip
+        </button>
+        <button
+          class="primary"
+          type="button"
+          (click)="submitRating()"
+          [disabled]="ratingSubmitting || vehicleRating === 0 || driverRating === 0"
+        >
+          {{ ratingSubmitting ? 'Submitting...' : 'Submit Rating' }}
+        </button>
+      </div>
+
+      <p class="modal-note">You have 3 days to rate this ride</p>
+    </div>
+  </div>
 </main>

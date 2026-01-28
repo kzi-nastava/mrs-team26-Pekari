@@ -186,7 +186,7 @@ public class RideController {
     @PostMapping("/{rideId}/stop")
     public ResponseEntity<WebMessageResponse> stopRide(
             @PathVariable Long rideId,
-            @Valid @RequestBody(required = false) WebStopRideEarlyRequest request,
+            @RequestBody(required = false) WebStopRideEarlyRequest request,
             @AuthenticationPrincipal String currentUserEmail) {
         log.debug("Stop ride requested for rideId: {}", rideId);
 
@@ -195,15 +195,37 @@ public class RideController {
             var serviceRequest = rideMapper.toServiceStopRideEarlyRequest(request);
             rideService.stopRideEarly(rideId, currentUserEmail, serviceRequest.getStopLocation());
             log.info("Ride {} stopped early at new location", rideId);
+
+            // Send WebSocket update with COMPLETED status
+            sendCompletionWebSocketUpdate(rideId);
+
             return ResponseEntity.ok(new WebMessageResponse("Ride completed at new location."));
         }
 
         // Otherwise, complete ride normally at original destination
         rideService.completeRide(rideId, currentUserEmail);
         log.info("Ride {} stopped and completed successfully", rideId);
+
+        // Send WebSocket update with COMPLETED status
+        sendCompletionWebSocketUpdate(rideId);
+
         return ResponseEntity.ok(new WebMessageResponse("Ride completed successfully."));
     }
 
+    private void sendCompletionWebSocketUpdate(Long rideId) {
+        try {
+            WebRideTrackingResponse payload = WebRideTrackingResponse.builder()
+                    .rideId(rideId)
+                    .status("COMPLETED")
+                    .rideStatus("COMPLETED")
+                    .build();
+            messagingTemplate.convertAndSend("/topic/rides/" + rideId + "/tracking", payload);
+            log.debug("Sent COMPLETED status via WebSocket for ride {}", rideId);
+        } catch (Exception e) {
+            log.warn("Failed to send WebSocket completion update for ride {}: {}", rideId, e.getMessage());
+        }
+    }
+    //fallback
     @Operation(summary = "Track ride", description = "Get real-time tracking information for an active ride - Protected endpoint")
     @PreAuthorize("hasAnyRole('PASSENGER', 'DRIVER')")
     @GetMapping("/{rideId}/track")
@@ -259,20 +281,14 @@ public class RideController {
     @PostMapping("/{rideId}/rate")
     public ResponseEntity<WebMessageResponse> rateRide(
             @PathVariable Long rideId,
-            @Valid @RequestBody WebRideRatingRequest request) {
+            @Valid @RequestBody WebRideRatingRequest request,
+            @AuthenticationPrincipal String currentUserEmail) {
 
         log.debug("Rating ride {} - Vehicle: {}/5, Driver: {}/5", rideId, request.getVehicleRating(), request.getDriverRating());
 
-        // TODO: Implement ride rating via RideService
-        // - Verify user is a passenger on this ride
-        // - Verify ride is COMPLETED
-        // - Verify ride was completed within last 3 days (rating deadline)
-        // - Verify user hasn't already rated this ride
-        // - Store rating (vehicle rating, driver rating, comment)
-        // - Update driver's average rating
-        // - Send email/notification to passenger confirming rating submission
+        rideService.rateRide(rideId, currentUserEmail, rideMapper.toServiceRideRatingRequest(request));
 
-        log.info("Ride {} rated successfully", rideId);
+        log.info("Ride {} rated successfully by {}", rideId, currentUserEmail);
         return ResponseEntity.ok(new WebMessageResponse("Ride rated successfully."));
     }
 
@@ -461,4 +477,24 @@ public class RideController {
         log.debug("Retrieved passenger details for rideId: {}", rideId);
         return ResponseEntity.ok(rideDetails);
     }
+
+
+    @Operation(summary = "Get next scheduled ride for driver", description = "Get the next scheduled ride for the logged-in driver - Protected endpoint (Drivers only)")
+    @PreAuthorize("hasRole('DRIVER')")
+    @GetMapping("/next-scheduled/driver")
+    public ResponseEntity<WebActiveRideResponse> getNextScheduledRideForDriver(
+            @AuthenticationPrincipal String currentUserEmail) {
+        log.debug("Get next scheduled ride requested for driver: {}", currentUserEmail);
+
+        var nextRide = rideService.getNextScheduledRideForDriver(currentUserEmail);
+
+        if (nextRide.isEmpty()) {
+            return ResponseEntity.noContent().build();
+        }
+
+        WebActiveRideResponse response = rideMapper.toWebActiveRideResponse(nextRide.get());
+        return ResponseEntity.ok(response);
+    }
+
+
 }

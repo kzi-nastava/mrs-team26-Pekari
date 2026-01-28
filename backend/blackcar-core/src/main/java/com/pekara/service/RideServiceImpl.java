@@ -4,6 +4,7 @@ import com.pekara.constant.RideStatus;
 import com.pekara.dto.common.LocationPointDto;
 import com.pekara.dto.request.EstimateRideRequest;
 import com.pekara.dto.request.OrderRideRequest;
+import com.pekara.dto.request.RideRatingRequest;
 import com.pekara.dto.response.ActiveRideResponse;
 import com.pekara.dto.response.OrderRideResponse;
 import com.pekara.dto.response.RideEstimateResponse;
@@ -13,9 +14,11 @@ import com.pekara.exception.NoDriversAvailableException;
 import com.pekara.model.Driver;
 import com.pekara.model.DriverState;
 import com.pekara.model.Ride;
+import com.pekara.model.RideRating;
 import com.pekara.model.RideStop;
 import com.pekara.model.User;
 import com.pekara.repository.DriverStateRepository;
+import com.pekara.repository.RideRatingRepository;
 import com.pekara.repository.RideRepository;
 import com.pekara.repository.UserRepository;
 import com.pekara.util.GeoUtils;
@@ -39,6 +42,7 @@ public class RideServiceImpl implements RideService {
 
     private final UserRepository userRepository;
     private final RideRepository rideRepository;
+    private final RideRatingRepository rideRatingRepository;
     private final DriverStateRepository driverStateRepository;
     private final EntityManager entityManager;
 
@@ -278,8 +282,13 @@ public class RideServiceImpl implements RideService {
 
         driverStateManagementService.releaseDriverAfterRide(ride.getDriver().getId());
         rideWorkLogService.completeWorkLog(rideId, now);
+        List<String> passengerEmails = ride.getPassengers().stream()
+                .map(passenger -> passenger.getEmail())
+                .collect(Collectors.toList());
+        rideNotificationService.sendRideCompletionNotifications(rideId, passengerEmails, ride.getEstimatedPrice());
 
-        log.info("Ride {} completed by driver {}", rideId, driverEmail);
+        log.info("Ride {} completed by driver {}, notifications sent to {} passengers", rideId, driverEmail, passengerEmails.size());
+
     }
 
     @Override
@@ -627,6 +636,69 @@ public class RideServiceImpl implements RideService {
         log.warn("PANIC ACTIVATED - Ride ID: {}, Activated by: {}, User: {}", rideId, panickedBy, userEmail);
 
         // TODO: Send notifications to admin/support team
+    public void rateRide(Long rideId, String passengerEmail, RideRatingRequest request) {
+        // Get passenger user
+        User passenger = userRepository.findByEmail(passengerEmail)
+                .orElseThrow(() -> new IllegalArgumentException("Passenger not found"));
+
+        // Get ride
+        Ride ride = rideRepository.findById(rideId)
+                .orElseThrow(() -> new IllegalArgumentException("Ride not found"));
+
+        // Verify user is a passenger on this ride
+        boolean isPassenger = ride.getPassengers().stream()
+                .anyMatch(p -> p.getId().equals(passenger.getId()));
+        if (!isPassenger) {
+            throw new IllegalArgumentException("You are not a passenger on this ride");
+        }
+
+        // Verify ride is COMPLETED
+        if (ride.getStatus() != RideStatus.COMPLETED) {
+            throw new IllegalArgumentException("Only completed rides can be rated");
+        }
+
+        // Verify ride was completed within last 3 days (rating deadline)
+        LocalDateTime completedAt = ride.getCompletedAt();
+        if (completedAt == null) {
+            throw new IllegalArgumentException("Ride completion time not found");
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime deadline = completedAt.plusDays(3);
+        if (now.isAfter(deadline)) {
+            throw new IllegalArgumentException("Rating deadline has passed. Ratings must be submitted within 3 days of ride completion");
+        }
+
+        // Verify user hasn't already rated this ride
+        boolean alreadyRated = rideRatingRepository.existsByRideIdAndPassengerId(rideId, passenger.getId());
+        if (alreadyRated) {
+            throw new IllegalArgumentException("You have already rated this ride");
+        }
+
+        // Validate ratings
+        if (request.getVehicleRating() < 1 || request.getVehicleRating() > 5) {
+            throw new IllegalArgumentException("Vehicle rating must be between 1 and 5");
+        }
+        if (request.getDriverRating() < 1 || request.getDriverRating() > 5) {
+            throw new IllegalArgumentException("Driver rating must be between 1 and 5");
+        }
+
+        // Store rating
+        RideRating rating = RideRating.builder()
+                .ride(ride)
+                .passenger(passenger)
+                .vehicleRating(request.getVehicleRating())
+                .driverRating(request.getDriverRating())
+                .comment(request.getComment())
+                .build();
+
+        rideRatingRepository.save(rating);
+
+        // TODO: Update driver's average rating
+        // TODO: Send email/notification to passenger confirming rating submission
+
+        log.info("Ride {} rated by passenger {}: vehicle={}/5, driver={}/5",
+                rideId, passengerEmail, request.getVehicleRating(), request.getDriverRating());
     }
 
     @Override
@@ -638,5 +710,23 @@ public class RideServiceImpl implements RideService {
         return panicRides.stream()
                 .map(this::mapToDriverRideHistoryResponse)
                 .collect(Collectors.toList());
+      
+    public Optional<ActiveRideResponse> getNextScheduledRideForDriver(String driverEmail) {
+        User driver = userRepository.findByEmail(driverEmail)
+                .orElseThrow(() -> new IllegalArgumentException("Driver not found"));
+
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime maxScheduledTime = now.plusHours(24);
+
+        // Find scheduled rides for this driver starting from now up to 24 hours ahead
+        List<Ride> scheduledRides = rideRepository.findScheduledRidesStartingBefore(
+                RideStatus.SCHEDULED, now, maxScheduledTime);
+
+        // Filter for this specific driver
+        Optional<Ride> nextRide = scheduledRides.stream()
+                .filter(ride -> ride.getDriver() != null && ride.getDriver().getId().equals(driver.getId()))
+                .min((r1, r2) -> r1.getScheduledAt().compareTo(r2.getScheduledAt()));
+
+        return nextRide.map(this::mapToActiveRideResponse);
     }
 }

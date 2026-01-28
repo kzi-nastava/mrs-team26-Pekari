@@ -47,6 +47,15 @@ export class PassengerHomeComponent implements OnInit, OnDestroy {
   reportSubmitting = false;
   reportSuccess?: string;
 
+  // Rating state
+  showRatingModal = false;
+  vehicleRating = 0;
+  driverRating = 0;
+  ratingComment = '';
+  ratingSubmitting = false;
+  ratingSuccess?: string;
+  completedRideId?: number;
+
   scheduledMin = '';
   scheduledMax = '';
   private scheduleBoundsTimer?: number;
@@ -181,12 +190,23 @@ export class PassengerHomeComponent implements OnInit, OnDestroy {
         this.trackingSubscription = this.wsService.subscribeToRideTracking(rideId).subscribe({
           next: (update: RideTrackingUpdate) => {
             console.log('[PassengerHome] Received tracking update:', update);
-            this.driverLocation = {
-              latitude: update.vehicleLatitude,
-              longitude: update.vehicleLongitude
-            };
-            this.estimatedTimeMinutes = update.estimatedTimeToDestinationMinutes;
-            console.log('[PassengerHome] Driver location set to:', this.driverLocation);
+
+            // Check if ride is completed (check both rideStatus and status fields)
+            if (update.rideStatus === 'COMPLETED' || update.status === 'COMPLETED') {
+              console.log('[PassengerHome] Ride completed, showing rating modal');
+              this.handleRideCompletion(rideId);
+              return;
+            }
+
+            // Only update location if we have valid coordinates
+            if (update.vehicleLatitude && update.vehicleLongitude) {
+              this.driverLocation = {
+                latitude: update.vehicleLatitude,
+                longitude: update.vehicleLongitude
+              };
+              this.estimatedTimeMinutes = update.estimatedTimeToDestinationMinutes;
+              console.log('[PassengerHome] Driver location set to:', this.driverLocation);
+            }
             this.cdr.detectChanges();
           },
           error: (err) => {
@@ -690,8 +710,71 @@ export class PassengerHomeComponent implements OnInit, OnDestroy {
         const backendMsg = err?.error?.message;
         const plainMsg = typeof err?.error === 'string' ? err.error : undefined;
         this.error = backendMsg || plainMsg || err?.message || 'Failed to activate panic';
+  private handleRideCompletion(rideId: number): void {
+    this.stopTracking();
+    this.isRideActive = false;
+    this.form.enable();
+    this.completedRideId = rideId;
+    this.showRatingModal = true;
+
+    if (this.orderResult) {
+      this.orderResult.status = 'COMPLETED';
+      this.orderResult.message = 'Ride completed successfully!';
+    }
+
+    this.cdr.detectChanges();
+  }
+
+  setVehicleRating(rating: number): void {
+    this.vehicleRating = rating;
+  }
+
+  setDriverRating(rating: number): void {
+    this.driverRating = rating;
+  }
+
+  submitRating(): void {
+    if (!this.completedRideId || this.vehicleRating === 0 || this.driverRating === 0) {
+      this.error = 'Please provide both vehicle and driver ratings';
+      return;
+    }
+
+    this.ratingSubmitting = true;
+    this.error = undefined;
+
+    this.rides.rateRide(this.completedRideId, {
+      vehicleRating: this.vehicleRating,
+      driverRating: this.driverRating,
+      comment: this.ratingComment.trim() || undefined
+    }).subscribe({
+      next: (response) => {
+        this.ratingSubmitting = false;
+        this.ratingSuccess = response.message || 'Rating submitted successfully!';
+        setTimeout(() => {
+          this.closeRatingModal();
+        }, 2000);
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        this.ratingSubmitting = false;
+        this.error = err?.error?.message || 'Failed to submit rating';
         this.cdr.detectChanges();
       }
     });
+  }
+
+  closeRatingModal(): void {
+    this.showRatingModal = false;
+    this.vehicleRating = 0;
+    this.driverRating = 0;
+    this.ratingComment = '';
+    this.ratingSuccess = undefined;
+    this.completedRideId = undefined;
+    this.orderResult = undefined;
+    this.cdr.detectChanges();
+  }
+
+  skipRating(): void {
+    this.closeRatingModal();
   }
 }
