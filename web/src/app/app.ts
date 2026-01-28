@@ -33,19 +33,22 @@ export class App {
       );
     } else if (user.role === 'driver') {
       links.push(
+        { label: 'Home', path: '/driver-home' },
         { label: 'Profile', path: '/profile' },
         { label: 'History', path: '/driver-history' },
         { label: 'Logout', onClick: () => this.handleLogout() }
       );
     } else if (user.role === 'passenger') {
       links.push(
-        { label: 'Profile', path: '/profile' },
         { label: 'Home', path: '/passenger-home' },
+        { label: 'History', path: '/passenger-history' },
+        { label: 'Profile', path: '/profile' },
         { label: 'Logout', onClick: () => this.handleLogout() }
       );
     } else if (user.role === 'admin') {
       links.push(
-        { label: 'Profile', path: '/profile' },
+        { label: 'Management', path: '/admin/management' },
+        { label: 'Add Driver', path: '/admin/add-driver' },
         { label: 'Logout', onClick: () => this.handleLogout() }
       );
     }
@@ -54,10 +57,12 @@ export class App {
   });
 
   handleLogout() {
-    this.authService.logout();
-    this.router.navigate(['/']);
+    this.authService.logout().subscribe({
+      next: () => this.router.navigate(['/']),
+      error: () => this.router.navigate(['/']) // Navigate even if logout fails
+    });
   }
 
   // Show development helper based on environment configuration
-  isDevelopment = !this.environmentService.isProduction();
+  isDevelopment = this.environmentService.areDevToolsEnabled();
 }

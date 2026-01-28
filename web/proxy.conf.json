@@ -1,0 +1,14 @@
+{
+  "/nominatim": {
+    "target": "https://nominatim.openstreetmap.org",
+    "secure": true,
+    "changeOrigin": true,
+    "headers": {
+      "User-Agent": "PekariApp/1.0 (contact: dev@local)",
+      "Referer": "http://localhost:4200/"
+    },
+    "pathRewrite": {
+      "^/nominatim": ""
+    }
+  }
+}

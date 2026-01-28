@@ -6,14 +6,14 @@
     <div class="filter-row">
       <div class="filter-group">
         <label>From</label>
-        <input type="date" id="dateFrom" value="2024-01-01">
+        <input type="date" id="dateFrom" [(ngModel)]="dateFrom">
       </div>
       <div class="filter-group">
         <label>To</label>
-        <input type="date" id="dateTo" value="2024-12-31">
+        <input type="date" id="dateTo" [(ngModel)]="dateTo">
       </div>
-      <button class="filter-btn">Filter</button>
-      <button class="filter-btn reset-btn">Reset</button>
+      <button class="filter-btn" (click)="onFilter()">Filter</button>
+      <button class="filter-btn reset-btn" (click)="onReset()">Reset</button>
     </div>
   </div>
   <div class="rides-list">

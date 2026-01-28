@@ -1,80 +1,209 @@
 import { Injectable, signal, inject } from '@angular/core';
 import { User } from '../models/user.model';
-import { Observable, of, throwError, timer } from 'rxjs';
+import { Observable, of, throwError } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
-import { map, switchMap } from 'rxjs/operators';
+import { map, switchMap, catchError } from 'rxjs/operators';
+import { EnvironmentService } from './environment.service';
+
+export interface RegisterDriverData {
+  firstName: string;
+  lastName: string;
+  email: string;
+  address: string;
+  phoneNumber: string;
+  vehicleModel: string;
+  vehicleType: string;
+  licensePlate: string;
+  numberOfSeats: number;
+  babyFriendly: boolean;
+  petFriendly: boolean;
+}
+
+export interface RegisterDriverResponse {
+  message: string;
+  email: string;
+  status: string;
+}
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
   private http = inject(HttpClient);
+  private env = inject(EnvironmentService);
   private currentUserSignal = signal<User | null>(null);
 
   readonly currentUser = this.currentUserSignal.asReadonly();
 
-  constructor() {
-    this.checkSession();
-  }
-
-  private checkSession(): void {
-    // This will be replaced with a call to a "Who Am I" endpoint
-    // to fetch the user based on the session cookie/token.
-  }
-
-  login(credentials: any): Observable<User> {
-    // Simulated API call delay
-    return timer(500).pipe(
-      switchMap(() => {
-        if (credentials.email === 'error@example.com') {
-          return throwError(() => new Error('Invalid credentials'));
-        }
-
-        const mockUser: User = {
-          id: '1',
-          email: credentials.email || 'user@example.com',
-          username: 'testuser',
-          role: 'passenger'
-        };
-
-        this.currentUserSignal.set(mockUser);
-        return of(mockUser);
+  login(credentials: { email: string; password: string }): Observable<User> {
+    return this.http
+      .post<{ token: string; id?: string; userId?: string; email: string; role: string }>(`${this.env.getApiUrl()}/auth/login`, credentials, {
+        withCredentials: true // Enable cookies to be sent/received
       })
-    );
+      .pipe(
+        map((resp) => {
+          const role = this.normalizeRole(resp.role);
+          if (!role) {
+            throw new Error('Unsupported role');
+          }
+
+          const user: User = {
+            id: resp.id || resp.userId || resp.email,
+            email: resp.email,
+            username: resp.email,
+            role
+          };
+          this.currentUserSignal.set(user);
+          return user;
+        }),
+        catchError(err => {
+          const errorMessage = err.error?.message || 'Login failed';
+          return throwError(() => new Error(errorMessage));
+        })
+      );
   }
 
-  register(userData: any): Observable<User> {
-    // Simulated API call delay
-    return timer(500).pipe(
+  private normalizeRole(role: string | null | undefined): User['role'] | null {
+    const r = (role || '').toLowerCase();
+    if (r === 'admin' || r === 'passenger' || r === 'driver') {
+      return r;
+    }
+    return null;
+  }
+
+  register(userData: any): Observable<{ message: string; email: string }> {
+    const formData = new FormData();
+    formData.append('email', userData.email);
+    // Auto-generate username from email since we don't have it in the form
+    const autoUsername = userData.email.split('@')[0];
+    formData.append('username', autoUsername);
+    formData.append('password', userData.password);
+    formData.append('firstName', userData.firstName);
+    formData.append('lastName', userData.lastName);
+    formData.append('address', userData.address);
+    // Ensure phone number format matches backend requirement (digits only, optional +)
+    // Remove spaces/dashes if any, keep +
+    const cleanPhone = userData.phoneNumber.replace(/[^0-9+]/g, '');
+    formData.append('phoneNumber', cleanPhone);
+
+    // We are not sending profileImage for now
+
+    return this.http.post<{ message: string; email: string }>(`${this.env.getApiUrl()}/auth/register/user`, formData)
+      .pipe(
+        catchError(err => {
+          const errorMessage = err.error?.message || 'Registration failed';
+          return throwError(() => new Error(errorMessage));
+        })
+      );
+  }
+
+  logout(): Observable<void> {
+    return this.http.post<void>(`${this.env.getApiUrl()}/auth/logout`, {}, {
+      withCredentials: true // Send cookies to backend
+    }).pipe(
       map(() => {
-        const newUser: User = {
-          id: Math.random().toString(36).substring(7),
-          email: userData.email,
-          username: userData.username || `${userData.firstName}${userData.lastName}`.toLowerCase(),
-          firstName: userData.firstName,
-          lastName: userData.lastName,
-          role: 'passenger'
-        };
-        // No signal used, user has to activate account via email
-        return newUser;
+        this.currentUserSignal.set(null);
+      }),
+      catchError(err => {
+        // Even if logout fails, clear the user locally
+        this.currentUserSignal.set(null);
+        return of(void 0);
       })
     );
-  }
-
-  logout(): void {
-    this.currentUserSignal.set(null);
   }
 
   isAuthenticated(): boolean {
     return this.currentUserSignal() !== null;
   }
 
+  checkSession(): Observable<User | null> {
+    return this.http.get<{ id?: string; userId?: string; email: string; role: string }>(`${this.env.getApiUrl()}/auth/me`, {
+      withCredentials: true
+    }).pipe(
+      map((resp) => {
+        const role = this.normalizeRole(resp.role);
+        if (!role) {
+          return null;
+        }
+
+        const user: User = {
+          id: resp.id || resp.userId || resp.email,
+          email: resp.email,
+          username: resp.email,
+          role
+        };
+        this.currentUserSignal.set(user);
+        return user;
+      }),
+      catchError(() => {
+        this.currentUserSignal.set(null);
+        return of(null);
+      })
+    );
+  }
+
   forgotPassword(email: string): Observable<void> {
-    // Simulated API call delay
-    return timer(500).pipe(
-      map(() => {
-        console.log(`Password reset instructions sent to: ${email}`);
-        return;
+    // TODO: Hook to real backend endpoint when implemented
+    return this.http.post<void>(`${this.env.getApiUrl()}/auth/reset-password`, { email });
+  }
+
+  activate(token: string): Observable<{ message: string }> {
+    return this.http.get<{ message: string }>(`${this.env.getApiUrl()}/auth/activate`, {
+      params: { token }
+    }).pipe(
+      catchError(err => {
+        const errorMessage = err.error?.message || 'Activation failed';
+        return throwError(() => new Error(errorMessage));
+      })
+    );
+  }
+
+  getActivationInfo(token: string): Observable<{ requiresPassword: boolean; role: string; email: string }> {
+    return this.http.get<{ requiresPassword: boolean; role: string; email: string }>(`${this.env.getApiUrl()}/auth/activation-info`, {
+      params: { token }
+    }).pipe(
+      catchError(err => {
+        const errorMessage = err.error?.message || 'Activation info failed';
+        return throwError(() => new Error(errorMessage));
+      })
+    );
+  }
+
+  setNewPassword(token: string, newPassword: string): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.env.getApiUrl()}/auth/new-password`, {
+      token,
+      newPassword
+    }).pipe(
+      catchError(err => {
+        const errorMessage = err.error?.message || 'Password setup failed';
+        return throwError(() => new Error(errorMessage));
+      })
+    );
+  }
+
+  registerDriver(driverData: Partial<RegisterDriverData>): Observable<RegisterDriverResponse> {
+    const formData = new FormData();
+    formData.append('email', driverData.email || '');
+    formData.append('firstName', driverData.firstName || '');
+    formData.append('lastName', driverData.lastName || '');
+    formData.append('address', driverData.address || '');
+    formData.append('phoneNumber', driverData.phoneNumber || '');
+
+    // Vehicle data as nested object for multipart/form-data
+    formData.append('vehicle.model', driverData.vehicleModel || '');
+    formData.append('vehicle.type', driverData.vehicleType || 'STANDARD');
+    formData.append('vehicle.licensePlate', driverData.licensePlate || '');
+    formData.append('vehicle.numberOfSeats', String(driverData.numberOfSeats || 4));
+    formData.append('vehicle.babyFriendly', String(driverData.babyFriendly || false));
+    formData.append('vehicle.petFriendly', String(driverData.petFriendly || false));
+
+    return this.http.post<RegisterDriverResponse>(
+      `${this.env.getApiUrl()}/auth/register/driver`,
+      formData
+    ).pipe(
+      catchError(err => {
+        const errorMessage = err.error?.message || 'Failed to register driver';
+        return throwError(() => new Error(errorMessage));
       })
     );
   }

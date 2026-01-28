@@ -14,7 +14,7 @@ export const authGuard: CanActivateFn = (route, state) => {
   // If user is logged in and tries to access root or auth pages, redirect to their home
   if (state.url === '/' || state.url === '/login' || state.url === '/register') {
     if (user.role === 'driver') {
-      return router.createUrlTree(['/driver-history']);
+      return router.createUrlTree(['/driver-home']);
     } else if (user.role === 'passenger') {
       return router.createUrlTree(['/passenger-home']);
     }
@@ -39,7 +39,7 @@ export const roleGuard = (allowedRoles: string[]): CanActivateFn => {
 
     // Redirect to respective home if role not allowed
     if (user.role === 'driver') {
-      return router.createUrlTree(['/driver-history']);
+      return router.createUrlTree(['/driver-home']);
     } else if (user.role === 'passenger') {
       return router.createUrlTree(['/passenger-home']);
     }

@@ -1,100 +1,110 @@
 package com.pekara.controller;
 
-import com.pekara.dto.request.LoginRequest;
-import com.pekara.dto.request.NewPasswordRequest;
-import com.pekara.dto.request.RegisterDriverRequest;
-import com.pekara.dto.request.RegisterUserRequest;
-import com.pekara.dto.request.ResetPasswordRequest;
-import com.pekara.dto.response.AuthResponse;
-import com.pekara.dto.response.MessageResponse;
-import com.pekara.dto.response.RegisterDriverResponse;
+import com.pekara.dto.request.WebLoginRequest;
+import com.pekara.dto.request.WebNewPasswordRequest;
+import com.pekara.dto.request.WebRegisterDriverRequest;
+import com.pekara.dto.request.WebRegisterUserRequest;
+import com.pekara.dto.request.WebResetPasswordRequest;
+import com.pekara.dto.response.WebMessageResponse;
+import com.pekara.dto.response.WebRegisterDriverResponse;
+import com.pekara.dto.response.WebRegisterResponse;
+import com.pekara.dto.response.WebAuthResponse;
+import com.pekara.mapper.AuthMapper;
+import com.pekara.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/auth")
+@RequiredArgsConstructor
 @Tag(name = "Authentication", description = "User authentication and registration endpoints")
 public class AuthController {
+
+    private final AuthService authService;
+    private final AuthMapper authMapper;
 
 
     @Operation(summary = "User login", description = "Authenticate user with email and password")
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
+    public ResponseEntity<WebAuthResponse> login(@Valid @RequestBody WebLoginRequest request, HttpServletResponse response) {
         log.debug("Login attempt for email: {}", request.getEmail());
 
-        // TODO: Implement login logic via AuthService
-        // - Validate email and password
-        // - Check if account is activated
-        // - Generate JWT token
-        // - Return AuthResponse with token, email, and role
+        var serviceResponse = authService.login(request.getEmail(), request.getPassword());
+
+        // Set JWT as HTTP-only cookie
+        Cookie jwtCookie = new Cookie("jwt", serviceResponse.getToken());
+        jwtCookie.setHttpOnly(true);
+        jwtCookie.setSecure(false);
+        jwtCookie.setPath("/");
+        jwtCookie.setMaxAge(24 * 60 * 60); // 24 hours
+        response.addCookie(jwtCookie);
+
+        WebAuthResponse webResponse = authMapper.toWebAuthResponse(serviceResponse);
 
         log.info("User logged in successfully: {}", request.getEmail());
-        return ResponseEntity.ok(new AuthResponse("dummy-token", request.getEmail(), "USER"));
+        return ResponseEntity.ok(webResponse);
     }
 
     @Operation(summary = "Register user", description = "Create a new user account")
-    @PostMapping("/register/user")
-    public ResponseEntity<MessageResponse> registerUser(@Valid @RequestBody RegisterUserRequest request) {
-        log.debug("User registration attempt for email: {}", request.getEmail());
+    @PostMapping(value = "/register/user", consumes = "multipart/form-data")
+    public ResponseEntity<WebRegisterResponse> registerUser(@Valid @ModelAttribute WebRegisterUserRequest webRequest) {
+        log.debug("User registration attempt for email: {}", webRequest.getEmail());
 
-        // TODO: Implement user registration logic via AuthService
-        // - Validate all required fields
-        // - Check if passwords match
-        // - Check if email is already registered
-        // - Create user account (inactive)
-        // - Generate activation token (24h validity)
-        // - Send activation email with link
-        // - Set default profile image if not provided
+        var serviceRequest = authMapper.toServiceRegisterUserRequest(webRequest);
+        var serviceResponse = authService.registerUser(serviceRequest);
 
-        log.info("User registered successfully: {}", request.getEmail());
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(new MessageResponse("User registration successful. Please check your email to activate your account."));
+        WebRegisterResponse webResponse = authMapper.toWebRegisterResponse(serviceResponse);
+
+        log.info("User registered successfully: {}", webRequest.getEmail());
+        return ResponseEntity.status(HttpStatus.CREATED).body(webResponse);
     }
 
-        @Operation(summary = "Register driver", description = "Create a new driver account (typically pending admin approval)")
-        @PostMapping("/register/driver")
-        public ResponseEntity<RegisterDriverResponse> registerDriver(@Valid @RequestBody RegisterDriverRequest request) {
+    @Operation(summary = "Register driver", description = "Create a new driver account (admin-initiated)")
+    @PostMapping(value = "/register/driver", consumes = "multipart/form-data")
+    public ResponseEntity<WebRegisterDriverResponse> registerDriver(@Valid @ModelAttribute WebRegisterDriverRequest request) {
         log.debug("Driver registration attempt for email: {}", request.getEmail());
 
-        // TODO: Implement driver registration logic via AuthService
-        // - Validate all required fields
-        // - Check if passwords match
-        // - Check if email is already registered
-        // - Validate vehicle fields (make/model/year/licensePlate/vin)
-        // - Create driver account (inactive / pending approval)
-        // - Notify admins or create approval workflow entry
-        // - Send activation email when approved or when account is created
+        var serviceRequest = authMapper.toServiceRegisterDriverRequest(request);
+        var serviceResponse = authService.registerDriver(serviceRequest);
 
-        log.info("Driver registered successfully (pending approval): {}", request.getEmail());
-        return ResponseEntity.status(HttpStatus.CREATED)
-            .body(new RegisterDriverResponse(
-                "Driver registration submitted successfully. Your account may require admin approval.",
-                request.getEmail(),
-                "PENDING_APPROVAL"
-            ));
-        }
+        WebRegisterDriverResponse webResponse = authMapper.toWebRegisterDriverResponse(serviceResponse);
+
+        log.info("Driver registered successfully: {}", request.getEmail());
+        return ResponseEntity.status(HttpStatus.CREATED).body(webResponse);
+    }
 
     @GetMapping("/activate")
-    public ResponseEntity<MessageResponse> activateAccount(@RequestParam("token") String token) {
+    public ResponseEntity<WebMessageResponse> activateAccount(@RequestParam("token") String token) {
         log.debug("Account activation attempt with token");
 
-        // TODO: Implement account activation logic via AuthService
-        // - Validate activation token
-        // - Check if token is expired (24h)
-        // - Activate user account
+        var serviceResponse = authService.activateAccount(token);
 
-        log.info("Account activated successfully");
-        return ResponseEntity.ok(new MessageResponse("Account activated successfully. You can now login."));
+        WebMessageResponse webResponse = authMapper.toWebMessageResponse(serviceResponse);
+
+        log.info("Account activated successfully for user: {}", serviceResponse.getEmail());
+        return ResponseEntity.ok(webResponse);
+    }
+
+    @GetMapping("/activation-info")
+    public ResponseEntity<?> getActivationInfo(@RequestParam("token") String token) {
+        log.debug("Activation info requested");
+
+        var info = authService.getActivationInfo(token);
+        return ResponseEntity.ok(info);
     }
 
     @PostMapping("/reset-password")
-    public ResponseEntity<MessageResponse> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+    public ResponseEntity<WebMessageResponse> resetPassword(@Valid @RequestBody WebResetPasswordRequest request) {
         log.debug("Password reset requested for email: {}", request.getEmail());
 
         // TODO: Implement password reset request logic via AuthService
@@ -103,32 +113,50 @@ public class AuthController {
         // - Send email with reset link
 
         log.debug("Password reset email sent to: {}", request.getEmail());
-        return ResponseEntity.ok(new MessageResponse("Password reset link has been sent to your email."));
+        return ResponseEntity.ok(new WebMessageResponse("Password reset link has been sent to your email."));
     }
 
     @PostMapping("/new-password")
-    public ResponseEntity<MessageResponse> setNewPassword(@Valid @RequestBody NewPasswordRequest request) {
+    public ResponseEntity<WebMessageResponse> setNewPassword(@Valid @RequestBody WebNewPasswordRequest request) {
         log.debug("New password submission attempt");
 
-        // TODO: Implement new password logic via AuthService
-        // - Validate reset token
-        // - Check if token is expired
-        // - Update user password
+        var serviceResponse = authService.setNewPassword(request.getToken(), request.getNewPassword());
 
-        log.info("Password changed successfully");
-        return ResponseEntity.ok(new MessageResponse("Password has been reset successfully."));
+        log.info("Password set successfully for user: {}", serviceResponse.getEmail());
+        return ResponseEntity.ok(new WebMessageResponse(serviceResponse.getMessage()));
+    }
+
+    @Operation(summary = "Get current user session", description = "Get current authenticated user from session")
+    @GetMapping("/me")
+    public ResponseEntity<WebAuthResponse> getCurrentUser(Authentication authentication) {
+        log.debug("Getting current user session");
+
+        String email = authentication.getName();
+        var serviceResponse = authService.getCurrentUser(email);
+
+        WebAuthResponse webResponse = authMapper.toWebAuthResponse(serviceResponse);
+
+        log.info("Current user session retrieved: {}", email);
+        return ResponseEntity.ok(webResponse);
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<MessageResponse> logout() {
+    public ResponseEntity<WebMessageResponse> logout(HttpServletResponse response) {
         log.debug("Logout request received");
 
-        // TODO: Implement logout logic
+        // Clear JWT cookie
+        Cookie jwtCookie = new Cookie("jwt", null);
+        jwtCookie.setHttpOnly(true);
+        jwtCookie.setSecure(false); // Set to true in production with HTTPS
+        jwtCookie.setPath("/");
+        jwtCookie.setMaxAge(0); // Expire immediately
+        response.addCookie(jwtCookie);
+
+        // TODO: Implement additional logout logic
         // - For drivers: check if they have active ride
         // - If driver is marked inactive during ride, become inactive after ride ends
-        // - Clear session/token
 
         log.debug("User logged out successfully");
-        return ResponseEntity.ok(new MessageResponse("Logged out successfully."));
+        return ResponseEntity.ok(new WebMessageResponse("Logged out successfully."));
     }
 }

@@ -103,7 +103,8 @@
         @if (registerForm.get('password')?.invalid && registerForm.get('password')?.touched) {
           <div class="field-error">
             @if (registerForm.get('password')?.errors?.['required']) { Password is required }
-            @if (registerForm.get('password')?.errors?.['minlength']) { Password must be at least 6 characters }
+            @if (registerForm.get('password')?.errors?.['minlength']) { Password must be at least 8 characters }
+            @if (registerForm.get('password')?.errors?.['pattern']) { Password must contain 1 uppercase, 1 lowercase, 1 number }
           </div>
         }
       </div>

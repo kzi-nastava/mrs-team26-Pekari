@@ -1,71 +1,82 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RideApiService, DriverRideHistoryResponse } from '../../../core/services/ride-api.service';
 
 @Component({
   selector: 'app-driver-history',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './driver-history.component.html',
   styleUrls: ['./driver-history.component.css']
 })
-export class DriverHistoryComponent {
-  rides = [
-    {
-      date: '15 December 2024',
-      time: '14:30 - 15:15 (45 min)',
-      status: ['completed', 'panic'],
-      locations: [
-        { type: 'start', label: 'Start', address: 'Knez Mihailova 12, Beograd' },
-        { type: 'end', label: 'Finish', address: 'Aerodrom Nikola Tesla, Beograd' }
-      ],
-      distance: '18.5 km',
-      price: '1,250 RSD',
-      passengers: [
-        { initials: 'MJ', name: 'Marko Jovanović' },
-        { initials: 'AP', name: 'Ana Petrović' }
-      ]
-    },
-    {
-      date: '14 December 2024',
-      time: '09:15 - 09:45 (30 min)',
-      status: ['completed'],
-      locations: [
-        { type: 'start', label: 'Start', address: 'Slavija trg 1, Beograd' },
-        { type: 'end', label: 'Finish', address: 'Ušće Shopping Center, Beograd' }
-      ],
-      distance: '8.2 km',
-      price: '650 RSD',
-      passengers: [
-        { initials: 'SM', name: 'Stefan Marković' }
-      ]
-    },
-    {
-      date: '13 December 2024.',
-      time: 'Canceled',
-      status: ['cancelled-driver'],
-      locations: [
-        { type: 'start', label: 'Start', address: 'Terazije 25, Beograd' },
-        { type: 'end', label: 'Finish', address: 'Ada Ciganlija, Beograd' }
-      ],
-      cancelReason: 'Technical issues',
-      passengers: [
-        { initials: 'NM', name: 'Nikola Milić' },
-        { initials: 'JD', name: 'Jelena Dimitrijević' },
-        { initials: 'DV', name: 'Dušan Vasić' }
-      ]
-    },
-    {
-      date: '12 December 2024',
-      time: 'Canceled',
-      status: ['cancelled-passenger'],
-      locations: [
-        { type: 'start', label: 'Start', address: 'Studentski trg 1, Beograd' },
-        { type: 'end', label: 'Finish', address: 'Kalemegdan, Beograd' }
-      ],
-      cancelReason: 'Change of plans',
-      passengers: [
-        { initials: 'MP', name: 'Milan Popović' }
-      ]
+export class DriverHistoryComponent implements OnInit {
+  private rideApiService = inject(RideApiService);
+
+  rides: any[] = [];
+  dateFrom: string = '2024-01-01';
+  dateTo: string = new Date().toISOString().split('T')[0];
+
+  ngOnInit() {
+    this.loadRideHistory();
+  }
+
+  loadRideHistory() {
+    this.rideApiService.getDriverRideHistory(this.dateFrom, this.dateTo).subscribe({
+      next: (response) => {
+        this.rides = response.content.map(ride => this.mapRideToView(ride));
+      },
+      error: (err) => {
+        console.error('Failed to load ride history', err);
+      }
+    });
+  }
+
+  private mapRideToView(ride: DriverRideHistoryResponse) {
+    const status = [];
+    if (ride.cancelled) {
+      status.push(ride.cancelledBy === 'DRIVER' ? 'cancelled-driver' : 'cancelled-passenger');
+    } else if (ride.status === 'COMPLETED') {
+      status.push('completed');
     }
-  ];
+    if (ride.panicActivated) {
+      status.push('panic');
+    }
+
+    const startTime = ride.startTime ? new Date(ride.startTime) : null;
+    const endTime = ride.endTime ? new Date(ride.endTime) : null;
+    const duration = startTime && endTime
+      ? Math.round((endTime.getTime() - startTime.getTime()) / 60000)
+      : null;
+
+    return {
+      date: startTime ? startTime.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : 'N/A',
+      time: ride.cancelled
+        ? 'Canceled'
+        : (startTime && endTime
+            ? `${startTime.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })} - ${endTime.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })} (${duration} min)`
+            : 'N/A'),
+      status,
+      locations: [
+        { type: 'start', label: 'Start', address: ride.pickupLocation || 'N/A' },
+        { type: 'end', label: 'Finish', address: ride.dropoffLocation || 'N/A' }
+      ],
+      price: ride.price ? `${ride.price.toFixed(2)} RSD` : null,
+      cancelReason: ride.cancelledBy ? 'Cancelled' : null,
+      passengers: ride.passengers.map(p => ({
+        initials: `${p.firstName[0]}${p.lastName[0]}`,
+        name: `${p.firstName} ${p.lastName}`
+      }))
+    };
+  }
+
+  onFilter() {
+    this.loadRideHistory();
+  }
+
+  onReset() {
+    this.dateFrom = '2024-01-01';
+    this.dateTo = new Date().toISOString().split('T')[0];
+    this.loadRideHistory();
+  }
 }

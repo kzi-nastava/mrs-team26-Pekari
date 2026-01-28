@@ -1,30 +1,38 @@
 package com.pekara.controller;
 
-import com.pekara.dto.request.CancelRideRequest;
-import com.pekara.dto.request.EstimateRideRequest;
-import com.pekara.dto.request.InconsistencyReportRequest;
-import com.pekara.dto.request.OrderRideRequest;
-import com.pekara.dto.request.RideHistoryFilterRequest;
-import com.pekara.dto.request.RideRatingRequest;
-import com.pekara.dto.response.DriverRideHistoryResponse;
-import com.pekara.dto.response.MessageResponse;
-import com.pekara.dto.response.OrderRideResponse;
-import com.pekara.dto.response.PassengerRideDetailResponse;
-import com.pekara.dto.response.PassengerRideHistoryResponse;
-import com.pekara.dto.response.RideDetailResponse;
-import com.pekara.dto.response.RideEstimateResponse;
-import com.pekara.dto.response.RideTrackingResponse;
+import com.pekara.dto.request.WebCancelRideRequest;
+import com.pekara.dto.request.WebEstimateRideRequest;
+import com.pekara.dto.request.WebInconsistencyReportRequest;
+import com.pekara.dto.request.WebOrderRideRequest;
+import com.pekara.dto.request.WebRideHistoryFilterRequest;
+import com.pekara.dto.request.WebRideLocationUpdateRequest;
+import com.pekara.dto.request.WebRideRatingRequest;
+import com.pekara.dto.request.WebStopRideEarlyRequest;
+import com.pekara.dto.response.WebActiveRideResponse;
+import com.pekara.dto.response.WebDriverRideHistoryResponse;
+import com.pekara.dto.response.WebMessageResponse;
+import com.pekara.dto.response.WebOrderRideResponse;
+import com.pekara.dto.response.WebPaginatedResponse;
+import com.pekara.dto.response.WebPassengerRideDetailResponse;
+import com.pekara.dto.response.WebPassengerRideHistoryResponse;
+import com.pekara.dto.response.WebRideDetailResponse;
+import com.pekara.dto.response.WebRideEstimateResponse;
+import com.pekara.dto.response.WebRideTrackingResponse;
+import com.pekara.mapper.RideMapper;
+import com.pekara.service.RideService;
+import com.pekara.service.RideTrackingService;
+import lombok.RequiredArgsConstructor;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -33,73 +41,50 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/rides")
 @Tag(name = "Rides", description = "Ride management endpoints")
+@RequiredArgsConstructor
 public class RideController {
+
+    private final RideService rideService;
+    private final RideTrackingService rideTrackingService;
+    private final RideMapper rideMapper;
+    private final SimpMessagingTemplate messagingTemplate;
 
     @Operation(summary = "Estimate ride", description = "Calculate ride estimation (price, duration, distance) - Public endpoint")
     @PostMapping("/estimate")
-    public ResponseEntity<RideEstimateResponse> estimateRide(@Valid @RequestBody EstimateRideRequest request) {
-        log.debug("Ride estimation requested from {} to {}", request.getPickupLocation(), request.getDropoffLocation());
+    public ResponseEntity<WebRideEstimateResponse> estimateRide(@Valid @RequestBody WebEstimateRideRequest request) {
+        log.debug("Ride estimation requested");
 
-        // TODO: Implement ride estimation logic via RideService
-        // - Calculate distance between pickup and dropoff locations
-        // - Calculate estimated duration based on traffic
-        // - Calculate price based on vehicle type, distance, baby/pet transport
-        // - Filter available vehicles by baby/pet transport requirements
-        // - Return estimation details
-
-        RideEstimateResponse response = new RideEstimateResponse(
-                new BigDecimal("250.00"),
-                15,
-                5.5,
-                request.getVehicleType()
+        var serviceResponse = rideService.estimateRide(rideMapper.toServiceEstimateRideRequest(request));
+        WebRideEstimateResponse response = new WebRideEstimateResponse(
+            serviceResponse.getEstimatedPrice(),
+            serviceResponse.getEstimatedDurationMinutes(),
+            serviceResponse.getDistanceKm(),
+            serviceResponse.getVehicleType(),
+            serviceResponse.getRoutePoints() == null ? null :
+                serviceResponse.getRoutePoints().stream().map(rideMapper::toWebLocation).toList()
         );
 
-        log.debug("Ride estimate calculated: {} RSD, {} minutes", response.getEstimatedPrice(), response.getEstimatedDurationMinutes());
         return ResponseEntity.ok(response);
     }
 
 
     @Operation(summary = "Order ride", description = "Order a ride now or schedule it up to 5 hours ahead - Protected endpoint")
+    @PreAuthorize("hasRole('PASSENGER')")
     @PostMapping("/order")
-    public ResponseEntity<OrderRideResponse> orderRide(@Valid @RequestBody OrderRideRequest request) {
-        log.debug("Ride order requested from {} to {}", request.getPickupLocation(), request.getDropoffLocation());
+    public ResponseEntity<WebOrderRideResponse> orderRide(
+            @Valid @RequestBody WebOrderRideRequest request,
+            @AuthenticationPrincipal String currentUserEmail) {
+        log.debug("Ride order requested");
 
-        if (request.getScheduledAt() != null) {
-            LocalDateTime now = LocalDateTime.now();
-            if (request.getScheduledAt().isBefore(now)) {
-                throw new IllegalArgumentException("Scheduled time must be in the future");
-            }
-            if (request.getScheduledAt().isAfter(now.plusHours(5))) {
-                throw new IllegalArgumentException("Ride can be scheduled at most 5 hours in advance");
-            }
-        }
+        var serviceResponse = rideService.orderRide(currentUserEmail, rideMapper.toServiceOrderRideRequest(request));
 
-        // TODO: Implement ride ordering logic via RideService
-        // - Build ordered route: pickup -> stops (ordered) -> dropoff
-        // - Validate linked passengers exist by email; creator pays the ride
-        // - Calculate route distance (km) and price:
-        //     price = basePriceByVehicleType + distanceKm * 120
-        // - Find available drivers:
-        //   * Reject if no active/logged-in drivers
-        //   * Reject if all drivers are busy AND already have a future scheduled ride
-        //   * If there are free drivers, pick the nearest to pickup
-        //   * If all are busy, pick one closest to pickup AND close to finishing current ride (<= 10 min remaining)
-        //   * Exclude drivers with > 8 working hours in last 24h
-        // - If scheduled ride: prioritize pre-scheduled rides in assignment
-        // - Send notifications:
-        //   * Driver: new ride assigned
-        //   * Creator: accepted/rejected
-        //   * Linked passengers: ride details available
-        // - Create reminder notifications: 15 minutes before, then every 5 minutes until start
-
-        boolean isScheduled = request.getScheduledAt() != null;
-        OrderRideResponse response = new OrderRideResponse(
-                1L,
-                isScheduled ? "SCHEDULED" : "ACCEPTED",
-                isScheduled ? "Ride scheduled successfully." : "Ride ordered successfully.",
-                new BigDecimal("250.00"),
-                request.getScheduledAt(),
-                null
+        WebOrderRideResponse response = new WebOrderRideResponse(
+                serviceResponse.getRideId(),
+                serviceResponse.getStatus(),
+                serviceResponse.getMessage(),
+                serviceResponse.getEstimatedPrice(),
+                serviceResponse.getScheduledAt(),
+                serviceResponse.getAssignedDriverEmail()
         );
 
         return ResponseEntity.status(201).body(response);
@@ -107,25 +92,70 @@ public class RideController {
 
 
     @Operation(summary = "Cancel ride", description = "Cancel a scheduled or active ride - Protected endpoint")
+    @PreAuthorize("hasAnyRole('PASSENGER', 'DRIVER')")
     @PostMapping("/{rideId}/cancel")
-    public ResponseEntity<MessageResponse> cancelRide(
+    public ResponseEntity<WebMessageResponse> cancelRide(
             @PathVariable Long rideId,
-            @Valid @RequestBody CancelRideRequest request) {
+            @Valid @RequestBody WebCancelRideRequest request,
+            @AuthenticationPrincipal String currentUserEmail) {
 
         log.debug("Ride cancellation requested for rideId: {} with reason: {}", rideId, request.getReason());
 
-        // TODO: Implement ride cancellation logic via RideService
-        // - Verify user has permission to cancel this ride
-        // - Check if ride can be cancelled (not completed, not already cancelled)
-        // - For passengers: can cancel up to 10 minutes before ride start
-        // - For drivers: can cancel before passengers enter vehicle
-        // - Update ride status to CANCELLED
-        // - Notify driver/passengers about cancellation
-        // - Apply cancellation fee if applicable
-        // - Return confirmation
+        rideService.cancelRide(rideId, currentUserEmail, request.getReason());
 
         log.info("Ride {} cancelled successfully", rideId);
-        return ResponseEntity.ok(new MessageResponse("Ride cancelled successfully."));
+        return ResponseEntity.ok(new WebMessageResponse("Ride cancelled successfully."));
+    }
+
+    @Operation(summary = "Get active ride for driver", description = "Get the current active ride for the logged-in driver - Protected endpoint (Drivers only)")
+    @PreAuthorize("hasRole('DRIVER')")
+    @GetMapping("/active/driver")
+    public ResponseEntity<WebActiveRideResponse> getActiveRideForDriver(
+            @AuthenticationPrincipal String currentUserEmail) {
+        log.debug("Get active ride requested for driver: {}", currentUserEmail);
+
+        var activeRide = rideService.getActiveRideForDriver(currentUserEmail);
+        
+        if (activeRide.isEmpty()) {
+            return ResponseEntity.noContent().build();
+        }
+
+        WebActiveRideResponse response = rideMapper.toWebActiveRideResponse(activeRide.get());
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "Get active ride for passenger", description = "Get the current active ride for the logged-in passenger - Protected endpoint (Passengers only)")
+    @PreAuthorize("hasRole('PASSENGER')")
+    @GetMapping("/active/passenger")
+    public ResponseEntity<WebActiveRideResponse> getActiveRideForPassenger(
+            @AuthenticationPrincipal String currentUserEmail) {
+        log.debug("Get active ride requested for passenger: {}", currentUserEmail);
+
+        var activeRide = rideService.getActiveRideForPassenger(currentUserEmail);
+
+        if (activeRide.isEmpty()) {
+            return ResponseEntity.noContent().build();
+        }
+
+        WebActiveRideResponse response = rideMapper.toWebActiveRideResponse(activeRide.get());
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "Get next scheduled ride for driver", description = "Get the next scheduled ride for the logged-in driver - Protected endpoint (Drivers only)")
+    @PreAuthorize("hasRole('DRIVER')")
+    @GetMapping("/next-scheduled/driver")
+    public ResponseEntity<WebActiveRideResponse> getNextScheduledRideForDriver(
+            @AuthenticationPrincipal String currentUserEmail) {
+        log.debug("Get next scheduled ride requested for driver: {}", currentUserEmail);
+
+        var nextRide = rideService.getNextScheduledRideForDriver(currentUserEmail);
+
+        if (nextRide.isEmpty()) {
+            return ResponseEntity.noContent().build();
+        }
+
+        WebActiveRideResponse response = rideMapper.toWebActiveRideResponse(nextRide.get());
+        return ResponseEntity.ok(response);
     }
 
     /**
@@ -135,78 +165,97 @@ public class RideController {
     @Operation(summary = "Start ride", description = "Mark that the ride has started - Protected endpoint (Drivers only)")
     @PreAuthorize("hasRole('DRIVER')")
     @PostMapping("/{rideId}/start")
-    public ResponseEntity<MessageResponse> startRide(@PathVariable Long rideId) {
+    public ResponseEntity<WebMessageResponse> startRide(
+            @PathVariable Long rideId,
+            @AuthenticationPrincipal String currentUserEmail) {
         log.debug("Start ride requested for rideId: {}", rideId);
 
-        // TODO: Implement start ride logic via RideService
-        // - Verify current user is the assigned driver for this ride
-        // - Verify ride is in a state that can be started (e.g., ACCEPTED / SCHEDULED)
-        // - Verify all passengers have entered the vehicle (business rule / confirmation)
-        // - Update ride status to IN_PROGRESS and set start timestamp
-        // - Ensure passengers on this ride cannot order new rides until completion
-        // - Notify passengers that the ride has started
+        rideService.startRide(rideId, currentUserEmail);
 
         log.info("Ride {} started successfully", rideId);
-        return ResponseEntity.ok(new MessageResponse("Ride started successfully."));
+        return ResponseEntity.ok(new WebMessageResponse("Ride started successfully."));
     }
 
     /**
-     * 2.6.5 Stop Ride in Progress
+     * Request early stop - called by passenger
+     * Protected endpoint - passengers only
+     */
+    @Operation(summary = "Request stop", description = "Passenger requests to stop the ride early - Protected endpoint (Passengers only)")
+    @PreAuthorize("hasRole('PASSENGER')")
+    @PostMapping("/{rideId}/request-stop")
+    public ResponseEntity<WebMessageResponse> requestStopRide(
+            @PathVariable Long rideId,
+            @AuthenticationPrincipal String currentUserEmail) {
+        log.debug("Stop requested by passenger for rideId: {}", rideId);
+
+        rideService.requestStopRide(rideId, currentUserEmail);
+
+        log.info("Ride {} stop requested successfully", rideId);
+        return ResponseEntity.ok(new WebMessageResponse("Stop request sent to driver."));
+    }
+
+    /**
+     * 2.6.5 Stop Ride in Progress (Complete the ride)
      * Protected endpoint - drivers only
      */
-    @Operation(summary = "Stop ride", description = "Stop a ride in progress - Protected endpoint (Drivers only)")
+    @Operation(summary = "Complete ride", description = "Complete a ride in progress - Protected endpoint (Drivers only)")
+    @PreAuthorize("hasRole('DRIVER')")
     @PostMapping("/{rideId}/stop")
-    public ResponseEntity<MessageResponse> stopRide(@PathVariable Long rideId) {
+    public ResponseEntity<WebMessageResponse> stopRide(
+            @PathVariable Long rideId,
+            @RequestBody(required = false) WebStopRideEarlyRequest request,
+            @AuthenticationPrincipal String currentUserEmail) {
         log.debug("Stop ride requested for rideId: {}", rideId);
 
-        // TODO: Implement stop ride logic via RideService
-        // - Verify user is the driver of this ride
-        // - Check if ride is currently IN_PROGRESS
-        // - Update ride status to COMPLETED
-        // - Capture current location as new dropoff point
-        // - Calculate final price based on actual distance/time
-        // - Process payment
-        // - Notify passengers about ride completion
-        // - Return completion details
+        // If stop location provided, handle early stop with new location
+        if (request != null && request.getStopLocation() != null) {
+            var serviceRequest = rideMapper.toServiceStopRideEarlyRequest(request);
+            rideService.stopRideEarly(rideId, currentUserEmail, serviceRequest.getStopLocation());
+            log.info("Ride {} stopped early at new location", rideId);
+            return ResponseEntity.ok(new WebMessageResponse("Ride completed at new location."));
+        }
 
+        // Otherwise, complete ride normally at original destination
+        rideService.completeRide(rideId, currentUserEmail);
         log.info("Ride {} stopped and completed successfully", rideId);
-        return ResponseEntity.ok(new MessageResponse("Ride completed successfully."));
+        return ResponseEntity.ok(new WebMessageResponse("Ride completed successfully."));
     }
 
     @Operation(summary = "Track ride", description = "Get real-time tracking information for an active ride - Protected endpoint")
     @PreAuthorize("hasAnyRole('PASSENGER', 'DRIVER')")
     @GetMapping("/{rideId}/track")
-    public ResponseEntity<RideTrackingResponse> trackRide(@PathVariable Long rideId) {
+    public ResponseEntity<WebRideTrackingResponse> trackRide(
+            @PathVariable Long rideId,
+            @AuthenticationPrincipal String currentUserEmail) {
         log.debug("Ride tracking requested for rideId: {}", rideId);
 
-        // TODO: Implement ride tracking via RideService
-        // - Verify user is a passenger or driver on this ride
-        // - Fetch current vehicle location
-        // - Calculate distance to next stop and final destination
-        // - Calculate estimated time to destination (updates as vehicle moves)
-        // - Return real-time tracking information
-
-        RideTrackingResponse response = new RideTrackingResponse(
-                rideId,
-                45.2671,
-                19.8335,
-                12,
-                4.5,
-                "IN_PROGRESS",
-                "Trg Slobode",
-                5,
-                new RideTrackingResponse.VehicleInfo(1L, "STANDARD", "NS-123-AB")
-        );
-
+        var tracking = rideTrackingService.getTracking(rideId, currentUserEmail);
+        WebRideTrackingResponse response = rideMapper.toWebRideTrackingResponse(tracking);
         return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "Update ride location", description = "Driver location ping for active ride - Protected endpoint (Drivers only)")
+    @PreAuthorize("hasRole('DRIVER')")
+    @PostMapping("/{rideId}/location")
+    public ResponseEntity<WebMessageResponse> updateRideLocation(
+            @PathVariable Long rideId,
+            @Valid @RequestBody WebRideLocationUpdateRequest request,
+            @AuthenticationPrincipal String currentUserEmail) {
+
+        log.debug("Ride {} location update by driver {}", rideId, currentUserEmail);
+        rideTrackingService.updateLocation(rideId, currentUserEmail, rideMapper.toServiceRideLocationUpdateRequest(request));
+        var tracking = rideTrackingService.getTracking(rideId, currentUserEmail);
+        WebRideTrackingResponse payload = rideMapper.toWebRideTrackingResponse(tracking);
+        messagingTemplate.convertAndSend("/topic/rides/" + rideId + "/tracking", payload);
+        return ResponseEntity.ok(new WebMessageResponse("Location updated."));
     }
 
     @Operation(summary = "Report inconsistency", description = "Report driver inconsistency during an active ride - Protected endpoint (Passengers only)")
     @PreAuthorize("hasRole('PASSENGER')")
     @PostMapping("/{rideId}/report-inconsistency")
-    public ResponseEntity<MessageResponse> reportInconsistency(
+    public ResponseEntity<WebMessageResponse> reportInconsistency(
             @PathVariable Long rideId,
-            @Valid @RequestBody InconsistencyReportRequest request) {
+            @Valid @RequestBody WebInconsistencyReportRequest request) {
 
         log.debug("Inconsistency report for rideId: {} - {}", rideId, request.getDescription());
 
@@ -219,15 +268,15 @@ public class RideController {
         // - Notify admin about the report
 
         log.info("Inconsistency reported for ride {}", rideId);
-        return ResponseEntity.ok(new MessageResponse("Inconsistency reported successfully."));
+        return ResponseEntity.ok(new WebMessageResponse("Inconsistency reported successfully."));
     }
 
     @Operation(summary = "Rate ride", description = "Rate a completed ride (vehicle and driver) - Protected endpoint (Passengers only)")
     @PreAuthorize("hasRole('PASSENGER')")
     @PostMapping("/{rideId}/rate")
-    public ResponseEntity<MessageResponse> rateRide(
+    public ResponseEntity<WebMessageResponse> rateRide(
             @PathVariable Long rideId,
-            @Valid @RequestBody RideRatingRequest request) {
+            @Valid @RequestBody WebRideRatingRequest request) {
 
         log.debug("Rating ride {} - Vehicle: {}/5, Driver: {}/5", rideId, request.getVehicleRating(), request.getDriverRating());
 
@@ -241,50 +290,59 @@ public class RideController {
         // - Send email/notification to passenger confirming rating submission
 
         log.info("Ride {} rated successfully", rideId);
-        return ResponseEntity.ok(new MessageResponse("Ride rated successfully."));
+        return ResponseEntity.ok(new WebMessageResponse("Ride rated successfully."));
     }
 
     @Operation(summary = "Get driver ride history", description = "View driver's ride history with date filtering - Protected endpoint (Drivers only)")
     @PreAuthorize("hasRole('DRIVER')")
-    @PostMapping("/history/driver")
-    public ResponseEntity<List<DriverRideHistoryResponse>> getDriverRideHistory(
-            @Valid @RequestBody RideHistoryFilterRequest filterRequest,
-            @AuthenticationPrincipal UserDetails currentUser) {
+    @GetMapping("/history/driver")
+    public ResponseEntity<WebPaginatedResponse<WebDriverRideHistoryResponse>> getDriverRideHistory(
+            @RequestParam String startDate,
+            @RequestParam String endDate,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @AuthenticationPrincipal String currentUserEmail) {
 
-        log.debug("Driver ride history requested with filters: {}", filterRequest);
+        log.debug("Driver ride history requested with filters: startDate={}, endDate={} (page: {}, size: {})", startDate, endDate, page, size);
 
-        // TODO: Implement driver ride history retrieval via RideService
-        // - Get current driver ID from UserDetails
-        // - Fetch all rides where user was the driver
-        // - Filter by date range (startDate to endDate)
-        // - For each ride include:
-        //   * Start time and end time
-        //   * Pickup and dropoff locations
-        //   * Cancelled status and who cancelled (passenger name or "driver")
-        //   * Price
-        //   * Panic button activation status
-        //   * All passengers information
-        // - Sort by date (newest first by default)
+        var serviceResponse = rideService.getDriverRideHistory(
+                currentUserEmail,
+                LocalDateTime.parse(startDate + "T00:00:00"),
+                LocalDateTime.parse(endDate + "T23:59:59"));
 
-        List<DriverRideHistoryResponse> history = new ArrayList<>();
+        List<WebDriverRideHistoryResponse> history = serviceResponse.stream()
+                .map(rideMapper::toWebDriverRideHistoryResponse)
+                .toList();
+
+        int start = page * size;
+        int end = Math.min(start + size, history.size());
+        List<WebDriverRideHistoryResponse> paginatedHistory = start < history.size()
+                ? history.subList(start, end)
+                : new ArrayList<>();
+
+        WebPaginatedResponse<WebDriverRideHistoryResponse> response = new WebPaginatedResponse<>(
+                paginatedHistory, page, size, (long) history.size());
 
         log.debug("Retrieved {} rides for driver", history.size());
-        return ResponseEntity.ok(history);
+        return ResponseEntity.ok(response);
     }
 
     @Operation(summary = "Get passenger ride history", description = "View passenger's ride history with date filtering - Protected endpoint (Passengers only)")
     @PreAuthorize("hasRole('PASSENGER')")
     @PostMapping("/history/passenger")
-    public ResponseEntity<List<PassengerRideHistoryResponse>> getPassengerRideHistory(
-            @Valid @RequestBody RideHistoryFilterRequest filterRequest,
+    public ResponseEntity<WebPaginatedResponse<WebPassengerRideHistoryResponse>> getPassengerRideHistory(
+            @Valid @RequestBody WebRideHistoryFilterRequest filterRequest,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
             @AuthenticationPrincipal UserDetails currentUser) {
 
-        log.debug("Passenger ride history requested with filters: {}", filterRequest);
+        log.debug("Passenger ride history requested with filters: {} (page: {}, size: {})", filterRequest, page, size);
 
         // TODO: Implement passenger ride history retrieval via RideService
         // - Get current passenger ID from UserDetails
         // - Fetch all rides where user was a passenger
         // - Filter by date range (startDate to endDate)
+        // - Apply pagination (page, size)
         // - For each ride include:
         //   * Start time and end time
         //   * Pickup and dropoff locations
@@ -294,16 +352,50 @@ public class RideController {
         //   * Driver basic information (NOT other passengers)
         // - Sort by date (newest first by default)
 
-        List<PassengerRideHistoryResponse> history = new ArrayList<>();
+        List<WebPassengerRideHistoryResponse> history = new ArrayList<>();
+        WebPaginatedResponse<WebPassengerRideHistoryResponse> response = new WebPaginatedResponse<>(history, page, size, 0L);
 
         log.debug("Retrieved {} rides for passenger", history.size());
-        return ResponseEntity.ok(history);
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "Get all rides history (Admin)", description = "View complete ride history for all drivers and passengers with filtering - Protected endpoint (Admins only)")
+    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping("/history/admin/all")
+    public ResponseEntity<WebPaginatedResponse<WebDriverRideHistoryResponse>> getAllRidesHistory(
+            @Valid @RequestBody WebRideHistoryFilterRequest filterRequest,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+
+        log.debug("Admin all rides history requested with filters: {} (page: {}, size: {})", filterRequest, page, size);
+
+        // TODO: Implement admin ride history retrieval via RideService
+        // - Fetch ALL rides in the system (no user filtering)
+        // - Filter by date range (startDate to endDate)
+        // - Apply pagination (page, size)
+        // - For each ride include:
+        //   * Start time and end time
+        //   * Pickup and dropoff locations
+        //   * Cancelled status and who cancelled (passenger name or "driver")
+        //   * Price
+        //   * Panic button activation status
+        //   * All passengers information
+        //   * Driver information
+        //   * Inconsistency reports if any
+        //   * Ratings if any
+        // - Sort by date (newest first by default)
+
+        List<WebDriverRideHistoryResponse> history = new ArrayList<>();
+        WebPaginatedResponse<WebDriverRideHistoryResponse> response = new WebPaginatedResponse<>(history, page, size, 0L);
+
+        log.debug("Retrieved {} total rides for admin", history.size());
+        return ResponseEntity.ok(response);
     }
 
     @Operation(summary = "Get ride details (Driver/Admin)", description = "View detailed ride information with all passengers - Protected endpoint (Drivers/Admins only)")
     @PreAuthorize("hasAnyRole('DRIVER', 'ADMIN')")
     @GetMapping("/{rideId}/details")
-    public ResponseEntity<RideDetailResponse> getRideDetailsForDriver(
+    public ResponseEntity<WebRideDetailResponse> getRideDetailsForDriver(
             @PathVariable Long rideId,
             @AuthenticationPrincipal UserDetails currentUser) {
 
@@ -325,7 +417,7 @@ public class RideController {
         //   * Panic button activation status
         //   * Cancellation details if applicable
 
-        RideDetailResponse rideDetails = new RideDetailResponse();
+        WebRideDetailResponse rideDetails = new WebRideDetailResponse();
 
         log.debug("Retrieved driver/admin details for rideId: {}", rideId);
         return ResponseEntity.ok(rideDetails);
@@ -334,7 +426,7 @@ public class RideController {
     @Operation(summary = "Get ride details (Passenger)", description = "View simplified ride information - Protected endpoint (Passengers only)")
     @PreAuthorize("hasRole('PASSENGER')")
     @GetMapping("/{rideId}")
-    public ResponseEntity<PassengerRideDetailResponse> getRideDetailsForPassenger(
+    public ResponseEntity<WebPassengerRideDetailResponse> getRideDetailsForPassenger(
             @PathVariable Long rideId,
             @AuthenticationPrincipal UserDetails currentUser) {
 
@@ -351,7 +443,7 @@ public class RideController {
         //   * Driver basic info (name, phone)
         //   * Passenger's own rating if exists
 
-        PassengerRideDetailResponse rideDetails = new PassengerRideDetailResponse();
+        WebPassengerRideDetailResponse rideDetails = new WebPassengerRideDetailResponse();
 
         log.debug("Retrieved passenger details for rideId: {}", rideId);
         return ResponseEntity.ok(rideDetails);
