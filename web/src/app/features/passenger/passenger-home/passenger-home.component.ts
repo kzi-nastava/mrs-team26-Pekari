@@ -710,6 +710,11 @@ export class PassengerHomeComponent implements OnInit, OnDestroy {
         const backendMsg = err?.error?.message;
         const plainMsg = typeof err?.error === 'string' ? err.error : undefined;
         this.error = backendMsg || plainMsg || err?.message || 'Failed to activate panic';
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
   private handleRideCompletion(rideId: number): void {
     this.stopTracking();
     this.isRideActive = false;

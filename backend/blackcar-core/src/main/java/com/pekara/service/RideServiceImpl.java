@@ -636,6 +636,10 @@ public class RideServiceImpl implements RideService {
         log.warn("PANIC ACTIVATED - Ride ID: {}, Activated by: {}, User: {}", rideId, panickedBy, userEmail);
 
         // TODO: Send notifications to admin/support team
+    }
+
+    @Override
+    @Transactional
     public void rateRide(Long rideId, String passengerEmail, RideRatingRequest request) {
         // Get passenger user
         User passenger = userRepository.findByEmail(passengerEmail)
@@ -710,7 +714,10 @@ public class RideServiceImpl implements RideService {
         return panicRides.stream()
                 .map(this::mapToDriverRideHistoryResponse)
                 .collect(Collectors.toList());
-      
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public Optional<ActiveRideResponse> getNextScheduledRideForDriver(String driverEmail) {
         User driver = userRepository.findByEmail(driverEmail)
                 .orElseThrow(() -> new IllegalArgumentException("Driver not found"));

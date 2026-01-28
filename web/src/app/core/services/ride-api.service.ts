@@ -252,7 +252,7 @@ export class RideApiService {
 
   getActivePanicRides() {
     return this.http.get<DriverRideHistoryResponse[]>(`${this.env.getApiUrl()}/rides/panic/active`);
-    
+  }
   rateRide(rideId: number, rating: RideRatingRequest) {
     return this.http.post<MessageResponse>(`${this.env.getApiUrl()}/rides/${rideId}/rate`, rating);
   }
