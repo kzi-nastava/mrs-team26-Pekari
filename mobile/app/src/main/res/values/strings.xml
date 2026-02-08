@@ -35,6 +35,7 @@
     <string name="profile_action_cancel">Cancel</string>
     <string name="profile_action_change_picture">Change Picture</string>
     <string name="profile_action_change_password">Change Password</string>
+    <string name="profile_action_logout">Log out</string>
 
     <string name="profile_banner_driver_pending">Changes sent for admin approval. Current profile remains unchanged.</string>
     <string name="profile_password_title">Change Password</string>
