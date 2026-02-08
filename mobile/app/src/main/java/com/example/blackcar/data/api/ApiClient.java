@@ -2,6 +2,7 @@ package com.example.blackcar.data.api;
 
 import com.example.blackcar.BuildConfig;
 import com.example.blackcar.data.api.service.AuthApiService;
+import com.example.blackcar.data.api.service.RideApiService;
 
 import okhttp3.OkHttpClient;
 import okhttp3.logging.HttpLoggingInterceptor;
@@ -12,6 +13,7 @@ public class ApiClient {
 
     private static Retrofit retrofit;
     private static AuthApiService authApiService;
+    private static RideApiService rideApiService;
 
     private static Retrofit getRetrofit() {
         if (retrofit == null) {
@@ -41,5 +43,12 @@ public class ApiClient {
             authApiService = getRetrofit().create(AuthApiService.class);
         }
         return authApiService;
+    }
+
+    public static RideApiService getRideService() {
+        if (rideApiService == null) {
+            rideApiService = getRetrofit().create(RideApiService.class);
+        }
+        return rideApiService;
     }
 }
