@@ -1,9 +1,13 @@
 package com.example.blackcar.data.api;
 
+import android.content.Context;
+
 import com.example.blackcar.BuildConfig;
 import com.example.blackcar.data.api.service.AuthApiService;
 import com.example.blackcar.data.api.service.ProfileApiService;
 import com.example.blackcar.data.session.SessionManager;
+import com.example.blackcar.data.api.service.RideApiService;
+import com.example.blackcar.data.auth.AuthInterceptor;
 
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -16,6 +20,16 @@ public class ApiClient {
     private static Retrofit retrofit;
     private static AuthApiService authApiService;
     private static ProfileApiService profileApiService;
+    private static RideApiService rideApiService;
+    private static Context appContext;
+
+    public static void init(Context context) {
+        appContext = context.getApplicationContext();
+        // Reset retrofit to force recreation with new context
+        retrofit = null;
+        authApiService = null;
+        rideApiService = null;
+    }
 
     private static Retrofit getRetrofit() {
         if (retrofit == null) {
@@ -63,5 +77,11 @@ public class ApiClient {
             profileApiService = getRetrofit().create(ProfileApiService.class);
         }
         return profileApiService;
+    }
+    public static RideApiService getRideService() {
+        if (rideApiService == null) {
+            rideApiService = getRetrofit().create(RideApiService.class);
+        }
+        return rideApiService;
     }
 }

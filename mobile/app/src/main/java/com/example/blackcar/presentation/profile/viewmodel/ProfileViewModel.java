@@ -1,5 +1,7 @@
 package com.example.blackcar.presentation.profile.viewmodel;
 
+import android.content.Context;
+
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
@@ -26,8 +28,10 @@ public class ProfileViewModel extends ViewModel {
 
     private ProfileUIModel cachedProfile;
     private DriverInfoUIModel cachedDriverInfo;
+    private final MockProfileStore store = MockProfileStore.getInstance();
 
-    public ProfileViewModel() {
+    public ProfileViewModel(Context context) {
+        this.authRepository = new AuthRepository(context);
         load();
     }
 
