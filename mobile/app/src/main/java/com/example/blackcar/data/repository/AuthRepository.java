@@ -7,6 +7,7 @@ import com.example.blackcar.data.api.model.LoginRequest;
 import com.example.blackcar.data.api.model.LoginResponse;
 import com.example.blackcar.data.api.model.RegisterResponse;
 import com.example.blackcar.data.api.service.AuthApiService;
+import com.example.blackcar.data.session.SessionManager;
 
 import okhttp3.MediaType;
 import okhttp3.RequestBody;
@@ -30,6 +31,7 @@ public class AuthRepository {
                 if (response.isSuccessful() && response.body() != null) {
                     LoginResponse body = response.body();
                     String userId = body.getId() != null ? body.getId() : (body.getUserId() != null ? body.getUserId() : body.getEmail());
+                    SessionManager.setSession(body.getToken(), body.getEmail(), body.getRole(), userId);
                     callback.onSuccess(userId);
                 } else {
                     String message = "Login failed";
@@ -93,12 +95,14 @@ public class AuthRepository {
             @Override
             public void onResponse(@NonNull Call<Void> call, @NonNull Response<Void> response) {
                 // Even if we get an error from the server, we consider the user locally logged out
+                SessionManager.clear();
                 callback.onSuccess(null);
             }
 
             @Override
             public void onFailure(@NonNull Call<Void> call, @NonNull Throwable t) {
                 // Same for network errors
+                SessionManager.clear();
                 callback.onSuccess(null);
             }
         });
