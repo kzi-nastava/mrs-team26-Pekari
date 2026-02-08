@@ -7,7 +7,9 @@ import androidx.lifecycle.ViewModel;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.example.blackcar.presentation.auth.viewmodel.LoginViewModel;
+import com.example.blackcar.presentation.auth.viewmodel.RegisterViewModel;
 import com.example.blackcar.presentation.history.viewmodel.DriverHistoryViewModel;
+import com.example.blackcar.presentation.profile.viewmodel.ProfileViewModel;
 
 public class ViewModelFactory implements ViewModelProvider.Factory {
 
@@ -22,6 +24,10 @@ public class ViewModelFactory implements ViewModelProvider.Factory {
     public <T extends ViewModel> T create(@NonNull Class<T> modelClass) {
         if (modelClass.isAssignableFrom(LoginViewModel.class)) {
             return (T) new LoginViewModel(context);
+        } else if (modelClass.isAssignableFrom(RegisterViewModel.class)) {
+            return (T) new RegisterViewModel(context);
+        } else if (modelClass.isAssignableFrom(ProfileViewModel.class)) {
+            return (T) new ProfileViewModel(context);
         } else if (modelClass.isAssignableFrom(DriverHistoryViewModel.class)) {
             return (T) new DriverHistoryViewModel();
         }

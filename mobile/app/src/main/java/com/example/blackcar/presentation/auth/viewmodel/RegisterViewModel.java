@@ -1,5 +1,7 @@
 package com.example.blackcar.presentation.auth.viewmodel;
 
+import android.content.Context;
+
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
@@ -11,7 +13,11 @@ public class RegisterViewModel extends ViewModel {
 
     private final MutableLiveData<RegisterViewState> registerState =
         new MutableLiveData<>(new RegisterViewState.Idle());
-    private final AuthRepository authRepository = new AuthRepository();
+    private final AuthRepository authRepository;
+
+    public RegisterViewModel(Context context) {
+        this.authRepository = new AuthRepository(context);
+    }
 
     public LiveData<RegisterViewState> getRegisterState() {
         return registerState;

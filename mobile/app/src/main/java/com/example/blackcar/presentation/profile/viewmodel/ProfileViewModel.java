@@ -1,5 +1,7 @@
 package com.example.blackcar.presentation.profile.viewmodel;
 
+import android.content.Context;
+
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
@@ -19,9 +21,10 @@ public class ProfileViewModel extends ViewModel {
     private final MutableLiveData<ProfileViewState> state = new MutableLiveData<>();
     private final MutableLiveData<Boolean> logoutSuccess = new MutableLiveData<>(false);
     private final MockProfileStore store = MockProfileStore.getInstance();
-    private final AuthRepository authRepository = new AuthRepository();
+    private final AuthRepository authRepository;
 
-    public ProfileViewModel() {
+    public ProfileViewModel(Context context) {
+        this.authRepository = new AuthRepository(context);
         load();
     }
 
