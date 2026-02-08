@@ -17,6 +17,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.navigation.Navigation;
 
 import com.example.blackcar.R;
 import com.example.blackcar.databinding.FragmentProfileBinding;
@@ -100,9 +101,18 @@ public class ProfileFragment extends Fragment {
         binding.btnChangePassword.setOnClickListener(v -> openChangePasswordDialog());
 
         binding.btnChangePicture.setOnClickListener(v -> pickImageLauncher.launch("image/*"));
+
+        binding.btnLogout.setOnClickListener(v -> viewModel.logout());
     }
 
     private void observeState() {
+        viewModel.getLogoutSuccess().observe(getViewLifecycleOwner(), success -> {
+            if (success) {
+                Navigation.findNavController(binding.getRoot())
+                        .navigate(R.id.action_profile_to_login);
+            }
+        });
+
         viewModel.getState().observe(getViewLifecycleOwner(), state -> {
             if (state == null) {
                 return;

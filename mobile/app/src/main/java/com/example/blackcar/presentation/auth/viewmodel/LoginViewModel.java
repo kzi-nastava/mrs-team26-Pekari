@@ -4,19 +4,13 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
+import com.example.blackcar.data.repository.AuthRepository;
 import com.example.blackcar.presentation.auth.viewstate.LoginViewState;
-
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 
 public class LoginViewModel extends ViewModel {
 
     private final MutableLiveData<LoginViewState> loginState = new MutableLiveData<>(new LoginViewState.Idle());
-    private final ScheduledExecutorService executorService;
-
-    public LoginViewModel() {
-        this.executorService = Executors.newSingleThreadScheduledExecutor();
-    }
+    private final AuthRepository authRepository = new AuthRepository();
 
     public LiveData<LoginViewState> getLoginState() {
         return loginState;
@@ -24,27 +18,16 @@ public class LoginViewModel extends ViewModel {
 
     public void login(String email, String password) {
         loginState.setValue(new LoginViewState.Loading());
+        authRepository.login(email, password, new AuthRepository.RepoCallback<String>() {
+            @Override
+            public void onSuccess(String userId) {
+                loginState.postValue(new LoginViewState.Success(userId));
+            }
 
-        executorService.execute(() -> {
-            try {
-                Thread.sleep(1500);
-
-                boolean success = !email.isEmpty() && password.length() >= 6;
-
-                if (success) {
-                    loginState.postValue(new LoginViewState.Success("dummy_user_123"));
-                } else {
-                    loginState.postValue(new LoginViewState.Error("Invalid email or password"));
-                }
-            } catch (Exception e) {
-                loginState.postValue(new LoginViewState.Error("Network error: " + e.getMessage()));
+            @Override
+            public void onError(String message) {
+                loginState.postValue(new LoginViewState.Error(message != null ? message : "Login failed"));
             }
         });
-    }
-
-    @Override
-    protected void onCleared() {
-        super.onCleared();
-        executorService.shutdown();
     }
 }

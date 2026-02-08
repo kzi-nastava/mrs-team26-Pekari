@@ -52,16 +52,33 @@ public class MainActivity extends AppCompatActivity {
         });
 
         navController.addOnDestinationChangedListener((controller, destination, arguments) -> {
-            if (destination.getId() == R.id.loginFragment || 
+            if (destination.getId() == R.id.loginFragment ||
                 destination.getId() == R.id.registerFragment ||
                 destination.getId() == R.id.forgotPasswordFragment) {
                 binding.bottomNavigation.setVisibility(android.view.View.GONE);
                 binding.appBarLayout.setVisibility(android.view.View.GONE);
+                setNavHostBottomMargin(0);
             } else {
                 binding.bottomNavigation.setVisibility(android.view.View.VISIBLE);
                 binding.appBarLayout.setVisibility(android.view.View.VISIBLE);
+                int bottom = binding.bottomNavigation.getHeight() > 0 ? binding.bottomNavigation.getHeight() : dpToPx(56);
+                setNavHostBottomMargin(bottom);
             }
         });
+    }
+
+    private void setNavHostBottomMargin(int px) {
+        android.view.View v = binding.navHostFragment;
+        android.view.ViewGroup.MarginLayoutParams lp = (android.view.ViewGroup.MarginLayoutParams) v.getLayoutParams();
+        if (lp.bottomMargin != px) {
+            lp.bottomMargin = px;
+            v.setLayoutParams(lp);
+        }
+    }
+
+    private int dpToPx(int dp) {
+        float density = getResources().getDisplayMetrics().density;
+        return Math.round(dp * density);
     }
 
     @Override
