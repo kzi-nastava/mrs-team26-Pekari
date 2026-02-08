@@ -26,7 +26,11 @@ yarn-error.log*
 # Dependencies (will be managed in subdirectories)
 node_modules/
 
+# Gradle
+.gradle/
+build/
+local.properties
+
 # Build outputs (will be managed in subdirectories)
 dist/
-build/
 backend/.env

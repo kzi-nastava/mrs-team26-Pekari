@@ -4,6 +4,7 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
+import com.example.blackcar.data.repository.AuthRepository;
 import com.example.blackcar.presentation.profile.data.MockProfileStore;
 import com.example.blackcar.presentation.profile.model.ApprovalRequestUIModel;
 import com.example.blackcar.presentation.profile.model.DriverInfoUIModel;
@@ -16,7 +17,9 @@ import java.util.List;
 public class ProfileViewModel extends ViewModel {
 
     private final MutableLiveData<ProfileViewState> state = new MutableLiveData<>();
+    private final MutableLiveData<Boolean> logoutSuccess = new MutableLiveData<>(false);
     private final MockProfileStore store = MockProfileStore.getInstance();
+    private final AuthRepository authRepository = new AuthRepository();
 
     public ProfileViewModel() {
         load();
@@ -24,6 +27,10 @@ public class ProfileViewModel extends ViewModel {
 
     public LiveData<ProfileViewState> getState() {
         return state;
+    }
+
+    public LiveData<Boolean> getLogoutSuccess() {
+        return logoutSuccess;
     }
 
     public void load() {
@@ -131,5 +138,20 @@ public class ProfileViewModel extends ViewModel {
             }
         }
         return pending;
+    }
+
+    public void logout() {
+        authRepository.logout(new AuthRepository.RepoCallback<Void>() {
+            @Override
+            public void onSuccess(Void data) {
+                logoutSuccess.postValue(true);
+            }
+
+            @Override
+            public void onError(String message) {
+                // We consider logout successful locally regardless of server error
+                logoutSuccess.postValue(true);
+            }
+        });
     }
 }
