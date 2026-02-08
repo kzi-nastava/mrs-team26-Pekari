@@ -13,7 +13,9 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.Navigation;
 
 import com.example.blackcar.R;
+import com.example.blackcar.data.api.ApiClient;
 import com.example.blackcar.databinding.FragmentLoginBinding;
+import com.example.blackcar.presentation.ViewModelFactory;
 import com.example.blackcar.presentation.auth.viewmodel.LoginViewModel;
 import com.example.blackcar.presentation.auth.viewstate.LoginViewState;
 
@@ -33,7 +35,11 @@ public class LoginFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        viewModel = new ViewModelProvider(this).get(LoginViewModel.class);
+        // Initialize ApiClient with context
+        ApiClient.init(requireContext());
+
+        ViewModelFactory factory = new ViewModelFactory(requireContext());
+        viewModel = new ViewModelProvider(this, factory).get(LoginViewModel.class);
 
         setupClickListeners();
 
