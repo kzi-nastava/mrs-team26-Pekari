@@ -70,10 +70,21 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(Arrays.asList(allowedOrigins.split(",")));
+
+        // Support both web and mobile requests
+        String[] origins = allowedOrigins.split(",");
+        if (origins.length == 1 && "*".equals(origins[0].trim())) {
+            // For wildcard, use pattern but disable credentials
+            configuration.setAllowedOriginPatterns(List.of("*"));
+        } else {
+            // For specific origins, use patterns and enable credentials
+            configuration.setAllowedOriginPatterns(Arrays.asList(origins));
+            configuration.setAllowCredentials(true);
+        }
+
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
-        configuration.setAllowCredentials(true);
+        configuration.setExposedHeaders(Arrays.asList("Authorization", "Content-Type"));
         configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
