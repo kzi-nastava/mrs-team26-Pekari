@@ -23,12 +23,11 @@ public class ProfileViewModel extends ViewModel {
     private final MutableLiveData<String> toastMessage = new MutableLiveData<>(null);
     private final MutableLiveData<Boolean> logoutSuccess = new MutableLiveData<>(false);
     private final ApprovalRequestStore approvalStore = ApprovalRequestStore.getInstance();
-    private final AuthRepository authRepository = new AuthRepository();
+    private final AuthRepository authRepository;
     private final ProfileRepository profileRepository = new ProfileRepository();
 
     private ProfileUIModel cachedProfile;
     private DriverInfoUIModel cachedDriverInfo;
-    private final MockProfileStore store = MockProfileStore.getInstance();
 
     public ProfileViewModel(Context context) {
         this.authRepository = new AuthRepository(context);

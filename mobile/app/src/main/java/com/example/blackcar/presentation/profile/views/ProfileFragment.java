@@ -24,6 +24,7 @@ import androidx.navigation.Navigation;
 
 import com.example.blackcar.R;
 import com.example.blackcar.databinding.FragmentProfileBinding;
+import com.example.blackcar.presentation.ViewModelFactory;
 import com.example.blackcar.presentation.profile.model.ApprovalRequestUIModel;
 import com.example.blackcar.presentation.profile.model.DriverInfoUIModel;
 import com.example.blackcar.presentation.profile.model.ProfileUIModel;
@@ -50,7 +51,8 @@ public class ProfileFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        viewModel = new ViewModelProvider(this).get(ProfileViewModel.class);
+        ViewModelFactory factory = new ViewModelFactory(requireContext());
+        viewModel = new ViewModelProvider(this, factory).get(ProfileViewModel.class);
 
         pickImageLauncher = registerForActivityResult(
                 new ActivityResultContracts.GetContent(),
