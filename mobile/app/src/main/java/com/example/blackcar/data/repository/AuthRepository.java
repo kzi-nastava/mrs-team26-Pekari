@@ -1,5 +1,7 @@
 package com.example.blackcar.data.repository;
 
+import android.content.Context;
+
 import androidx.annotation.NonNull;
 
 import com.example.blackcar.data.api.ApiClient;
@@ -7,6 +9,7 @@ import com.example.blackcar.data.api.model.LoginRequest;
 import com.example.blackcar.data.api.model.LoginResponse;
 import com.example.blackcar.data.api.model.RegisterResponse;
 import com.example.blackcar.data.api.service.AuthApiService;
+import com.example.blackcar.data.auth.TokenManager;
 
 import okhttp3.MediaType;
 import okhttp3.RequestBody;
@@ -22,6 +25,11 @@ public class AuthRepository {
     }
 
     private final AuthApiService api = ApiClient.getAuthService();
+    private final TokenManager tokenManager;
+
+    public AuthRepository(Context context) {
+        this.tokenManager = TokenManager.getInstance(context);
+    }
 
     public void login(String email, String password, RepoCallback<String> callback) {
         api.login(new LoginRequest(email, password)).enqueue(new Callback<LoginResponse>() {
@@ -29,7 +37,20 @@ public class AuthRepository {
             public void onResponse(@NonNull Call<LoginResponse> call, @NonNull Response<LoginResponse> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     LoginResponse body = response.body();
+
+                    // Store token and user info
+                    if (body.getToken() != null) {
+                        tokenManager.saveToken(body.getToken());
+                    }
+                    if (body.getRole() != null) {
+                        tokenManager.saveRole(body.getRole());
+                    }
+
                     String userId = body.getId() != null ? body.getId() : (body.getUserId() != null ? body.getUserId() : body.getEmail());
+                    if (userId != null) {
+                        tokenManager.saveUserId(userId);
+                    }
+
                     callback.onSuccess(userId);
                 } else {
                     String message = "Login failed";
@@ -92,12 +113,16 @@ public class AuthRepository {
         api.logout().enqueue(new Callback<Void>() {
             @Override
             public void onResponse(@NonNull Call<Void> call, @NonNull Response<Void> response) {
+                // Clear stored token
+                tokenManager.clearToken();
                 // Even if we get an error from the server, we consider the user locally logged out
                 callback.onSuccess(null);
             }
 
             @Override
             public void onFailure(@NonNull Call<Void> call, @NonNull Throwable t) {
+                // Clear stored token even on network error
+                tokenManager.clearToken();
                 // Same for network errors
                 callback.onSuccess(null);
             }
