@@ -9,7 +9,7 @@ import retrofit2.http.Query;
 
 public interface RideApiService {
 
-    @GET("api/v1/rides/history/driver")
+    @GET("rides/history/driver")
     Call<PaginatedResponse<DriverRideHistoryResponse>> getDriverRideHistory(
             @Query("startDate") String startDate,
             @Query("endDate") String endDate,
