@@ -4,10 +4,13 @@ import android.content.Context;
 
 import com.example.blackcar.BuildConfig;
 import com.example.blackcar.data.api.service.AuthApiService;
+import com.example.blackcar.data.api.service.ProfileApiService;
+import com.example.blackcar.data.session.SessionManager;
 import com.example.blackcar.data.api.service.RideApiService;
 import com.example.blackcar.data.auth.AuthInterceptor;
 
 import okhttp3.OkHttpClient;
+import okhttp3.Request;
 import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
@@ -16,6 +19,7 @@ public class ApiClient {
 
     private static Retrofit retrofit;
     private static AuthApiService authApiService;
+    private static ProfileApiService profileApiService;
     private static RideApiService rideApiService;
     private static Context appContext;
 
@@ -32,15 +36,20 @@ public class ApiClient {
             HttpLoggingInterceptor logging = new HttpLoggingInterceptor();
             logging.setLevel(HttpLoggingInterceptor.Level.BODY);
 
-            OkHttpClient.Builder clientBuilder = new OkHttpClient.Builder()
-                    .addInterceptor(logging);
-
-            // Add auth interceptor if context is available
-            if (appContext != null) {
-                clientBuilder.addInterceptor(new AuthInterceptor(appContext));
-            }
-
-            OkHttpClient client = clientBuilder.build();
+            OkHttpClient client = new OkHttpClient.Builder()
+                    .addInterceptor(chain -> {
+                        Request original = chain.request();
+                        String token = SessionManager.getToken();
+                        if (token != null && !token.trim().isEmpty()) {
+                            Request authed = original.newBuilder()
+                                    .header("Authorization", "Bearer " + token)
+                                    .build();
+                            return chain.proceed(authed);
+                        }
+                        return chain.proceed(original);
+                    })
+                    .addInterceptor(logging)
+                    .build();
 
             String baseUrl = BuildConfig.API_BASE_URL;
             if (!baseUrl.endsWith("/")) {
@@ -63,6 +72,12 @@ public class ApiClient {
         return authApiService;
     }
 
+    public static ProfileApiService getProfileService() {
+        if (profileApiService == null) {
+            profileApiService = getRetrofit().create(ProfileApiService.class);
+        }
+        return profileApiService;
+    }
     public static RideApiService getRideService() {
         if (rideApiService == null) {
             rideApiService = getRetrofit().create(RideApiService.class);

@@ -7,7 +7,8 @@ import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
 import com.example.blackcar.data.repository.AuthRepository;
-import com.example.blackcar.presentation.profile.data.MockProfileStore;
+import com.example.blackcar.data.repository.ProfileRepository;
+import com.example.blackcar.presentation.profile.data.ApprovalRequestStore;
 import com.example.blackcar.presentation.profile.model.ApprovalRequestUIModel;
 import com.example.blackcar.presentation.profile.model.DriverInfoUIModel;
 import com.example.blackcar.presentation.profile.model.ProfileUIModel;
@@ -19,9 +20,14 @@ import java.util.List;
 public class ProfileViewModel extends ViewModel {
 
     private final MutableLiveData<ProfileViewState> state = new MutableLiveData<>();
+    private final MutableLiveData<String> toastMessage = new MutableLiveData<>(null);
     private final MutableLiveData<Boolean> logoutSuccess = new MutableLiveData<>(false);
-    private final MockProfileStore store = MockProfileStore.getInstance();
+    private final ApprovalRequestStore approvalStore = ApprovalRequestStore.getInstance();
     private final AuthRepository authRepository;
+    private final ProfileRepository profileRepository = new ProfileRepository();
+
+    private ProfileUIModel cachedProfile;
+    private DriverInfoUIModel cachedDriverInfo;
 
     public ProfileViewModel(Context context) {
         this.authRepository = new AuthRepository(context);
@@ -32,30 +38,68 @@ public class ProfileViewModel extends ViewModel {
         return state;
     }
 
+    public LiveData<String> getToastMessage() {
+        return toastMessage;
+    }
+
     public LiveData<Boolean> getLogoutSuccess() {
         return logoutSuccess;
     }
 
     public void load() {
-        ProfileUIModel profile = store.getCurrentProfile();
-        DriverInfoUIModel driverInfo = store.getDriverInfo();
-        List<ApprovalRequestUIModel> requests = store.getApprovalRequests();
-
-        String banner = null;
-        if ("driver".equalsIgnoreCase(profile.role) && store.hasPendingRequestForCurrentUser()) {
-            banner = "Changes sent for admin approval. Current profile remains unchanged.";
-        }
-
         state.setValue(new ProfileViewState(
-                false,
+                true,
                 false,
                 null,
                 false,
-                banner,
-                profile,
-                driverInfo,
-                requests
+                null,
+                cachedProfile,
+                cachedDriverInfo,
+                approvalStore.getApprovalRequests()
         ));
+
+        profileRepository.getProfile(new ProfileRepository.RepoCallback<ProfileRepository.ProfilePayload>() {
+            @Override
+            public void onSuccess(ProfileRepository.ProfilePayload data) {
+                cachedProfile = data.profile;
+                cachedDriverInfo = data.driverInfo;
+                String banner = null;
+                if (cachedProfile != null && "driver".equalsIgnoreCase(cachedProfile.role)) {
+                    ApprovalRequestUIModel approved = approvalStore.getLatestApprovedRequestForUser(cachedProfile.id);
+                    if (approved != null && approved.changes != null) {
+                        cachedProfile = approved.changes;
+                    }
+                    if (approvalStore.hasPendingRequestForUser(cachedProfile.id)) {
+                        banner = "Changes sent for admin approval. Current profile remains unchanged.";
+                    }
+                }
+
+                state.postValue(new ProfileViewState(
+                        false,
+                        false,
+                        null,
+                        false,
+                        banner,
+                        cachedProfile,
+                        cachedDriverInfo,
+                        approvalStore.getApprovalRequests()
+                ));
+            }
+
+            @Override
+            public void onError(String message) {
+                state.postValue(new ProfileViewState(
+                        false,
+                        true,
+                        message,
+                        false,
+                        null,
+                        cachedProfile,
+                        cachedDriverInfo,
+                        approvalStore.getApprovalRequests()
+                ));
+            }
+        });
     }
 
     public void setEditing(boolean editing) {
@@ -92,6 +136,7 @@ public class ProfileViewModel extends ViewModel {
         );
 
         // For UI: reflect immediately in edit mode preview
+        cachedProfile = updated;
         state.setValue(new ProfileViewState(
                 current.loading,
                 current.error,
@@ -105,35 +150,73 @@ public class ProfileViewModel extends ViewModel {
     }
 
     public void submitChanges(ProfileUIModel proposed) {
-        ProfileUIModel currentProfile = store.getCurrentProfile();
-
-        if ("driver".equalsIgnoreCase(currentProfile.role)) {
-            store.createDriverProfileChangeRequest(proposed);
-            load();
-            setEditing(false);
+        ProfileViewState current = state.getValue();
+        if (current == null || current.profile == null) {
+            toastMessage.postValue("Profile not loaded");
             return;
         }
 
-        // admin/passenger: apply immediately
-        store.setCurrentProfile(proposed);
-        load();
-        setEditing(false);
+        if ("driver".equalsIgnoreCase(current.profile.role)) {
+            approvalStore.createDriverProfileChangeRequest(
+                    current.profile.id,
+                    current.profile.email,
+                    proposed
+            );
+
+            String banner = "Changes sent for admin approval. Current profile remains unchanged.";
+            cachedProfile = current.profile;
+            state.postValue(new ProfileViewState(
+                    false,
+                    false,
+                    null,
+                    false,
+                    banner,
+                    current.profile,
+                    current.driverInfo,
+                    approvalStore.getApprovalRequests()
+            ));
+            toastMessage.postValue("Request sent for admin approval");
+            return;
+        }
+
+        profileRepository.updateProfile(proposed, new ProfileRepository.RepoCallback<String>() {
+            @Override
+            public void onSuccess(String message) {
+                cachedProfile = proposed;
+                state.postValue(new ProfileViewState(
+                        false,
+                        false,
+                        null,
+                        false,
+                        null,
+                        proposed,
+                        current.driverInfo,
+                        approvalStore.getApprovalRequests()
+                ));
+                toastMessage.postValue(message != null ? message : "Profile updated");
+            }
+
+            @Override
+            public void onError(String message) {
+                toastMessage.postValue(message != null ? message : "Failed to update profile");
+            }
+        });
     }
 
     public boolean approveRequest(String requestId) {
-        boolean ok = store.approveRequest(requestId);
-        load();
+        boolean ok = approvalStore.approveRequest(requestId);
+        refreshApprovalsOnly();
         return ok;
     }
 
     public boolean rejectRequest(String requestId, String reason) {
-        boolean ok = store.rejectRequest(requestId, reason);
-        load();
+        boolean ok = approvalStore.rejectRequest(requestId, reason);
+        refreshApprovalsOnly();
         return ok;
     }
 
     public List<ApprovalRequestUIModel> getPendingApprovalRequestsOnly() {
-        List<ApprovalRequestUIModel> all = store.getApprovalRequests();
+        List<ApprovalRequestUIModel> all = approvalStore.getApprovalRequests();
         List<ApprovalRequestUIModel> pending = new ArrayList<>();
         for (ApprovalRequestUIModel r : all) {
             if (r != null && "pending".equalsIgnoreCase(r.status)) {
@@ -141,6 +224,25 @@ public class ProfileViewModel extends ViewModel {
             }
         }
         return pending;
+    }
+
+    public void changePassword(String currentPassword, String newPassword, String confirmPassword) {
+        profileRepository.changePassword(currentPassword, newPassword, confirmPassword,
+                new ProfileRepository.RepoCallback<String>() {
+                    @Override
+                    public void onSuccess(String message) {
+                        toastMessage.postValue(message != null ? message : "Password changed");
+                    }
+
+                    @Override
+                    public void onError(String message) {
+                        toastMessage.postValue(message != null ? message : "Failed to change password");
+                    }
+                });
+    }
+
+    public void clearToastMessage() {
+        toastMessage.setValue(null);
     }
 
     public void logout() {
@@ -156,5 +258,22 @@ public class ProfileViewModel extends ViewModel {
                 logoutSuccess.postValue(true);
             }
         });
+    }
+
+    private void refreshApprovalsOnly() {
+        ProfileViewState current = state.getValue();
+        if (current == null) {
+            return;
+        }
+        state.postValue(new ProfileViewState(
+                current.loading,
+                current.error,
+                current.errorMessage,
+                current.isEditing,
+                current.bannerMessage,
+                current.profile,
+                current.driverInfo,
+                approvalStore.getApprovalRequests()
+        ));
     }
 }

@@ -1,9 +1,12 @@
 package com.example.blackcar.presentation.profile.views;
 
 import android.app.AlertDialog;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
 import android.text.InputType;
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -21,6 +24,7 @@ import androidx.navigation.Navigation;
 
 import com.example.blackcar.R;
 import com.example.blackcar.databinding.FragmentProfileBinding;
+import com.example.blackcar.presentation.ViewModelFactory;
 import com.example.blackcar.presentation.profile.model.ApprovalRequestUIModel;
 import com.example.blackcar.presentation.profile.model.DriverInfoUIModel;
 import com.example.blackcar.presentation.profile.model.ProfileUIModel;
@@ -47,7 +51,8 @@ public class ProfileFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        viewModel = new ViewModelProvider(this).get(ProfileViewModel.class);
+        ViewModelFactory factory = new ViewModelFactory(requireContext());
+        viewModel = new ViewModelProvider(this, factory).get(ProfileViewModel.class);
 
         pickImageLauncher = registerForActivityResult(
                 new ActivityResultContracts.GetContent(),
@@ -89,13 +94,6 @@ public class ProfileFragment extends Fragment {
             );
 
             viewModel.submitChanges(proposed);
-
-            String role = current.role != null ? current.role : "";
-            if ("driver".equalsIgnoreCase(role)) {
-                Toast.makeText(requireContext(), "Request sent for admin approval", Toast.LENGTH_LONG).show();
-            } else {
-                Toast.makeText(requireContext(), "Profile updated", Toast.LENGTH_SHORT).show();
-            }
         });
 
         binding.btnChangePassword.setOnClickListener(v -> openChangePasswordDialog());
@@ -113,9 +111,20 @@ public class ProfileFragment extends Fragment {
             }
         });
 
+        viewModel.getToastMessage().observe(getViewLifecycleOwner(), message -> {
+            if (message != null && !message.trim().isEmpty()) {
+                Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
+                viewModel.clearToastMessage();
+            }
+        });
+
         viewModel.getState().observe(getViewLifecycleOwner(), state -> {
             if (state == null) {
                 return;
+            }
+
+            if (state.error && state.errorMessage != null && !state.errorMessage.trim().isEmpty()) {
+                Toast.makeText(requireContext(), state.errorMessage, Toast.LENGTH_LONG).show();
             }
 
             if (state.bannerMessage != null && !state.bannerMessage.trim().isEmpty()) {
@@ -144,11 +153,7 @@ public class ProfileFragment extends Fragment {
         binding.edtEmail.setText(profile.email);
         binding.edtAddress.setText(profile.address);
 
-        if (profile.profilePictureUri != null && !profile.profilePictureUri.isEmpty()) {
-            binding.imgProfile.setImageURI(Uri.parse(profile.profilePictureUri));
-        } else {
-            binding.imgProfile.setImageResource(R.drawable.baseline_person_24);
-        }
+        setProfileImage(profile.profilePictureUri);
     }
 
     private void renderDriverInfo(ProfileUIModel profile, DriverInfoUIModel info) {
@@ -178,11 +183,11 @@ public class ProfileFragment extends Fragment {
 
         VehicleUIModel v = info.vehicle;
         if (v != null) {
-            binding.txtVehicleMake.setText(getString(R.string.profile_vehicle_make) + ": " + v.make);
-            binding.txtVehicleModel.setText(getString(R.string.profile_vehicle_model) + ": " + v.model);
-            binding.txtVehicleYear.setText(getString(R.string.profile_vehicle_year) + ": " + v.year);
-            binding.txtVehicleLicense.setText(getString(R.string.profile_vehicle_license_plate) + ": " + v.licensePlate);
-            binding.txtVehicleVin.setText(getString(R.string.profile_vehicle_vin) + ": " + v.vin);
+            binding.txtVehicleMake.setText(getString(R.string.profile_vehicle_make) + ": " + safeValue(v.make));
+            binding.txtVehicleModel.setText(getString(R.string.profile_vehicle_model) + ": " + safeValue(v.model));
+            binding.txtVehicleYear.setText(getString(R.string.profile_vehicle_year) + ": " + (v.year > 0 ? v.year : "-"));
+            binding.txtVehicleLicense.setText(getString(R.string.profile_vehicle_license_plate) + ": " + safeValue(v.licensePlate));
+            binding.txtVehicleVin.setText(getString(R.string.profile_vehicle_vin) + ": " + safeValue(v.vin));
         }
     }
 
@@ -328,7 +333,7 @@ public class ProfileFragment extends Fragment {
                 return;
             }
 
-            Toast.makeText(requireContext(), "Password changed", Toast.LENGTH_SHORT).show();
+            viewModel.changePassword(c, n, k);
         });
 
         builder.setNegativeButton(getString(R.string.profile_password_cancel), (dialog, which) -> dialog.dismiss());
@@ -356,6 +361,46 @@ public class ProfileFragment extends Fragment {
 
     private static String formatHours(double hours) {
         return String.format(java.util.Locale.getDefault(), "%.2f h", hours);
+    }
+
+    private static String safeValue(String value) {
+        return value == null || value.trim().isEmpty() ? "-" : value;
+    }
+
+    private void setProfileImage(String picture) {
+        if (TextUtils.isEmpty(picture)) {
+            binding.imgProfile.setImageResource(R.drawable.baseline_person_24);
+            return;
+        }
+
+        String trimmed = picture.trim();
+        if (trimmed.startsWith("content://") || trimmed.startsWith("file://") || trimmed.startsWith("android.resource://")) {
+            binding.imgProfile.setImageURI(Uri.parse(trimmed));
+            return;
+        }
+
+        Bitmap bitmap = decodeBase64Image(trimmed);
+        if (bitmap != null) {
+            binding.imgProfile.setImageBitmap(bitmap);
+        } else {
+            binding.imgProfile.setImageResource(R.drawable.baseline_person_24);
+        }
+    }
+
+    private Bitmap decodeBase64Image(String value) {
+        try {
+            String data = value;
+            if (value.startsWith("data:image")) {
+                int comma = value.indexOf(',');
+                if (comma >= 0) {
+                    data = value.substring(comma + 1);
+                }
+            }
+            byte[] decoded = android.util.Base64.decode(data, android.util.Base64.DEFAULT);
+            return BitmapFactory.decodeByteArray(decoded, 0, decoded.length);
+        } catch (IllegalArgumentException ex) {
+            return null;
+        }
     }
 
     @Override

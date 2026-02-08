@@ -9,6 +9,7 @@ import com.example.blackcar.data.api.model.LoginRequest;
 import com.example.blackcar.data.api.model.LoginResponse;
 import com.example.blackcar.data.api.model.RegisterResponse;
 import com.example.blackcar.data.api.service.AuthApiService;
+import com.example.blackcar.data.session.SessionManager;
 import com.example.blackcar.data.auth.TokenManager;
 
 import okhttp3.MediaType;
@@ -47,6 +48,7 @@ public class AuthRepository {
                     }
 
                     String userId = body.getId() != null ? body.getId() : (body.getUserId() != null ? body.getUserId() : body.getEmail());
+                    SessionManager.setSession(body.getToken(), body.getEmail(), body.getRole(), userId);
                     if (userId != null) {
                         tokenManager.saveUserId(userId);
                     }
@@ -116,6 +118,7 @@ public class AuthRepository {
                 // Clear stored token
                 tokenManager.clearToken();
                 // Even if we get an error from the server, we consider the user locally logged out
+                SessionManager.clear();
                 callback.onSuccess(null);
             }
 
@@ -124,6 +127,7 @@ public class AuthRepository {
                 // Clear stored token even on network error
                 tokenManager.clearToken();
                 // Same for network errors
+                SessionManager.clear();
                 callback.onSuccess(null);
             }
         });
