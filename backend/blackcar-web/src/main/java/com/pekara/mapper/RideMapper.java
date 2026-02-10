@@ -15,9 +15,11 @@ import com.pekara.dto.request.WebRideRatingRequest;
 import com.pekara.dto.request.WebStopRideEarlyRequest;
 import com.pekara.dto.response.ActiveRideResponse;
 import com.pekara.dto.response.DriverRideHistoryResponse;
+import com.pekara.dto.response.PassengerRideHistoryResponse;
 import com.pekara.dto.response.RideTrackingResponse;
 import com.pekara.dto.response.WebActiveRideResponse;
 import com.pekara.dto.response.WebDriverRideHistoryResponse;
+import com.pekara.dto.response.WebPassengerRideHistoryResponse;
 import com.pekara.dto.response.WebRideTrackingResponse;
 import org.springframework.stereotype.Component;
 
@@ -211,6 +213,32 @@ public class RideMapper {
                 response.getPanickedBy(),
                 response.getStatus(),
                 passengers
+        );
+    }
+
+    public WebPassengerRideHistoryResponse toWebPassengerRideHistoryResponse(PassengerRideHistoryResponse response) {
+        if (response == null) {
+            return null;
+        }
+
+        WebPassengerRideHistoryResponse.DriverInfo driver = response.getDriver() == null ? null :
+                new WebPassengerRideHistoryResponse.DriverInfo(
+                        response.getDriver().getId(),
+                        response.getDriver().getFirstName(),
+                        response.getDriver().getLastName());
+
+        return new WebPassengerRideHistoryResponse(
+                response.getId(),
+                response.getStartTime(),
+                response.getEndTime(),
+                response.getPickupLocation(),
+                response.getDropoffLocation(),
+                response.getCancelled(),
+                response.getCancelledBy(),
+                response.getPrice(),
+                response.getPanicActivated(),
+                response.getStatus(),
+                driver
         );
     }
 

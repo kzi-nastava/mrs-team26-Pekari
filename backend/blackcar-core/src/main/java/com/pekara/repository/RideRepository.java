@@ -40,6 +40,11 @@ public interface RideRepository extends JpaRepository<Ride, Long> {
                                       @Param("startDate") LocalDateTime startDate,
                                       @Param("endDate") LocalDateTime endDate);
 
+    @Query("SELECT r FROM Ride r JOIN r.passengers p WHERE p.id = :passengerId AND r.createdAt BETWEEN :startDate AND :endDate ORDER BY r.createdAt DESC")
+    List<Ride> findPassengerRideHistory(@Param("passengerId") Long passengerId,
+                                        @Param("startDate") LocalDateTime startDate,
+                                        @Param("endDate") LocalDateTime endDate);
+
     @Query("SELECT r FROM Ride r WHERE r.panicActivated = true AND r.status IN :statuses ORDER BY r.updatedAt DESC")
     List<Ride> findActivePanicRides(@Param("statuses") List<RideStatus> statuses);
 }
