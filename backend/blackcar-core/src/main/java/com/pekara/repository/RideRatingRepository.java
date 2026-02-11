@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -13,6 +14,9 @@ public interface RideRatingRepository extends JpaRepository<RideRating, Long> {
 
     @Query("SELECT rr FROM RideRating rr WHERE rr.ride.id = :rideId")
     Optional<RideRating> findByRideId(@Param("rideId") Long rideId);
+
+    @Query("SELECT rr FROM RideRating rr WHERE rr.ride.id = :rideId")
+    List<RideRating> findAllByRideId(@Param("rideId") Long rideId);
 
     @Query("SELECT rr FROM RideRating rr WHERE rr.ride.id = :rideId AND rr.passenger.id = :passengerId")
     Optional<RideRating> findByRideIdAndPassengerId(@Param("rideId") Long rideId, @Param("passengerId") Long passengerId);

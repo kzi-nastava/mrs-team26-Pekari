@@ -9,6 +9,8 @@ import com.pekara.dto.request.WebRideLocationUpdateRequest;
 import com.pekara.dto.request.WebRideRatingRequest;
 import com.pekara.dto.request.WebStopRideEarlyRequest;
 import com.pekara.dto.response.WebActiveRideResponse;
+import com.pekara.dto.response.WebAdminRideDetailResponse;
+import com.pekara.dto.response.WebAdminRideHistoryResponse;
 import com.pekara.dto.response.WebDriverRideHistoryResponse;
 import com.pekara.dto.response.WebMessageResponse;
 import com.pekara.dto.response.WebOrderRideResponse;
@@ -19,6 +21,7 @@ import com.pekara.dto.response.WebRideDetailResponse;
 import com.pekara.dto.response.WebRideEstimateResponse;
 import com.pekara.dto.response.WebRideTrackingResponse;
 import com.pekara.mapper.RideMapper;
+import com.pekara.service.AdminService;
 import com.pekara.service.RideService;
 import com.pekara.service.RideTrackingService;
 import lombok.RequiredArgsConstructor;
@@ -46,6 +49,7 @@ public class RideController {
 
     private final RideService rideService;
     private final RideTrackingService rideTrackingService;
+    private final AdminService adminService;
     private final RideMapper rideMapper;
     private final SimpMessagingTemplate messagingTemplate;
 
@@ -395,64 +399,71 @@ public class RideController {
     @Operation(summary = "Get all rides history (Admin)", description = "View complete ride history for all drivers and passengers with filtering - Protected endpoint (Admins only)")
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/history/admin/all")
-    public ResponseEntity<WebPaginatedResponse<WebDriverRideHistoryResponse>> getAllRidesHistory(
+    public ResponseEntity<WebPaginatedResponse<WebAdminRideHistoryResponse>> getAllRidesHistory(
             @Valid @RequestBody WebRideHistoryFilterRequest filterRequest,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
 
         log.debug("Admin all rides history requested with filters: {} (page: {}, size: {})", filterRequest, page, size);
 
-        // TODO: Implement admin ride history retrieval via RideService
-        // - Fetch ALL rides in the system (no user filtering)
-        // - Filter by date range (startDate to endDate)
-        // - Apply pagination (page, size)
-        // - For each ride include:
-        //   * Start time and end time
-        //   * Pickup and dropoff locations
-        //   * Cancelled status and who cancelled (passenger name or "driver")
-        //   * Price
-        //   * Panic button activation status
-        //   * All passengers information
-        //   * Driver information
-        //   * Inconsistency reports if any
-        //   * Ratings if any
-        // - Sort by date (newest first by default)
+        LocalDateTime startDateTime = filterRequest.getStartDate() != null
+                ? filterRequest.getStartDate()
+                : LocalDateTime.now().minusYears(1);
+        LocalDateTime endDateTime = filterRequest.getEndDate() != null
+                ? filterRequest.getEndDate()
+                : LocalDateTime.now();
 
-        List<WebDriverRideHistoryResponse> history = new ArrayList<>();
-        WebPaginatedResponse<WebDriverRideHistoryResponse> response = new WebPaginatedResponse<>(history, page, size, 0L);
+        var serviceResponse = adminService.getAllRidesHistory(startDateTime, endDateTime);
+
+        List<WebAdminRideHistoryResponse> history = serviceResponse.stream()
+                .map(rideMapper::toWebAdminRideHistoryResponse)
+                .toList();
+
+        // Apply pagination
+        int start = page * size;
+        int end = Math.min(start + size, history.size());
+        List<WebAdminRideHistoryResponse> paginatedHistory = start < history.size()
+                ? history.subList(start, end)
+                : new ArrayList<>();
+
+        WebPaginatedResponse<WebAdminRideHistoryResponse> response = new WebPaginatedResponse<>(
+                paginatedHistory, page, size, (long) history.size());
 
         log.debug("Retrieved {} total rides for admin", history.size());
         return ResponseEntity.ok(response);
     }
 
-    @Operation(summary = "Get ride details (Driver/Admin)", description = "View detailed ride information with all passengers - Protected endpoint (Drivers/Admins only)")
-    @PreAuthorize("hasAnyRole('DRIVER', 'ADMIN')")
+    @Operation(summary = "Get ride details (Admin)", description = "View detailed ride information with route, ratings, and reports - Protected endpoint (Admins only)")
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/admin/{rideId}")
+    public ResponseEntity<WebAdminRideDetailResponse> getAdminRideDetails(
+            @PathVariable Long rideId) {
+
+        log.debug("Admin requesting ride details for rideId: {}", rideId);
+
+        var serviceResponse = adminService.getRideDetail(rideId);
+        WebAdminRideDetailResponse response = rideMapper.toWebAdminRideDetailResponse(serviceResponse);
+
+        log.debug("Retrieved admin details for rideId: {}", rideId);
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "Get ride details (Driver)", description = "View detailed ride information with all passengers - Protected endpoint (Drivers only)")
+    @PreAuthorize("hasRole('DRIVER')")
     @GetMapping("/{rideId}/details")
     public ResponseEntity<WebRideDetailResponse> getRideDetailsForDriver(
             @PathVariable Long rideId,
             @AuthenticationPrincipal UserDetails currentUser) {
 
-        log.debug("Requesting driver/admin details for rideId: {}", rideId);
+        log.debug("Requesting driver details for rideId: {}", rideId);
 
-        // TODO: Implement ride detail retrieval via RideService
-        // - Get current user's ID and roles from UserDetails
-        // - Fetch ride information
-        // - Verify permissions:
-        //   * If currentUser is the driver on this ride -> allow
-        //   * If currentUser has ADMIN role -> allow
-        //   * Otherwise -> throw 403 Forbidden
-        // - Return complete ride information including:
-        //   * Route with all stops
-        //   * Driver information
-        //   * All passengers information (with full details)
-        //   * Inconsistency reports
-        //   * Ratings and comments
-        //   * Panic button activation status
-        //   * Cancellation details if applicable
+        // TODO: Implement ride detail retrieval via RideService for drivers
+        // - Verify currentUser is the driver on this ride
+        // - Return ride information
 
         WebRideDetailResponse rideDetails = new WebRideDetailResponse();
 
-        log.debug("Retrieved driver/admin details for rideId: {}", rideId);
+        log.debug("Retrieved driver details for rideId: {}", rideId);
         return ResponseEntity.ok(rideDetails);
     }
 
