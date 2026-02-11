@@ -138,6 +138,33 @@ export interface DriverRideHistoryResponse {
   passengers: PassengerHistoryInfo[];
 }
 
+export interface PassengerRideHistoryResponse {
+  id: number;
+  startTime: string | null;
+  endTime: string | null;
+  pickupLocation: string;
+  dropoffLocation: string;
+  pickup?: LocationPoint;
+  dropoff?: LocationPoint;
+  stops?: LocationPoint[];
+  cancelled: boolean;
+  cancelledBy: string | null;
+  price: number;
+  panicActivated: boolean;
+  status: string;
+  vehicleType: string;
+  babyTransport: boolean;
+  petTransport: boolean;
+  distanceKm: number;
+  driver: DriverHistoryInfo | null;
+}
+
+export interface DriverHistoryInfo {
+  id: number;
+  firstName: string;
+  lastName: string;
+}
+
 export interface PassengerHistoryInfo {
   id: number;
   firstName: string;
@@ -242,6 +269,13 @@ export class RideApiService {
   getDriverRideHistory(startDate: string, endDate: string, page: number = 0, size: number = 20) {
     return this.http.get<PaginatedResponse<DriverRideHistoryResponse>>(
       `${this.env.getApiUrl()}/rides/history/driver?startDate=${startDate}&endDate=${endDate}&page=${page}&size=${size}`
+    );
+  }
+
+  getPassengerRideHistory(filter: RideHistoryFilterRequest, page: number = 0, size: number = 20) {
+    return this.http.post<PaginatedResponse<PassengerRideHistoryResponse>>(
+      `${this.env.getApiUrl()}/rides/history/passenger?page=${page}&size=${size}`,
+      filter
     );
   }
 

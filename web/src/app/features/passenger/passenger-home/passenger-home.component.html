@@ -290,15 +290,15 @@
             <div class="route-details">
               <div class="route-location">
                 <span class="location-label">From:</span>
-                <span class="location-address">{{ route.pickup.address }}</span>
+                <span class="location-address">{{ isCoordinates(route.pickup.address) ? '(Invalid address - coordinates only)' : route.pickup.address }}</span>
               </div>
               <div class="route-location" *ngFor="let stop of route.stops; let i = index">
                 <span class="location-label">Stop {{ i + 1 }}:</span>
-                <span class="location-address">{{ stop.address }}</span>
+                <span class="location-address">{{ isCoordinates(stop.address) ? '(Invalid address - coordinates only)' : stop.address }}</span>
               </div>
               <div class="route-location">
                 <span class="location-label">To:</span>
-                <span class="location-address">{{ route.dropoff.address }}</span>
+                <span class="location-address">{{ isCoordinates(route.dropoff.address) ? '(Invalid address - coordinates only)' : route.dropoff.address }}</span>
               </div>
               <div class="route-meta">
                 <span class="vehicle-type">{{ route.vehicleType }}</span>
