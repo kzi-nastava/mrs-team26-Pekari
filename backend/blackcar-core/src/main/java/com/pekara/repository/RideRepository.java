@@ -47,4 +47,12 @@ public interface RideRepository extends JpaRepository<Ride, Long> {
 
     @Query("SELECT r FROM Ride r WHERE r.panicActivated = true AND r.status IN :statuses ORDER BY r.updatedAt DESC")
     List<Ride> findActivePanicRides(@Param("statuses") List<RideStatus> statuses);
+
+    /**
+     * Find all rides within date range for admin history view.
+     * Sorted by createdAt from newest to oldest.
+     */
+    @Query("SELECT r FROM Ride r WHERE r.createdAt BETWEEN :startDate AND :endDate ORDER BY r.createdAt DESC")
+    List<Ride> findAllRidesHistory(@Param("startDate") LocalDateTime startDate,
+                                   @Param("endDate") LocalDateTime endDate);
 }
