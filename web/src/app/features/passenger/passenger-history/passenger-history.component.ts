@@ -1,11 +1,12 @@
 import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RideApiService, FavoriteRoute, CreateFavoriteRouteRequest, LocationPoint } from '../../../core/services/ride-api.service';
+import { FormsModule } from '@angular/forms';
+import { RideApiService, FavoriteRoute, CreateFavoriteRouteRequest, LocationPoint, PassengerRideHistoryResponse } from '../../../core/services/ride-api.service';
 
 @Component({
   selector: 'app-passenger-history',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './passenger-history.component.html',
   styleUrls: ['./passenger-history.component.css']
 })
@@ -15,8 +16,12 @@ export class PassengerHistoryComponent implements OnInit {
 
   ridesList: any[] = [];
   favoriteRouteIds: Set<number> = new Set();
+  favoriteRoutes: FavoriteRoute[] = [];
   loading = false;
   error?: string;
+
+  startDate: string = '2024-01-01';
+  endDate: string = new Date().toISOString().split('T')[0];
 
   ngOnInit(): void {
     this.loadRides();
@@ -24,54 +29,95 @@ export class PassengerHistoryComponent implements OnInit {
   }
 
   loadRides() {
-    // TODO: Replace with actual API call when backend is ready
-    // For now, using mock data similar to driver history
-    this.ridesList = [
-      {
-        id: 1,
-        date: '15 December 2024',
-        time: '14:30 - 15:15 (45 min)',
-        status: ['completed'],
-        locations: [
-          { type: 'start', label: 'Start', address: 'Knez Mihailova 12, Beograd', latitude: 45.2671, longitude: 19.8335 },
-          { type: 'end', label: 'Finish', address: 'Aerodrom Nikola Tesla, Beograd', latitude: 45.255, longitude: 19.845 }
-        ],
-        stops: [],
-        distance: '18.5 km',
-        price: '1,250 RSD',
-        vehicleType: 'STANDARD',
-        babyTransport: false,
-        petTransport: false
+    this.loading = true;
+    this.error = undefined;
+
+    const filter = {
+      startDate: this.startDate + 'T00:00:00',
+      endDate: this.endDate + 'T23:59:59'
+    };
+
+    this.rides.getPassengerRideHistory(filter).subscribe({
+      next: (response) => {
+        this.ridesList = response.content.map(ride => this.mapRideForDisplay(ride));
+        this.loading = false;
+        this.cdr.detectChanges();
       },
-      {
-        id: 2,
-        date: '14 December 2024',
-        time: '09:15 - 09:45 (30 min)',
-        status: ['completed'],
-        locations: [
-          { type: 'start', label: 'Start', address: 'Slavija trg 1, Beograd', latitude: 45.26, longitude: 19.84 },
-          { type: 'end', label: 'Finish', address: 'Ušće Shopping Center, Beograd', latitude: 45.25, longitude: 19.85 }
-        ],
-        stops: [
-          { address: 'Trg slobode', latitude: 45.258, longitude: 19.842 }
-        ],
-        distance: '8.2 km',
-        price: '650 RSD',
-        vehicleType: 'VAN',
-        babyTransport: true,
-        petTransport: false
+      error: (err) => {
+        this.error = 'Failed to load ride history';
+        this.loading = false;
+        console.error(err);
+        this.cdr.detectChanges();
       }
-    ];
+    });
+  }
+
+  private mapRideForDisplay(ride: PassengerRideHistoryResponse): any {
+    const startTime = ride.startTime ? new Date(ride.startTime) : null;
+    const endTime = ride.endTime ? new Date(ride.endTime) : null;
+
+    let duration = '';
+    if (startTime && endTime) {
+      const diffMs = endTime.getTime() - startTime.getTime();
+      const diffMins = Math.round(diffMs / 60000);
+      duration = ` (${diffMins} min)`;
+    }
+
+    const timeRange = `${startTime ? this.formatTime(startTime) : '??'} - ${endTime ? this.formatTime(endTime) : '??'}${duration}`;
+
+    const statuses: string[] = [];
+    if (ride.status === 'COMPLETED') statuses.push('completed');
+    if (ride.panicActivated) statuses.push('panic');
+    if (ride.status === 'CANCELLED') {
+      if (ride.cancelledBy === 'driver') statuses.push('cancelled-driver');
+      else statuses.push('cancelled-passenger');
+    }
+
+    return {
+      id: ride.id,
+      date: startTime ? this.formatDate(startTime) : 'Unknown date',
+      time: timeRange,
+      status: statuses,
+      locations: [
+        { type: 'start', label: 'Start', address: ride.pickup?.address || ride.pickupLocation, latitude: ride.pickup?.latitude, longitude: ride.pickup?.longitude },
+        { type: 'end', label: 'Finish', address: ride.dropoff?.address || ride.dropoffLocation, latitude: ride.dropoff?.latitude, longitude: ride.dropoff?.longitude }
+      ],
+      stops: ride.stops?.map(s => ({
+        address: s.address,
+        latitude: s.latitude,
+        longitude: s.longitude
+      })) || [],
+      distance: ride.distanceKm ? `${ride.distanceKm.toFixed(1)} km` : '',
+      price: `${ride.price.toLocaleString()} RSD`,
+      vehicleType: ride.vehicleType,
+      babyTransport: ride.babyTransport,
+      petTransport: ride.petTransport,
+      rawRide: ride
+    };
+  }
+
+  private formatTime(date: Date): string {
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+  }
+
+  private formatDate(date: Date): string {
+    return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+  }
+
+  applyFilter() {
+    this.loadRides();
+  }
+
+  resetFilter() {
+    this.startDate = '2024-01-01';
+    this.endDate = new Date().toISOString().split('T')[0];
+    this.loadRides();
   }
 
   loadFavoriteRoutes() {
-    const token = localStorage.getItem('auth_token');
-    if (!token) {
-      return;
-    }
-
     this.rides.getFavoriteRoutes().subscribe({
       next: (routes) => {
+        this.favoriteRoutes = routes;
         this.favoriteRouteIds = new Set(routes.map(r => r.id));
         this.cdr.detectChanges();
       },
@@ -82,36 +128,41 @@ export class PassengerHistoryComponent implements OnInit {
   }
 
   toggleFavorite(ride: any) {
-    const isFavorite = this.favoriteRouteIds.has(ride.id);
+    const pickupAddress = ride.locations[0]?.address;
+    const dropoffAddress = ride.locations[ride.locations.length - 1]?.address;
 
-    if (isFavorite) {
-      // Find the favorite route ID and delete it
-      this.rides.getFavoriteRoutes().subscribe({
-        next: (routes) => {
-          const favoriteRoute = routes.find(r => 
-            r.pickup.address === ride.locations[0].address &&
-            r.dropoff.address === ride.locations[ride.locations.length - 1].address
-          );
-          
-          if (favoriteRoute) {
-            this.rides.deleteFavoriteRoute(favoriteRoute.id).subscribe({
-              next: () => {
-                this.favoriteRouteIds.delete(ride.id);
-                this.cdr.detectChanges();
-              },
-              error: (err) => {
-                this.error = 'Failed to remove from favorites';
-                console.error(err);
-              }
-            });
-          }
+    // Find the favorite route that matches this ride
+    const favoriteRoute = this.favoriteRoutes.find(r =>
+      r.pickup?.address === pickupAddress &&
+      r.dropoff?.address === dropoffAddress
+    );
+
+    if (favoriteRoute) {
+      // Delete existing favorite
+      this.rides.deleteFavoriteRoute(favoriteRoute.id).subscribe({
+        next: () => {
+          this.favoriteRouteIds.delete(favoriteRoute.id);
+          this.favoriteRoutes = this.favoriteRoutes.filter(r => r.id !== favoriteRoute.id);
+          delete ride.favoriteRouteId;
+          this.cdr.detectChanges();
+        },
+        error: (err) => {
+          this.error = 'Failed to remove from favorites';
+          console.error(err);
+          this.cdr.detectChanges();
         }
       });
     } else {
       // Create favorite route from ride data
       const pickup = ride.locations[0];
       const dropoff = ride.locations[ride.locations.length - 1];
-      
+
+      if (!pickup.latitude || !dropoff.latitude) {
+        this.error = 'Cannot add to favorites: missing location coordinates';
+        this.cdr.detectChanges();
+        return;
+      }
+
       const request: CreateFavoriteRouteRequest = {
         name: `${pickup.address} → ${dropoff.address}`,
         pickup: {
@@ -136,10 +187,11 @@ export class PassengerHistoryComponent implements OnInit {
 
       this.loading = true;
       this.rides.createFavoriteRoute(request).subscribe({
-        next: (favoriteRoute) => {
-          this.favoriteRouteIds.add(favoriteRoute.id);
+        next: (createdRoute) => {
+          this.favoriteRouteIds.add(createdRoute.id);
+          this.favoriteRoutes.push(createdRoute);
           // Also mark the ride as favorite using a temporary ID
-          ride.favoriteRouteId = favoriteRoute.id;
+          ride.favoriteRouteId = createdRoute.id;
           this.loading = false;
           this.cdr.detectChanges();
         },
@@ -154,6 +206,17 @@ export class PassengerHistoryComponent implements OnInit {
   }
 
   isFavorite(ride: any): boolean {
-    return this.favoriteRouteIds.has(ride.id) || ride.favoriteRouteId !== undefined;
+    // Check if there's a favorite route that matches this ride's pickup and dropoff
+    const pickupAddress = ride.locations[0]?.address;
+    const dropoffAddress = ride.locations[ride.locations.length - 1]?.address;
+
+    if (!pickupAddress || !dropoffAddress) {
+      return false;
+    }
+
+    return this.favoriteRoutes.some(favRoute =>
+      favRoute.pickup?.address === pickupAddress &&
+      favRoute.dropoff?.address === dropoffAddress
+    ) || ride.favoriteRouteId !== undefined;
   }
 }

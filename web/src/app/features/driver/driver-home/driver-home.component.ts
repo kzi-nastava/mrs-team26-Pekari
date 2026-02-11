@@ -1,6 +1,7 @@
 import { Component, OnInit, OnDestroy, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RideApiService, ActiveRideResponse } from '../../../core/services/ride-api.service';
+import { GeocodingService } from '../../../core/services/geocoding.service';
 import { Router } from '@angular/router';
 import * as L from 'leaflet';
 
@@ -13,6 +14,7 @@ import * as L from 'leaflet';
 })
 export class DriverHomeComponent implements OnInit, OnDestroy {
   private rideService = inject(RideApiService);
+  private geocoding = inject(GeocodingService);
   private router = inject(Router);
   private map: L.Map | null = null;
   private carMarker: L.Marker | null = null;
@@ -126,20 +128,49 @@ export class DriverHomeComponent implements OnInit, OnDestroy {
     this.actionInProgress.set(true);
     this.error.set(null);
 
-    this.rideService.completeRide(ride.rideId, {
-      address: `${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)}`,
-      latitude: location.latitude,
-      longitude: location.longitude
-    }).subscribe({
-      next: () => {
-        this.actionInProgress.set(false);
-        this.stopRequested.set(false);
-        this.loadActiveRide(); // Reload to check for new rides
+    // Perform reverse geocoding to get actual address
+    this.geocoding.reverseGeocode(location.latitude, location.longitude).subscribe({
+      next: (result) => {
+        const address = result?.displayName || `${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)}`;
+
+        this.rideService.completeRide(ride.rideId, {
+          address: address,
+          latitude: location.latitude,
+          longitude: location.longitude
+        }).subscribe({
+          next: () => {
+            this.actionInProgress.set(false);
+            this.stopRequested.set(false);
+            this.loadActiveRide(); // Reload to check for new rides
+          },
+          error: (err) => {
+            this.actionInProgress.set(false);
+            this.error.set(err.error?.message || 'Failed to stop ride. Please try again.');
+            console.error('Error stopping ride:', err);
+          }
+        });
       },
       error: (err) => {
-        this.actionInProgress.set(false);
-        this.error.set(err.error?.message || 'Failed to stop ride. Please try again.');
-        console.error('Error stopping ride:', err);
+        console.warn('Reverse geocoding failed, using coordinates as fallback:', err);
+        // Fallback to coordinates if geocoding fails
+        const fallbackAddress = `${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)}`;
+
+        this.rideService.completeRide(ride.rideId, {
+          address: fallbackAddress,
+          latitude: location.latitude,
+          longitude: location.longitude
+        }).subscribe({
+          next: () => {
+            this.actionInProgress.set(false);
+            this.stopRequested.set(false);
+            this.loadActiveRide();
+          },
+          error: (err) => {
+            this.actionInProgress.set(false);
+            this.error.set(err.error?.message || 'Failed to stop ride. Please try again.');
+            console.error('Error stopping ride:', err);
+          }
+        });
       }
     });
   }
