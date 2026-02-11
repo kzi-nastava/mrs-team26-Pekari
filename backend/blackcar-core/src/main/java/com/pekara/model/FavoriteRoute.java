@@ -26,10 +26,10 @@ public class FavoriteRoute {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Column(name = "name", length = 255)
+    @Column(name = "name", length = 1000)
     private String name;
 
-    @Column(name = "pickup_address", nullable = false, length = 255)
+    @Column(name = "pickup_address", nullable = false, length = 500)
     private String pickupAddress;
 
     @Column(name = "pickup_latitude", nullable = false)
@@ -38,7 +38,7 @@ public class FavoriteRoute {
     @Column(name = "pickup_longitude", nullable = false)
     private Double pickupLongitude;
 
-    @Column(name = "dropoff_address", nullable = false, length = 255)
+    @Column(name = "dropoff_address", nullable = false, length = 500)
     private String dropoffAddress;
 
     @Column(name = "dropoff_latitude", nullable = false)

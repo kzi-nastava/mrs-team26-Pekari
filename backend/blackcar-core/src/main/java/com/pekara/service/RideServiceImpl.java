@@ -622,6 +622,31 @@ public class RideServiceImpl implements RideService {
         String pickupLocation = !stops.isEmpty() ? stops.get(0).getAddress() : null;
         String dropoffLocation = stops.size() > 1 ? stops.get(stops.size() - 1).getAddress() : null;
 
+        com.pekara.dto.common.LocationPointDto pickupDto = !stops.isEmpty() ?
+                com.pekara.dto.common.LocationPointDto.builder()
+                        .address(stops.get(0).getAddress())
+                        .latitude(stops.get(0).getLatitude())
+                        .longitude(stops.get(0).getLongitude())
+                        .build() : null;
+
+        com.pekara.dto.common.LocationPointDto dropoffDto = stops.size() > 1 ?
+                com.pekara.dto.common.LocationPointDto.builder()
+                        .address(stops.get(stops.size() - 1).getAddress())
+                        .latitude(stops.get(stops.size() - 1).getLatitude())
+                        .longitude(stops.get(stops.size() - 1).getLongitude())
+                        .build() : null;
+
+        List<com.pekara.dto.common.LocationPointDto> stopsDto = new ArrayList<>();
+        if (stops.size() > 2) {
+            for (int i = 1; i < stops.size() - 1; i++) {
+                stopsDto.add(com.pekara.dto.common.LocationPointDto.builder()
+                        .address(stops.get(i).getAddress())
+                        .latitude(stops.get(i).getLatitude())
+                        .longitude(stops.get(i).getLongitude())
+                        .build());
+            }
+        }
+
         com.pekara.dto.response.PassengerRideHistoryResponse.DriverInfo driverInfo = null;
         if (ride.getDriver() != null) {
             driverInfo = com.pekara.dto.response.PassengerRideHistoryResponse.DriverInfo.builder()
@@ -638,12 +663,19 @@ public class RideServiceImpl implements RideService {
                 .endTime(ride.getCompletedAt())
                 .pickupLocation(pickupLocation)
                 .dropoffLocation(dropoffLocation)
+                .pickup(pickupDto)
+                .dropoff(dropoffDto)
+                .stops(stopsDto)
                 .cancelled(ride.getStatus() == RideStatus.CANCELLED)
                 .cancelledBy(ride.getCancelledBy())
                 .price(ride.getEstimatedPrice())
                 .panicActivated(ride.getPanicActivated())
                 .panickedBy(ride.getPanickedBy())
                 .status(ride.getStatus().name())
+                .vehicleType(ride.getVehicleType())
+                .babyTransport(ride.getBabyTransport())
+                .petTransport(ride.getPetTransport())
+                .distanceKm(ride.getDistanceKm())
                 .driver(driverInfo)
                 .build();
     }

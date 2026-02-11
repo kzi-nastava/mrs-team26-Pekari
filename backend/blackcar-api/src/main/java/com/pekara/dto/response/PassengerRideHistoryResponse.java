@@ -1,5 +1,6 @@
 package com.pekara.dto.response;
 
+import com.pekara.dto.common.LocationPointDto;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -7,6 +8,7 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @Builder
@@ -19,12 +21,19 @@ public class PassengerRideHistoryResponse {
     private LocalDateTime endTime;
     private String pickupLocation;
     private String dropoffLocation;
+    private LocationPointDto pickup;
+    private LocationPointDto dropoff;
+    private List<LocationPointDto> stops;
     private Boolean cancelled;
     private String cancelledBy;
     private BigDecimal price;
     private Boolean panicActivated;
     private String panickedBy;
     private String status;
+    private String vehicleType;
+    private Boolean babyTransport;
+    private Boolean petTransport;
+    private Double distanceKm;
     private DriverInfo driver;
 
     @Data

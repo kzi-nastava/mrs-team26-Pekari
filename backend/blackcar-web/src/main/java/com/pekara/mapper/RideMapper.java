@@ -227,17 +227,29 @@ public class RideMapper {
                         response.getDriver().getFirstName(),
                         response.getDriver().getLastName());
 
+        List<WebLocationPoint> stops = response.getStops() == null ? null :
+                response.getStops().stream()
+                        .map(this::toWebLocation)
+                        .collect(Collectors.toList());
+
         return new WebPassengerRideHistoryResponse(
                 response.getId(),
                 response.getStartTime(),
                 response.getEndTime(),
                 response.getPickupLocation(),
                 response.getDropoffLocation(),
+                toWebLocation(response.getPickup()),
+                toWebLocation(response.getDropoff()),
+                stops,
                 response.getCancelled(),
                 response.getCancelledBy(),
                 response.getPrice(),
                 response.getPanicActivated(),
                 response.getStatus(),
+                response.getVehicleType(),
+                response.getBabyTransport(),
+                response.getPetTransport(),
+                response.getDistanceKm(),
                 driver
         );
     }
