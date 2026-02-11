@@ -363,28 +363,32 @@ public class RideController {
             @Valid @RequestBody WebRideHistoryFilterRequest filterRequest,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
-            @AuthenticationPrincipal UserDetails currentUser) {
+            @AuthenticationPrincipal String currentUserEmail) {
 
-        log.debug("Passenger ride history requested with filters: {} (page: {}, size: {})", filterRequest, page, size);
+        log.debug("Passenger ride history requested for {} with filters: {} (page: {}, size: {})", currentUserEmail, filterRequest, page, size);
 
-        // TODO: Implement passenger ride history retrieval via RideService
-        // - Get current passenger ID from UserDetails
-        // - Fetch all rides where user was a passenger
-        // - Filter by date range (startDate to endDate)
-        // - Apply pagination (page, size)
-        // - For each ride include:
-        //   * Start time and end time
-        //   * Pickup and dropoff locations
-        //   * Cancelled status and who cancelled ("passenger" or "driver")
-        //   * Price
-        //   * Panic button activation status
-        //   * Driver basic information (NOT other passengers)
-        // - Sort by date (newest first by default)
+        LocalDateTime startDateTime = filterRequest.getStartDate() != null ? filterRequest.getStartDate() : LocalDateTime.now().minusYears(1);
+        LocalDateTime endDateTime = filterRequest.getEndDate() != null ? filterRequest.getEndDate() : LocalDateTime.now();
 
-        List<WebPassengerRideHistoryResponse> history = new ArrayList<>();
-        WebPaginatedResponse<WebPassengerRideHistoryResponse> response = new WebPaginatedResponse<>(history, page, size, 0L);
+        var serviceResponse = rideService.getPassengerRideHistory(
+                currentUserEmail,
+                startDateTime,
+                endDateTime);
 
-        log.debug("Retrieved {} rides for passenger", history.size());
+        List<WebPassengerRideHistoryResponse> history = serviceResponse.stream()
+                .map(rideMapper::toWebPassengerRideHistoryResponse)
+                .toList();
+
+        int start = page * size;
+        int end = Math.min(start + size, history.size());
+        List<WebPassengerRideHistoryResponse> paginatedHistory = start < history.size()
+                ? history.subList(start, end)
+                : new ArrayList<>();
+
+        WebPaginatedResponse<WebPassengerRideHistoryResponse> response = new WebPaginatedResponse<>(
+                paginatedHistory, page, size, (long) history.size());
+
+        log.debug("Retrieved {} rides for passenger {}", history.size(), currentUserEmail);
         return ResponseEntity.ok(response);
     }
 

@@ -56,6 +56,13 @@ public class FavoriteRouteServiceImpl implements FavoriteRouteService {
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new IllegalArgumentException("User not found: " + userEmail));
 
+        // Log field lengths to identify which field exceeds 255 characters
+        log.info("Creating favorite route - Field lengths:");
+        log.info("  name: {} chars", name != null ? name.length() : 0);
+        log.info("  pickupAddress: {} chars - '{}'", pickup.getAddress() != null ? pickup.getAddress().length() : 0, pickup.getAddress());
+        log.info("  dropoffAddress: {} chars - '{}'", dropoff.getAddress() != null ? dropoff.getAddress().length() : 0, dropoff.getAddress());
+        log.info("  vehicleType: {} chars", vehicleType != null ? vehicleType.length() : 0);
+
         FavoriteRoute route = FavoriteRoute.builder()
                 .user(user)
                 .name(name)

@@ -7,6 +7,7 @@ import com.pekara.dto.request.RideRatingRequest;
 import com.pekara.dto.response.ActiveRideResponse;
 import com.pekara.dto.response.DriverRideHistoryResponse;
 import com.pekara.dto.response.OrderRideResponse;
+import com.pekara.dto.response.PassengerRideHistoryResponse;
 import com.pekara.dto.response.RideEstimateResponse;
 
 import java.time.LocalDateTime;
@@ -33,6 +34,8 @@ public interface RideService {
     void stopRideEarly(Long rideId, String driverEmail, LocationPointDto actualStopLocation);
 
     List<DriverRideHistoryResponse> getDriverRideHistory(String driverEmail, LocalDateTime startDate, LocalDateTime endDate);
+
+    List<PassengerRideHistoryResponse> getPassengerRideHistory(String passengerEmail, LocalDateTime startDate, LocalDateTime endDate);
 
     void activatePanic(Long rideId, String userEmail);
 
