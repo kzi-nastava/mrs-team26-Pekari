@@ -42,6 +42,10 @@ export class AuthService {
       })
       .pipe(
         map((resp) => {
+          if (resp.token) {
+            localStorage.setItem('auth_token', resp.token);
+          }
+
           const role = this.normalizeRole(resp.role);
           if (!role) {
             throw new Error('Unsupported role');
@@ -103,10 +107,12 @@ export class AuthService {
       withCredentials: true // Send cookies to backend
     }).pipe(
       map(() => {
+        localStorage.removeItem('auth_token');
         this.currentUserSignal.set(null);
       }),
       catchError(err => {
         // Even if logout fails, clear the user locally
+        localStorage.removeItem('auth_token');
         this.currentUserSignal.set(null);
         return of(void 0);
       })
@@ -122,6 +128,10 @@ export class AuthService {
       withCredentials: true
     }).pipe(
       map((resp) => {
+        if (resp.token) {
+          localStorage.setItem('auth_token', resp.token);
+        }
+
         const role = this.normalizeRole(resp.role);
         if (!role) {
           return null;

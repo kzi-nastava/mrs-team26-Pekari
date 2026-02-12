@@ -120,6 +120,27 @@ export class WebSocketService implements OnDestroy {
     this.unsubscribeFrom(topic);
   }
 
+  subscribeToChat(conversationId: number): Observable<any> {
+    const topic = `/topic/chat/${conversationId}`;
+    return this.subscribeTo<any>(topic);
+  }
+
+  unsubscribeFromChat(conversationId: number): void {
+    const topic = `/topic/chat/${conversationId}`;
+    this.unsubscribeFrom(topic);
+  }
+
+  publish(destination: string, body: any): void {
+    if (!this.client?.active) {
+      console.error('[WebSocket] Cannot publish, not connected');
+      return;
+    }
+    this.client.publish({
+      destination,
+      body: JSON.stringify(body)
+    });
+  }
+
   private subscribeTo<T>(topic: string): Observable<T> {
     // If we already have a subject for this topic, return it
     if (this.messageSubjects.has(topic)) {
