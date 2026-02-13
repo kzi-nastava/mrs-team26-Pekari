@@ -20,6 +20,12 @@ interface DriverProfileResponse {
   licenseNumber: string;
   licenseExpiry: string;
   vehicleRegistration: string;
+  vehicleModel: string;
+  vehicleType: string;
+  licensePlate: string;
+  numberOfSeats: number;
+  babyFriendly: boolean;
+  petFriendly: boolean;
   averageRating: number;
   totalRides: number;
   isActive: boolean;
@@ -109,21 +115,37 @@ export class ProfileService {
 
   /**
    * Get driver-specific information (hours active, vehicle)
+   * Fetches from /profile/driver - same endpoint as getProfile() for drivers
    */
   getDriverInfo(): Observable<DriverInfo> {
-    // TODO: Implement when backend endpoint is available
-    // For now, return mock data as the backend doesn't have a separate driver info endpoint
-    return of({
-      hoursActiveLast24h: 0,
+    return this.http.get<DriverProfileResponse>(`${this.apiUrl}/driver`).pipe(
+      map(response => this.mapDriverProfileToDriverInfo(response))
+    );
+  }
+
+  private mapDriverProfileToDriverInfo(response: DriverProfileResponse): DriverInfo {
+    const vehicleModel = response.vehicleModel?.trim() || '';
+    const vehicleType = response.vehicleType?.trim() || '';
+    const parts = vehicleModel.split(/\s+/).filter(Boolean);
+    const make = parts.length > 1 ? parts[0] : '';
+    const model =
+      parts.length > 0
+        ? parts.length > 1
+          ? parts.slice(1).join(' ')
+          : parts[0]
+        : vehicleType || '';
+
+    return {
+      hoursActiveLast24h: 0, // Backend does not expose this yet
       vehicle: {
-        id: '',
-        make: '',
-        model: '',
-        year: 0,
-        licensePlate: '',
-        vin: ''
+        id: response.id,
+        make,
+        model,
+        year: 0, // Backend does not store year separately
+        licensePlate: response.licensePlate || '',
+        vin: response.vehicleRegistration || ''
       }
-    });
+    };
   }
 
   /**
