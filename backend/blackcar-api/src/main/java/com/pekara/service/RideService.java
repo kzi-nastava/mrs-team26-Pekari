@@ -9,6 +9,7 @@ import com.pekara.dto.response.DriverRideHistoryResponse;
 import com.pekara.dto.response.OrderRideResponse;
 import com.pekara.dto.response.PassengerRideHistoryResponse;
 import com.pekara.dto.response.RideEstimateResponse;
+import com.pekara.dto.response.RideStatsResponse;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -36,6 +37,10 @@ public interface RideService {
     List<DriverRideHistoryResponse> getDriverRideHistory(String driverEmail, LocalDateTime startDate, LocalDateTime endDate);
 
     List<PassengerRideHistoryResponse> getPassengerRideHistory(String passengerEmail, LocalDateTime startDate, LocalDateTime endDate);
+
+    RideStatsResponse getDriverRideStats(String driverEmail, LocalDateTime startDate, LocalDateTime endDate);
+
+    RideStatsResponse getPassengerRideStats(String passengerEmail, LocalDateTime startDate, LocalDateTime endDate);
 
     void activatePanic(Long rideId, String userEmail);
 

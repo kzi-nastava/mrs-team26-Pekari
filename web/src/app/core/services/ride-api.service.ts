@@ -239,6 +239,38 @@ export interface AdminRideHistoryFilter {
   endDate?: string;
 }
 
+// Ride stats interfaces
+export interface RideStatsDayDto {
+  date: string;
+  rideCount: number;
+  distanceKm: number;
+  amount: number;
+}
+
+export interface RideStatsResponse {
+  dailyData: RideStatsDayDto[];
+  totalRides: number;
+  totalDistanceKm: number;
+  totalAmount: number;
+  avgRidesPerDay: number;
+  avgDistancePerDay: number;
+  avgAmountPerDay: number;
+}
+
+export interface DriverBasicInfo {
+  id: number;
+  firstName: string;
+  lastName: string;
+  email: string;
+}
+
+export interface PassengerBasicInfo {
+  id: number;
+  firstName: string;
+  lastName: string;
+  email: string;
+}
+
 // Admin ride detail interfaces
 export interface AdminRideDetailResponse {
   id: number;
@@ -425,5 +457,34 @@ export class RideApiService {
 
   getAdminRideDetail(rideId: number) {
     return this.http.get<AdminRideDetailResponse>(`${this.env.getApiUrl()}/rides/admin/${rideId}`);
+  }
+
+  // Ride stats methods
+  getDriverRideStats(startDate: string, endDate: string) {
+    return this.http.get<RideStatsResponse>(
+      `${this.env.getApiUrl()}/rides/stats/driver?startDate=${startDate}&endDate=${endDate}`
+    );
+  }
+
+  getPassengerRideStats(startDate: string, endDate: string) {
+    return this.http.get<RideStatsResponse>(
+      `${this.env.getApiUrl()}/rides/stats/passenger?startDate=${startDate}&endDate=${endDate}`
+    );
+  }
+
+  getAdminRideStats(params: { startDate: string; endDate: string; scope: string; userId?: number }) {
+    let url = `${this.env.getApiUrl()}/rides/stats/admin?startDate=${params.startDate}&endDate=${params.endDate}&scope=${params.scope}`;
+    if (params.userId != null) {
+      url += `&userId=${params.userId}`;
+    }
+    return this.http.get<RideStatsResponse>(url);
+  }
+
+  getAdminDrivers() {
+    return this.http.get<DriverBasicInfo[]>(`${this.env.getApiUrl()}/admin/drivers`);
+  }
+
+  getAdminPassengers() {
+    return this.http.get<PassengerBasicInfo[]>(`${this.env.getApiUrl()}/admin/passengers`);
   }
 }

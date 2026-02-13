@@ -18,12 +18,16 @@ import com.pekara.dto.response.AdminRideDetailResponse;
 import com.pekara.dto.response.AdminRideHistoryResponse;
 import com.pekara.dto.response.DriverRideHistoryResponse;
 import com.pekara.dto.response.PassengerRideHistoryResponse;
+import com.pekara.dto.response.RideStatsDayDto;
+import com.pekara.dto.response.RideStatsResponse;
 import com.pekara.dto.response.RideTrackingResponse;
 import com.pekara.dto.response.WebActiveRideResponse;
 import com.pekara.dto.response.WebAdminRideDetailResponse;
 import com.pekara.dto.response.WebAdminRideHistoryResponse;
 import com.pekara.dto.response.WebDriverRideHistoryResponse;
 import com.pekara.dto.response.WebPassengerRideHistoryResponse;
+import com.pekara.dto.response.WebRideStatsDayDto;
+import com.pekara.dto.response.WebRideStatsResponse;
 import com.pekara.dto.response.WebRideTrackingResponse;
 import org.springframework.stereotype.Component;
 
@@ -433,6 +437,37 @@ public class RideMapper {
                 .reportedByName(report.getReportedByName())
                 .description(report.getDescription())
                 .reportedAt(report.getReportedAt())
+                .build();
+    }
+
+    public WebRideStatsResponse toWebRideStatsResponse(RideStatsResponse response) {
+        if (response == null) {
+            return null;
+        }
+        List<WebRideStatsDayDto> dailyData = response.getDailyData() == null ? null :
+                response.getDailyData().stream()
+                        .map(this::toWebRideStatsDayDto)
+                        .collect(Collectors.toList());
+        return WebRideStatsResponse.builder()
+                .dailyData(dailyData)
+                .totalRides(response.getTotalRides())
+                .totalDistanceKm(response.getTotalDistanceKm())
+                .totalAmount(response.getTotalAmount())
+                .avgRidesPerDay(response.getAvgRidesPerDay())
+                .avgDistancePerDay(response.getAvgDistancePerDay())
+                .avgAmountPerDay(response.getAvgAmountPerDay())
+                .build();
+    }
+
+    private WebRideStatsDayDto toWebRideStatsDayDto(RideStatsDayDto dto) {
+        if (dto == null) {
+            return null;
+        }
+        return WebRideStatsDayDto.builder()
+                .date(dto.getDate())
+                .rideCount(dto.getRideCount())
+                .distanceKm(dto.getDistanceKm())
+                .amount(dto.getAmount())
                 .build();
     }
 }

@@ -1,0 +1,85 @@
+<div class="main-container">
+  <div class="page-header">
+    <h1 class="page-title">Statistics</h1>
+  </div>
+
+  <div class="card filter-section">
+    <div class="filter-row">
+      <div class="filter-group">
+        <label>From</label>
+        <input type="date" id="dateFrom" [(ngModel)]="dateFrom">
+      </div>
+      <div class="filter-group">
+        <label>To</label>
+        <input type="date" id="dateTo" [(ngModel)]="dateTo">
+      </div>
+      <button class="filter-btn" (click)="onFilter()" [disabled]="loading">Filter</button>
+      <button class="filter-btn reset-btn" (click)="onReset()" [disabled]="loading">Reset</button>
+    </div>
+  </div>
+
+  <p class="error" *ngIf="error">{{ error }}</p>
+  <div class="loading" *ngIf="loading">Loading statistics...</div>
+
+  <ng-container *ngIf="!loading && stats">
+    <div class="summary-cards" *ngIf="stats.dailyData.length">
+      <div class="summary-card">
+        <span class="summary-label">Total rides</span>
+        <span class="summary-value">{{ stats.totalRides }}</span>
+        <span class="summary-avg">Avg: {{ stats.avgRidesPerDay | number:'1.1-1' }}/day</span>
+      </div>
+      <div class="summary-card">
+        <span class="summary-label">Total distance (km)</span>
+        <span class="summary-value">{{ stats.totalDistanceKm | number:'1.1-1' }}</span>
+        <span class="summary-avg">Avg: {{ stats.avgDistancePerDay | number:'1.1-1' }} km/day</span>
+      </div>
+      <div class="summary-card">
+        <span class="summary-label">Total spent (RSD)</span>
+        <span class="summary-value price">{{ stats.totalAmount | number:'1.0-0' }}</span>
+        <span class="summary-avg">Avg: {{ stats.avgAmountPerDay | number:'1.0-0' }} RSD/day</span>
+      </div>
+    </div>
+
+    <div class="charts-grid">
+      <div class="card chart-card">
+        <h3 class="chart-title">Rides per day</h3>
+        <div class="chart-container" *ngIf="ridesChartData().labels?.length">
+          <canvas baseChart
+            [type]="'bar'"
+            [data]="ridesChartData()"
+            [options]="chartOptions">
+          </canvas>
+        </div>
+        <p class="empty-chart" *ngIf="!ridesChartData().labels?.length">No data in selected range</p>
+      </div>
+
+      <div class="card chart-card">
+        <h3 class="chart-title">Distance per day (km)</h3>
+        <div class="chart-container" *ngIf="distanceChartData().labels?.length">
+          <canvas baseChart
+            [type]="'bar'"
+            [data]="distanceChartData()"
+            [options]="chartOptions">
+          </canvas>
+        </div>
+        <p class="empty-chart" *ngIf="!distanceChartData().labels?.length">No data in selected range</p>
+      </div>
+
+      <div class="card chart-card">
+        <h3 class="chart-title">Spent per day (RSD)</h3>
+        <div class="chart-container" *ngIf="amountChartData().labels?.length">
+          <canvas baseChart
+            [type]="'bar'"
+            [data]="amountChartData()"
+            [options]="chartOptions">
+          </canvas>
+        </div>
+        <p class="empty-chart" *ngIf="!amountChartData().labels?.length">No data in selected range</p>
+      </div>
+    </div>
+  </ng-container>
+
+  <div class="empty-state" *ngIf="!loading && !stats">
+    <p class="empty-text">Select a date range and click Filter to view statistics.</p>
+  </div>
+</div>

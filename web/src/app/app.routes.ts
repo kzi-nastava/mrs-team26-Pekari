@@ -6,11 +6,14 @@ import { ActivateComponent } from './features/auth/activate/activate.component';
 import { ForgotPasswordComponent } from './features/auth/forgot-password/forgot-password.component';
 import { DriverHomeComponent } from './features/driver/driver-home/driver-home.component';
 import { DriverHistoryComponent } from './features/driver/driver-history/driver-history.component';
+import { DriverStatsComponent } from './features/driver/driver-stats/driver-stats.component';
 import { PassengerHomeComponent } from './features/passenger/passenger-home/passenger-home.component';
 import { PassengerHistoryComponent } from './features/passenger/passenger-history/passenger-history.component';
+import { PassengerStatsComponent } from './features/passenger/passenger-stats/passenger-stats.component';
 import { ProfileComponent } from './features/profile/profile.component';
 import { AddDriverComponent } from './features/admin/add-driver/add-driver.component';
 import { PanicPanel } from './features/admin/panic-panel/panic-panel';
+import { ManagementComponent } from './features/admin/management/management.component';
 import { AdminRidesComponent } from './features/admin/admin-rides/admin-rides.component';
 import { authGuard, roleGuard } from './core/guards/auth.guard';
 
@@ -32,6 +35,11 @@ export const routes: Routes = [
     canActivate: [roleGuard(['driver'])]
   },
   {
+    path: 'driver/stats',
+    component: DriverStatsComponent,
+    canActivate: [roleGuard(['driver'])]
+  },
+  {
     path: 'passenger-home',
     component: PassengerHomeComponent,
     canActivate: [roleGuard(['passenger'])]
@@ -39,6 +47,11 @@ export const routes: Routes = [
   {
     path: 'passenger-history',
     component: PassengerHistoryComponent,
+    canActivate: [roleGuard(['passenger'])]
+  },
+  {
+    path: 'passenger/stats',
+    component: PassengerStatsComponent,
     canActivate: [roleGuard(['passenger'])]
   },
   {
@@ -54,6 +67,11 @@ export const routes: Routes = [
   {
     path: 'admin/rides',
     component: AdminRidesComponent,
+    canActivate: [roleGuard(['admin'])]
+  },
+  {
+    path: 'admin/management',
+    component: ManagementComponent,
     canActivate: [roleGuard(['admin'])]
   }
 ];
