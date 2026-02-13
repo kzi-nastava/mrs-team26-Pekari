@@ -200,17 +200,27 @@ export class PassengerHomeComponent implements OnInit, OnDestroy {
               // Check for completion
               if (updatedRide.status === 'COMPLETED') {
                 this.handleRideCompletion(updatedRide.rideId);
+                this.stopPolling();
               }
 
               this.cdr.detectChanges();
             } else {
-              // No active ride - might have been cancelled or completed
+              // No active ride returned - check if ride was completed
+              // The backend doesn't return COMPLETED rides, so if we had an active ride
+              // and now there's nothing, it was either completed or cancelled
+              if (this.rideStatus === 'IN_PROGRESS' || this.rideStatus === 'STOP_REQUESTED') {
+                // Likely completed, show rating modal
+                this.handleRideCompletion(this.orderResult!.rideId);
+              }
               this.stopPolling();
             }
           },
           error: (err) => {
             if (err?.status === 404 || err?.status === 204) {
-              // No active ride
+              // No active ride - check if it was completed
+              if (this.rideStatus === 'IN_PROGRESS' || this.rideStatus === 'STOP_REQUESTED') {
+                this.handleRideCompletion(this.orderResult!.rideId);
+              }
               this.stopPolling();
             }
             console.error('Error polling for ride updates:', err);
@@ -344,11 +354,6 @@ export class PassengerHomeComponent implements OnInit, OnDestroy {
   }
 
   loadFavoriteRoutes() {
-    const token = localStorage.getItem('auth_token');
-    if (!token) {
-      return;
-    }
-
     this.rides.getFavoriteRoutes().subscribe({
       next: (routes) => {
         this.favoriteRoutes = routes;
@@ -382,9 +387,9 @@ export class PassengerHomeComponent implements OnInit, OnDestroy {
     // Set pickup
     this.form.patchValue({
       pickup: {
-        address: route.pickup.address,
-        latitude: route.pickup.latitude,
-        longitude: route.pickup.longitude
+        address: route.pickup?.address || '',
+        latitude: route.pickup?.latitude || 0,
+        longitude: route.pickup?.longitude || 0
       }
     });
 
@@ -404,9 +409,9 @@ export class PassengerHomeComponent implements OnInit, OnDestroy {
     // Set dropoff
     this.form.patchValue({
       dropoff: {
-        address: route.dropoff.address,
-        latitude: route.dropoff.latitude,
-        longitude: route.dropoff.longitude
+        address: route.dropoff?.address || '',
+        latitude: route.dropoff?.latitude || 0,
+        longitude: route.dropoff?.longitude || 0
       }
     });
 
@@ -419,10 +424,10 @@ export class PassengerHomeComponent implements OnInit, OnDestroy {
 
     // Update autocomplete components
     if (this.pickupAutocomplete) {
-      this.pickupAutocomplete.setAddress(route.pickup.address);
+      this.pickupAutocomplete.setAddress(route.pickup?.address || '');
     }
     if (this.dropoffAutocomplete) {
-      this.dropoffAutocomplete.setAddress(route.dropoff.address);
+      this.dropoffAutocomplete.setAddress(route.dropoff?.address || '');
     }
 
     // Update stop autocompletes
@@ -948,5 +953,12 @@ export class PassengerHomeComponent implements OnInit, OnDestroy {
 
   skipRating(): void {
     this.closeRatingModal();
+  }
+
+  isCoordinates(address: string): boolean {
+    if (!address) return false;
+    // Check if address looks like coordinates (e.g., "45.262373, 19.839226" or "45.262373,19.839226")
+    const coordsPattern = /^-?\d+\.?\d*,?\s*-?\d+\.?\d*$/;
+    return coordsPattern.test(address.trim());
   }
 }

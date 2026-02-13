@@ -48,6 +48,8 @@ export class App {
     } else if (user.role === 'admin') {
       links.push(
         { label: 'User management', path: '/admin/user-management' },
+        { label: 'Rides', path: '/admin/rides' },
+        { label: 'Management', path: '/admin/management' },
         { label: 'Add Driver', path: '/admin/add-driver' },
         { label: '🚨 Panic Panel', path: '/admin/panic-panel' },
         { label: 'Logout', onClick: () => this.handleLogout() }

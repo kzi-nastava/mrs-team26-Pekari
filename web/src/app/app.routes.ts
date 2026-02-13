@@ -12,6 +12,7 @@ import { ProfileComponent } from './features/profile/profile.component';
 import { AddDriverComponent } from './features/admin/add-driver/add-driver.component';
 import { PanicPanel } from './features/admin/panic-panel/panic-panel';
 import { UserManagementComponent } from './features/admin/user-management/user-management.component';
+import { AdminRidesComponent } from './features/admin/admin-rides/admin-rides.component';
 import { authGuard, roleGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
@@ -54,6 +55,8 @@ export const routes: Routes = [
   {
     path: 'admin/user-management',
     component: UserManagementComponent,
+    path: 'admin/rides',
+    component: AdminRidesComponent,
     canActivate: [roleGuard(['admin'])]
   }
 ];
