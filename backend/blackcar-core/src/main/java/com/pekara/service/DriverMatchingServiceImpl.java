@@ -34,6 +34,7 @@ public class DriverMatchingServiceImpl implements DriverMatchingService {
 
         List<DriverState> eligible = onlineDrivers.stream()
                 .filter(ds -> ds.getDriver() != null)
+                .filter(ds -> !Boolean.TRUE.equals(ds.getDriver().getBlocked()))
                 .filter(ds -> ds.getNextScheduledRideAt() == null)
                 .filter(ds -> !hasExceededWorkLimit(ds.getDriver().getId(), now))
                 .filter(ds -> {

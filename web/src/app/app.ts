@@ -34,7 +34,7 @@ export class App {
     } else if (user.role === 'driver') {
       links.push(
         { label: 'Home', path: '/driver-home' },
-        { label: 'Profile', path: '/profile' },
+        { label: 'Profile', path: '/profile', danger: user.blocked },
         { label: 'History', path: '/driver-history' },
         { label: 'Logout', onClick: () => this.handleLogout() }
       );
@@ -42,12 +42,12 @@ export class App {
       links.push(
         { label: 'Home', path: '/passenger-home' },
         { label: 'History', path: '/passenger-history' },
-        { label: 'Profile', path: '/profile' },
+        { label: 'Profile', path: '/profile', danger: user.blocked },
         { label: 'Logout', onClick: () => this.handleLogout() }
       );
     } else if (user.role === 'admin') {
       links.push(
-        { label: 'Management', path: '/admin/management' },
+        { label: 'User management', path: '/admin/user-management' },
         { label: 'Add Driver', path: '/admin/add-driver' },
         { label: '🚨 Panic Panel', path: '/admin/panic-panel' },
         { label: 'Logout', onClick: () => this.handleLogout() }

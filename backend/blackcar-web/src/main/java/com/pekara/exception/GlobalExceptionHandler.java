@@ -5,6 +5,7 @@ import com.pekara.exception.ActiveRideConflictException;
 import com.pekara.exception.InvalidScheduleTimeException;
 import com.pekara.exception.NoActiveDriversException;
 import com.pekara.exception.NoDriversAvailableException;
+import com.pekara.exception.UserBlockedException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -167,5 +168,16 @@ public class GlobalExceptionHandler {
                 ex.getMessage()
         );
         return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    @ExceptionHandler(UserBlockedException.class)
+    public ResponseEntity<WebErrorResponse> handleUserBlocked(UserBlockedException ex) {
+        log.warn("User blocked: {}", ex.getMessage());
+
+        WebErrorResponse error = new WebErrorResponse(
+                "USER_BLOCKED",
+                ex.getMessage()
+        );
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
     }
 }

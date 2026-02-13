@@ -25,4 +25,6 @@ public class WebPassengerProfileResponse {
     // Passenger-specific fields
     private Integer totalRides;
     private Double averageRating;
+    private Boolean blocked;
+    private String blockedNote;
 }

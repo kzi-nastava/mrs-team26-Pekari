@@ -21,6 +21,12 @@
       {{ errorMessage() }}
     </div>
 
+    <!-- Blocked Account Banner -->
+    <div *ngIf="profile()?.blocked" class="block-banner">
+      <strong>You've been blocked by the admin.</strong>
+      The reason: {{ profile()?.blockedNote?.trim() || 'No reason provided. Contact support.' }}
+    </div>
+
     <!-- Profile Header -->
     <div class="profile-header">
       <div class="profile-picture-section">

@@ -56,6 +56,13 @@ public class User {
     @Builder.Default
     private Boolean isActive = false;
 
+    @Column(name = "blocked", nullable = false, columnDefinition = "boolean not null default false")
+    @Builder.Default
+    private Boolean blocked = false;
+
+    @Column(name = "blocked_note", length = 500)
+    private String blockedNote;
+
     @Column(name = "total_rides", nullable = false)
     @Builder.Default
     private Integer totalRides = 0;

@@ -52,3 +52,12 @@
 .nav-links a.active {
   color: var(--primary);
 }
+
+.nav-links a.nav-link-danger {
+  color: var(--danger, #ef4444);
+}
+
+.nav-links a.nav-link-danger:hover {
+  color: var(--danger, #ef4444);
+  opacity: 0.9;
+}

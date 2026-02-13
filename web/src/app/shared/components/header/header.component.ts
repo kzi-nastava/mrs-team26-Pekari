@@ -6,6 +6,8 @@ export interface NavLink {
   label: string;
   path?: string;
   onClick?: () => void;
+  /** When true, style the link as danger (e.g. red for blocked users) */
+  danger?: boolean;
 }
 
 @Component({

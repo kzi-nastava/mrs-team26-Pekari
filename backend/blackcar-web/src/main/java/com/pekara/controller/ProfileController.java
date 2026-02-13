@@ -70,7 +70,9 @@ public class ProfileController {
                 driver.getPetFriendly(),
                 driver.getAverageRating(),
                 driver.getTotalRides(),
-                driver.getIsActive()
+                driver.getIsActive(),
+                driver.getBlocked(),
+                driver.getBlockedNote()
         );
 
         return ResponseEntity.ok(response);
@@ -97,7 +99,9 @@ public class ProfileController {
                 user.getCreatedAt(),
                 user.getUpdatedAt(),
                 user.getTotalRides(),
-                user.getAverageRating()
+                user.getAverageRating(),
+                user.getBlocked(),
+                user.getBlockedNote()
         );
 
         return ResponseEntity.ok(response);
@@ -124,7 +128,9 @@ public class ProfileController {
                 user.getCreatedAt(),
                 user.getUpdatedAt(),
                 user.getTotalRides(),
-                user.getAverageRating()
+                user.getAverageRating(),
+                user.getBlocked(),
+                user.getBlockedNote()
         );
 
         return ResponseEntity.ok(response);
