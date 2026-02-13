@@ -55,6 +55,9 @@ export const routes: Routes = [
   {
     path: 'admin/user-management',
     component: UserManagementComponent,
+    canActivate: [roleGuard(['admin'])]
+  },
+  {
     path: 'admin/rides',
     component: AdminRidesComponent,
     canActivate: [roleGuard(['admin'])]
