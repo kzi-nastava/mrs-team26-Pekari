@@ -1,5 +1,6 @@
 import { Component, OnInit, inject, signal, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { RideApiService, ActiveRideResponse } from '../../../core/services/ride-api.service';
 import { WebSocketService } from '../../../core/services/websocket.service';
@@ -9,7 +10,7 @@ import { Subscription } from 'rxjs';
 @Component({
   selector: 'app-ride-tracking',
   standalone: true,
-  imports: [CommonModule, RideMapComponent],
+  imports: [CommonModule, FormsModule, RideMapComponent],
   templateUrl: './ride-tracking.component.html',
   styleUrls: ['./ride-tracking.component.css']
 })
@@ -22,6 +23,11 @@ export class RideTrackingComponent implements OnInit, OnDestroy {
   ride = signal<ActiveRideResponse | null>(null);
   driverLocation = signal<{latitude: number, longitude: number} | null>(null);
   estimatedTimeMinutes = signal<number | undefined>(undefined);
+  showReportForm = signal<boolean>(false);
+  reportText = '';
+  reportSubmitting = signal<boolean>(false);
+  reportSuccess = signal<string | undefined>(undefined);
+  error = signal<string | undefined>(undefined);
 
   private trackingSubscription?: Subscription;
 
@@ -98,5 +104,38 @@ export class RideTrackingComponent implements OnInit, OnDestroy {
           }
       }
       return [];
+  }
+
+  toggleReportForm() {
+    this.showReportForm.update(v => !v);
+    this.reportSuccess.set(undefined);
+  }
+
+  submitReport() {
+    const rideId = this.ride()?.rideId;
+    const text = this.reportText.trim();
+
+    if (!rideId || !text) {
+      return;
+    }
+
+    this.reportSubmitting.set(true);
+    this.reportSuccess.set(undefined);
+    this.error.set(undefined);
+
+    this.rideApi.reportInconsistency(rideId, text).subscribe({
+      next: (response) => {
+        this.reportSubmitting.set(false);
+        this.reportSuccess.set(response.message || 'Report submitted successfully');
+        this.reportText = '';
+        this.showReportForm.set(false);
+      },
+      error: (err) => {
+        this.reportSubmitting.set(false);
+        const backendMsg = err?.error?.message;
+        const plainMsg = typeof err?.error === 'string' ? err.error : undefined;
+        this.error.set(backendMsg || plainMsg || err?.message || 'Failed to submit report');
+      }
+    });
   }
 }

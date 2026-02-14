@@ -1,5 +1,6 @@
 package com.pekara.controller;
 
+import com.pekara.dto.PricingDto;
 import com.pekara.dto.request.WebBlockUserRequest;
 import com.pekara.dto.response.WebMessageResponse;
 import com.pekara.dto.response.WebUserListItemResponse;
@@ -8,6 +9,7 @@ import com.pekara.model.User;
 import com.pekara.model.UserRole;
 import com.pekara.repository.DriverRepository;
 import com.pekara.repository.UserRepository;
+import com.pekara.service.PricingService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -29,6 +31,21 @@ public class AdminController {
 
     private final UserRepository userRepository;
     private final DriverRepository driverRepository;
+    private final PricingService pricingService;
+
+    @Operation(summary = "Get all pricing", description = "Get list of pricing for all vehicle types")
+    @GetMapping("/pricing")
+    public ResponseEntity<List<PricingDto>> getAllPricing() {
+        log.debug("Admin requested pricing list");
+        return ResponseEntity.ok(pricingService.getAllPricing());
+    }
+
+    @Operation(summary = "Update pricing", description = "Update pricing for a vehicle type")
+    @PutMapping("/pricing")
+    public ResponseEntity<PricingDto> updatePricing(@Valid @RequestBody PricingDto request) {
+        log.debug("Admin requested pricing update for vehicle type: {}", request.getVehicleType());
+        return ResponseEntity.ok(pricingService.updatePricing(request));
+    }
 
     @Operation(summary = "List all drivers", description = "Get list of drivers for block/unblock management")
     @GetMapping("/drivers")

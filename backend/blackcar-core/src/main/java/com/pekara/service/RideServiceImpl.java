@@ -3,6 +3,7 @@ package com.pekara.service;
 import com.pekara.constant.RideStatus;
 import com.pekara.dto.common.LocationPointDto;
 import com.pekara.dto.request.EstimateRideRequest;
+import com.pekara.dto.request.InconsistencyReportRequest;
 import com.pekara.dto.request.OrderRideRequest;
 import com.pekara.dto.request.RideRatingRequest;
 import com.pekara.dto.response.ActiveRideResponse;
@@ -14,11 +15,13 @@ import com.pekara.exception.NoDriversAvailableException;
 import com.pekara.exception.UserBlockedException;
 import com.pekara.model.Driver;
 import com.pekara.model.DriverState;
+import com.pekara.model.InconsistencyReport;
 import com.pekara.model.Ride;
 import com.pekara.model.RideRating;
 import com.pekara.model.RideStop;
 import com.pekara.model.User;
 import com.pekara.repository.DriverStateRepository;
+import com.pekara.repository.InconsistencyReportRepository;
 import com.pekara.repository.RideRatingRepository;
 import com.pekara.repository.RideRepository;
 import com.pekara.repository.UserRepository;
@@ -44,6 +47,7 @@ public class RideServiceImpl implements RideService {
     private final UserRepository userRepository;
     private final RideRepository rideRepository;
     private final RideRatingRepository rideRatingRepository;
+    private final InconsistencyReportRepository inconsistencyReportRepository;
     private final DriverStateRepository driverStateRepository;
     private final EntityManager entityManager;
 
@@ -788,6 +792,44 @@ public class RideServiceImpl implements RideService {
 
         log.info("Ride {} rated by passenger {}: vehicle={}/5, driver={}/5",
                 rideId, passengerEmail, request.getVehicleRating(), request.getDriverRating());
+    }
+
+    @Override
+    @Transactional
+    public void reportInconsistency(Long rideId, String passengerEmail, InconsistencyReportRequest request) {
+        // Get passenger user
+        User passenger = userRepository.findByEmail(passengerEmail)
+                .orElseThrow(() -> new IllegalArgumentException("Passenger not found"));
+
+        // Get ride
+        Ride ride = rideRepository.findById(rideId)
+                .orElseThrow(() -> new IllegalArgumentException("Ride not found"));
+
+        // Verify user is a passenger on this ride
+        boolean isPassenger = ride.getPassengers().stream()
+                .anyMatch(p -> p.getId().equals(passenger.getId()));
+        if (!isPassenger) {
+            throw new IllegalArgumentException("You are not a passenger on this ride");
+        }
+
+        // Verify ride is currently IN_PROGRESS or STOP_REQUESTED
+        if (ride.getStatus() != RideStatus.IN_PROGRESS && ride.getStatus() != RideStatus.STOP_REQUESTED) {
+            throw new IllegalArgumentException("Inconsistency reports can only be filed for active rides");
+        }
+
+        // Store report
+        InconsistencyReport report = InconsistencyReport.builder()
+                .ride(ride)
+                .reportedBy(passenger)
+                .description(request.getDescription())
+                .build();
+
+        inconsistencyReportRepository.save(report);
+
+        log.info("Inconsistency reported for ride {} by passenger {}: {}",
+                rideId, passengerEmail, request.getDescription());
+
+        // TODO: Notify admin about the report
     }
 
     @Override

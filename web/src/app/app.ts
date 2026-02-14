@@ -63,6 +63,7 @@ export class App {
       links.push(
         { label: 'User management', path: '/admin/user-management' },
         { label: 'Rides', path: '/admin/rides' },
+        { label: 'Pricing', path: '/admin/pricing' },
         { label: 'Management', path: '/admin/management' },
         { label: 'Add Driver', path: '/admin/add-driver' },
         { label: '🚨 Panic Panel', path: '/admin/panic-panel' },

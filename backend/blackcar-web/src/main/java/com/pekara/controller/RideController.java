@@ -268,19 +268,14 @@ public class RideController {
     @PostMapping("/{rideId}/report-inconsistency")
     public ResponseEntity<WebMessageResponse> reportInconsistency(
             @PathVariable Long rideId,
-            @Valid @RequestBody WebInconsistencyReportRequest request) {
+            @Valid @RequestBody WebInconsistencyReportRequest request,
+            @AuthenticationPrincipal String currentUserEmail) {
 
-        log.debug("Inconsistency report for rideId: {} - {}", rideId, request.getDescription());
+        log.debug("Inconsistency report for rideId: {} by user: {} - {}", rideId, currentUserEmail, request.getDescription());
 
-        // TODO: Implement inconsistency reporting via RideService
-        // - Verify user is a passenger on this ride
-        // - Verify ride is currently IN_PROGRESS
-        // - Create inconsistency report with passenger info and description
-        // - Store report linked to the ride
-        // - Reports will be shown in ride history and admin reports
-        // - Notify admin about the report
+        rideService.reportInconsistency(rideId, currentUserEmail, rideMapper.toServiceInconsistencyReportRequest(request));
 
-        log.info("Inconsistency reported for ride {}", rideId);
+        log.info("Inconsistency reported for ride {} by {}", rideId, currentUserEmail);
         return ResponseEntity.ok(new WebMessageResponse("Inconsistency reported successfully."));
     }
 

@@ -204,7 +204,7 @@
             </div>
 
             <!-- Report inconsistency section -->
-            <div class="report-section" *ngIf="isRideActive">
+            <div class="report-section" *ngIf="isRideActive && (rideStatus === 'IN_PROGRESS' || rideStatus === 'STOP_REQUESTED')">
               <button
                 class="link report-link"
                 type="button"
@@ -217,13 +217,14 @@
                 <textarea
                   class="input report-textarea"
                   [(ngModel)]="reportText"
-                  placeholder="Describe the issue (min 10 characters)..."
+                  [ngModelOptions]="{standalone: true}"
+                  placeholder="Describe the issue..."
                   rows="3"
                 ></textarea>
                 <button
-                  class="secondary"
+                  class="primary"
                   type="button"
-                  [disabled]="reportSubmitting || reportText.trim().length < 10"
+                  [disabled]="reportSubmitting || !reportText.trim()"
                   (click)="submitReport()"
                 >
                   {{ reportSubmitting ? 'Submitting...' : 'Submit Report' }}

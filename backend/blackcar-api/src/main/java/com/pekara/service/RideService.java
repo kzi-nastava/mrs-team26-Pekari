@@ -2,6 +2,7 @@ package com.pekara.service;
 
 import com.pekara.dto.common.LocationPointDto;
 import com.pekara.dto.request.EstimateRideRequest;
+import com.pekara.dto.request.InconsistencyReportRequest;
 import com.pekara.dto.request.OrderRideRequest;
 import com.pekara.dto.request.RideRatingRequest;
 import com.pekara.dto.response.ActiveRideResponse;
@@ -42,6 +43,8 @@ public interface RideService {
     List<DriverRideHistoryResponse> getActivePanicRides();
   
     void rateRide(Long rideId, String passengerEmail, RideRatingRequest request);
+
+    void reportInconsistency(Long rideId, String passengerEmail, InconsistencyReportRequest request);
 
     Optional<ActiveRideResponse> getNextScheduledRideForDriver(String driverEmail);
 }
