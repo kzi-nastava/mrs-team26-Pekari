@@ -426,4 +426,8 @@ export class RideApiService {
   getAdminRideDetail(rideId: number) {
     return this.http.get<AdminRideDetailResponse>(`${this.env.getApiUrl()}/rides/admin/${rideId}`);
   }
+
+  getAllActiveRides() {
+    return this.http.get<AdminRideHistoryResponse[]>(`${this.env.getApiUrl()}/rides/active/all`);
+  }
 }

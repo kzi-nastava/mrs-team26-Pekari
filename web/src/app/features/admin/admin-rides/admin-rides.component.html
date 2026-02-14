@@ -1,10 +1,16 @@
 <div class="main-container">
   <div class="page-header">
-    <h1 class="page-title">All Rides</h1>
-    <span class="rides-count" *ngIf="totalElements > 0">{{ totalElements }} rides found</span>
+    <h1 class="page-title">Rides Management</h1>
+    <span class="rides-count" *ngIf="activeTab === 'history' && totalElements > 0">{{ totalElements }} rides found</span>
+    <span class="rides-count" *ngIf="activeTab === 'active' && displayedRides.length > 0">{{ displayedRides.length }} active rides</span>
   </div>
 
-  <div class="card filter-section">
+  <div class="tabs">
+    <button class="tab-btn" [class.active]="activeTab === 'active'" (click)="switchTab('active')">Active Rides</button>
+    <button class="tab-btn" [class.active]="activeTab === 'history'" (click)="switchTab('history')">Ride History</button>
+  </div>
+
+  <div class="card filter-section" *ngIf="activeTab === 'history'">
     <div class="filter-row">
       <div class="filter-group">
         <label>From</label>
@@ -20,7 +26,17 @@
     <p class="error" *ngIf="!isFilterValid()" style="margin-top: 12px; margin-bottom: 0;">Start date cannot be greater than end date</p>
   </div>
 
-  <p class="error" *ngIf="error && isFilterValid()">{{ error }}</p>
+  <div class="card filter-section" *ngIf="activeTab === 'active'">
+    <div class="filter-row">
+      <div class="filter-group full-width">
+        <label>Search Driver</label>
+        <input type="text" [(ngModel)]="driverSearch" (ngModelChange)="applyFilterAndSort()" placeholder="Search by name or email...">
+      </div>
+      <button class="filter-btn" (click)="loadActiveRides()" [disabled]="loading">Refresh</button>
+    </div>
+  </div>
+
+  <p class="error" *ngIf="error && (activeTab === 'active' || isFilterValid())">{{ error }}</p>
 
   <div class="loading" *ngIf="loading">Loading rides...</div>
 
@@ -98,10 +114,11 @@
   <div class="empty-state" *ngIf="!loading && displayedRides.length === 0 && !error">
     <div class="empty-icon">🚗</div>
     <div class="empty-title">No rides found</div>
-    <div class="empty-text">Try adjusting your date filter</div>
+    <div class="empty-text" *ngIf="activeTab === 'history'">Try adjusting your date filter</div>
+    <div class="empty-text" *ngIf="activeTab === 'active'">There are no currently active rides matching your search</div>
   </div>
 
-  <div class="pagination" *ngIf="totalPages > 1">
+  <div class="pagination" *ngIf="activeTab === 'history' && totalPages > 1">
     <button class="page-btn" (click)="previousPage()" [disabled]="currentPage === 0">
       ← Previous
     </button>

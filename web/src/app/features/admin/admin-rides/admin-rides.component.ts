@@ -19,9 +19,16 @@ export class AdminRidesComponent implements OnInit {
   private cdr = inject(ChangeDetectorRef);
 
   ridesList: AdminRideHistoryResponse[] = [];
+  activeRidesList: AdminRideHistoryResponse[] = [];
   displayedRides: AdminRideHistoryResponse[] = [];
   loading = false;
   error?: string;
+
+  // Tabs
+  activeTab: 'active' | 'history' = 'active';
+
+  // Search
+  driverSearch = '';
 
   // Modal
   selectedRideId?: number;
@@ -47,7 +54,37 @@ export class AdminRidesComponent implements OnInit {
     oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
     this.startDate = oneYearAgo.toISOString().split('T')[0];
 
-    this.loadRides();
+    this.switchTab('active');
+  }
+
+  switchTab(tab: 'active' | 'history') {
+    this.activeTab = tab;
+    this.currentPage = 0;
+    if (tab === 'active') {
+      this.loadActiveRides();
+    } else {
+      this.loadRides();
+    }
+  }
+
+  loadActiveRides() {
+    this.loading = true;
+    this.error = undefined;
+
+    this.rideService.getAllActiveRides().subscribe({
+      next: (rides) => {
+        this.activeRidesList = rides;
+        this.applyFilterAndSort();
+        this.loading = false;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        this.error = err?.error?.message || err?.message || 'Failed to load active rides';
+        this.loading = false;
+        console.error('Error loading active rides:', err);
+        this.cdr.detectChanges();
+      }
+    });
   }
 
   loadRides() {
@@ -81,7 +118,24 @@ export class AdminRidesComponent implements OnInit {
   }
 
   applySorting() {
-    this.displayedRides = [...this.ridesList].sort((a, b) => {
+    this.applyFilterAndSort();
+  }
+
+  applyFilterAndSort() {
+    const list = this.activeTab === 'active' ? this.activeRidesList : this.ridesList;
+
+    // Filter
+    let filtered = [...list];
+    if (this.activeTab === 'active' && this.driverSearch.trim()) {
+      const search = this.driverSearch.toLowerCase().trim();
+      filtered = filtered.filter(r =>
+        this.getDriverName(r).toLowerCase().includes(search) ||
+        r.driver?.email.toLowerCase().includes(search)
+      );
+    }
+
+    // Sort
+    this.displayedRides = filtered.sort((a, b) => {
       let aVal: any;
       let bVal: any;
 
