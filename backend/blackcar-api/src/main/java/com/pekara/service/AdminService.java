@@ -10,5 +10,7 @@ public interface AdminService {
 
     List<AdminRideHistoryResponse> getAllRidesHistory(LocalDateTime startDate, LocalDateTime endDate);
 
+    List<AdminRideHistoryResponse> getActiveRides();
+
     AdminRideDetailResponse getRideDetail(Long rideId);
 }

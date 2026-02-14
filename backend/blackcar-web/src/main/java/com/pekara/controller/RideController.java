@@ -231,7 +231,7 @@ public class RideController {
     }
     //fallback
     @Operation(summary = "Track ride", description = "Get real-time tracking information for an active ride - Protected endpoint")
-    @PreAuthorize("hasAnyRole('PASSENGER', 'DRIVER')")
+    @PreAuthorize("hasAnyRole('PASSENGER', 'DRIVER', 'ADMIN')")
     @GetMapping("/{rideId}/track")
     public ResponseEntity<WebRideTrackingResponse> trackRide(
             @PathVariable Long rideId,
@@ -255,7 +255,11 @@ public class RideController {
         rideTrackingService.updateLocation(rideId, currentUserEmail, rideMapper.toServiceRideLocationUpdateRequest(request));
         var tracking = rideTrackingService.getTracking(rideId, currentUserEmail);
         WebRideTrackingResponse payload = rideMapper.toWebRideTrackingResponse(tracking);
-        messagingTemplate.convertAndSend("/topic/rides/" + rideId + "/tracking", payload);
+        try {
+            messagingTemplate.convertAndSend("/topic/rides/" + rideId + "/tracking", payload);
+        } catch (Exception e) {
+            log.warn("Failed to send WebSocket location update for ride {}: {}", rideId, e.getMessage());
+        }
         return ResponseEntity.ok(new WebMessageResponse("Location updated."));
     }
 
@@ -430,6 +434,21 @@ public class RideController {
                 paginatedHistory, page, size, (long) history.size());
 
         log.debug("Retrieved {} total rides for admin", history.size());
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "Get all active rides (Admin)", description = "View all currently active rides - Protected endpoint (Admins only)")
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/active/all")
+    public ResponseEntity<List<WebAdminRideHistoryResponse>> getAllActiveRides() {
+        log.debug("Admin requesting all active rides");
+
+        var serviceResponse = adminService.getActiveRides();
+        List<WebAdminRideHistoryResponse> response = serviceResponse.stream()
+                .map(rideMapper::toWebAdminRideHistoryResponse)
+                .toList();
+
+        log.debug("Retrieved {} active rides for admin", response.size());
         return ResponseEntity.ok(response);
     }
 

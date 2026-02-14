@@ -1,5 +1,6 @@
 package com.pekara.service;
 
+import com.pekara.constant.RideStatus;
 import com.pekara.dto.common.LocationPointDto;
 import com.pekara.dto.response.AdminRideDetailResponse;
 import com.pekara.dto.response.AdminRideHistoryResponse;
@@ -35,6 +36,22 @@ public class AdminServiceImpl implements AdminService {
         List<Ride> rides = rideRepository.findAllRidesHistory(startDate, endDate);
         
         return rides.stream()
+                .map(this::mapToHistoryResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<AdminRideHistoryResponse> getActiveRides() {
+        log.debug("Fetching all active rides for admin");
+        List<RideStatus> activeStatuses = List.of(
+                RideStatus.ACCEPTED,
+                RideStatus.SCHEDULED,
+                RideStatus.IN_PROGRESS,
+                RideStatus.STOP_REQUESTED
+        );
+        List<Ride> activeRides = rideRepository.findAllActiveRides(activeStatuses);
+        return activeRides.stream()
                 .map(this::mapToHistoryResponse)
                 .collect(Collectors.toList());
     }
