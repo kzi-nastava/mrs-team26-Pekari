@@ -7,7 +7,7 @@ import java.util.List;
 
 public interface ChatService {
     ChatMessageDto sendMessage(ChatMessageDto messageDto);
-    List<ChatMessageDto> getConversationHistory(Long conversationId);
+    List<ChatMessageDto> getConversationHistory(Long conversationId, String requesterEmail);
     List<ConversationDto> getUserConversations(String email);
     ConversationDto getOrCreateConversation(List<String> participantEmails);
 }

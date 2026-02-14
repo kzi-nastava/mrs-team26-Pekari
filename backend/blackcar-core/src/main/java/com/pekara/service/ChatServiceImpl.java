@@ -5,6 +5,7 @@ import com.pekara.dto.chat.ConversationDto;
 import com.pekara.model.Conversation;
 import com.pekara.model.Message;
 import com.pekara.model.User;
+import com.pekara.model.UserRole;
 import com.pekara.repository.ConversationRepository;
 import com.pekara.repository.MessageRepository;
 import com.pekara.repository.UserRepository;
@@ -33,6 +34,13 @@ public class ChatServiceImpl implements ChatService {
         User sender = userRepository.findByEmail(messageDto.getSenderEmail())
                 .orElseThrow(() -> new IllegalArgumentException("Sender not found"));
 
+        // Security check: sender must be a participant OR an admin
+        boolean isParticipant = conversation.getParticipants().stream()
+                .anyMatch(p -> p.getEmail().equals(sender.getEmail()));
+        if (sender.getRole() != UserRole.ADMIN && !isParticipant) {
+            throw new IllegalArgumentException("User does not have access to this conversation");
+        }
+
         Message message = Message.builder()
                 .conversation(conversation)
                 .sender(sender)
@@ -45,7 +53,20 @@ public class ChatServiceImpl implements ChatService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<ChatMessageDto> getConversationHistory(Long conversationId) {
+    public List<ChatMessageDto> getConversationHistory(Long conversationId, String requesterEmail) {
+        Conversation conversation = conversationRepository.findById(conversationId)
+                .orElseThrow(() -> new IllegalArgumentException("Conversation not found"));
+
+        User requester = userRepository.findByEmail(requesterEmail)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        // Security check: requester must be a participant OR an admin
+        boolean isParticipant = conversation.getParticipants().stream()
+                .anyMatch(p -> p.getEmail().equals(requesterEmail));
+        if (requester.getRole() != UserRole.ADMIN && !isParticipant) {
+            throw new IllegalArgumentException("User does not have access to this conversation history");
+        }
+
         return messageRepository.findAllByConversationIdOrderByCreatedAtAsc(conversationId)
                 .stream()
                 .map(this::mapToMessageDto)
@@ -55,6 +76,16 @@ public class ChatServiceImpl implements ChatService {
     @Override
     @Transactional(readOnly = true)
     public List<ConversationDto> getUserConversations(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        if (user.getRole() == UserRole.ADMIN) {
+            return conversationRepository.findAll()
+                    .stream()
+                    .map(this::mapToConversationDto)
+                    .collect(Collectors.toList());
+        }
+
         return conversationRepository.findAllByUserEmail(email)
                 .stream()
                 .map(this::mapToConversationDto)
@@ -84,6 +115,7 @@ public class ChatServiceImpl implements ChatService {
                 .id(message.getId())
                 .conversationId(message.getConversation().getId())
                 .senderEmail(message.getSender().getEmail())
+                .senderRole(message.getSender().getRole().name())
                 .content(message.getContent())
                 .createdAt(message.getCreatedAt())
                 .build();

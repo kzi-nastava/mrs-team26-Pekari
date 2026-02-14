@@ -15,6 +15,7 @@ public class ChatMapper {
                 .id(dto.getId())
                 .conversationId(dto.getConversationId())
                 .senderEmail(dto.getSenderEmail())
+                .senderRole(dto.getSenderRole())
                 .content(dto.getContent())
                 .createdAt(dto.getCreatedAt())
                 .build();
@@ -26,6 +27,7 @@ public class ChatMapper {
                 .id(webDto.getId())
                 .conversationId(webDto.getConversationId())
                 .senderEmail(webDto.getSenderEmail())
+                .senderRole(webDto.getSenderRole())
                 .content(webDto.getContent())
                 .createdAt(webDto.getCreatedAt())
                 .build();

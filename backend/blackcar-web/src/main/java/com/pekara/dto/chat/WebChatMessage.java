@@ -15,6 +15,7 @@ public class WebChatMessage {
     private Long id;
     private Long conversationId;
     private String senderEmail;
+    private String senderRole;
     private String content;
     private LocalDateTime createdAt;
 }
