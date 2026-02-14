@@ -1,7 +1,9 @@
-import { Component, OnInit, Input, Output, EventEmitter, inject, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, Input, Output, EventEmitter, inject, ChangeDetectorRef, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RideApiService, AdminRideDetailResponse, LocationPoint } from '../../../core/services/ride-api.service';
 import { RideMapComponent } from '../../../shared/components/ride-map/ride-map.component';
+import { WebSocketService } from '../../../core/services/websocket.service';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-admin-ride-detail-modal',
@@ -10,11 +12,12 @@ import { RideMapComponent } from '../../../shared/components/ride-map/ride-map.c
   templateUrl: './admin-ride-detail-modal.component.html',
   styleUrls: ['./admin-ride-detail-modal.component.css']
 })
-export class AdminRideDetailModalComponent implements OnInit {
+export class AdminRideDetailModalComponent implements OnInit, OnDestroy {
   @Input() rideId!: number;
   @Output() close = new EventEmitter<void>();
 
   private rideService = inject(RideApiService);
+  private wsService = inject(WebSocketService);
   private cdr = inject(ChangeDetectorRef);
 
   rideDetail?: AdminRideDetailResponse;
@@ -23,9 +26,16 @@ export class AdminRideDetailModalComponent implements OnInit {
 
   // Map data
   routePoints: LocationPoint[] = [];
+  driverLocation: { latitude: number; longitude: number } | null = null;
+  estimatedTimeMinutes?: number;
+  private trackingSubscription?: Subscription;
 
   ngOnInit(): void {
     this.loadRideDetail();
+  }
+
+  ngOnDestroy(): void {
+    this.stopTracking();
   }
 
   loadRideDetail() {
@@ -36,6 +46,11 @@ export class AdminRideDetailModalComponent implements OnInit {
       next: (detail) => {
         this.rideDetail = detail;
         this.parseRouteCoordinates();
+
+        if (this.isActiveForTracking(detail.status)) {
+          this.startTracking();
+        }
+
         this.loading = false;
         this.cdr.detectChanges();
       },
@@ -46,6 +61,48 @@ export class AdminRideDetailModalComponent implements OnInit {
         this.cdr.detectChanges();
       }
     });
+  }
+
+  isActiveForTracking(status: string): boolean {
+    return status === 'ACCEPTED' || status === 'IN_PROGRESS' || status === 'SCHEDULED' || status === 'STOP_REQUESTED';
+  }
+
+  startTracking() {
+    this.stopTracking();
+    this.wsService.connect();
+
+    this.trackingSubscription = this.wsService.subscribeToRideTracking(this.rideId).subscribe({
+      next: (update) => {
+        if (update.vehicleLatitude && update.vehicleLongitude) {
+          this.driverLocation = {
+            latitude: update.vehicleLatitude,
+            longitude: update.vehicleLongitude
+          };
+        }
+
+        if (update.estimatedTimeToDestinationMinutes !== undefined) {
+          this.estimatedTimeMinutes = update.estimatedTimeToDestinationMinutes;
+        }
+
+        this.cdr.detectChanges();
+
+        if (update.rideStatus === 'COMPLETED') {
+          this.stopTracking();
+          // Optionally reload details to show finished state
+          this.loadRideDetail();
+        }
+      },
+      error: (err) => {
+        console.error('Admin tracking error:', err);
+      }
+    });
+  }
+
+  stopTracking() {
+    if (this.trackingSubscription) {
+      this.trackingSubscription.unsubscribe();
+      this.trackingSubscription = undefined;
+    }
   }
 
   parseRouteCoordinates() {

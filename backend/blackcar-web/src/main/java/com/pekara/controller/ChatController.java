@@ -33,12 +33,16 @@ public class ChatController {
         var savedMessage = chatService.sendMessage(serviceMessage);
         var webMessage = chatMapper.toWebMessage(savedMessage);
 
-        // Send to specific conversation topic
-        messagingTemplate.convertAndSend("/topic/chat/" + webMessage.getConversationId(), webMessage);
+        try {
+            // Send to specific conversation topic
+            messagingTemplate.convertAndSend("/topic/chat/" + webMessage.getConversationId(), webMessage);
 
-        // Broadcast to all admins if sender is not an admin
-        if (!"ADMIN".equalsIgnoreCase(webMessage.getSenderRole())) {
-            messagingTemplate.convertAndSend("/topic/chat/admins", webMessage);
+            // Broadcast to all admins if sender is not an admin
+            if (!"ADMIN".equalsIgnoreCase(webMessage.getSenderRole())) {
+                messagingTemplate.convertAndSend("/topic/chat/admins", webMessage);
+            }
+        } catch (Exception e) {
+            log.warn("Failed to send WebSocket chat message: {}", e.getMessage());
         }
     }
 
