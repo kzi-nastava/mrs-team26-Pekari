@@ -1,7 +1,9 @@
 package com.pekara.service;
 
+import com.pekara.dto.response.UserNotificationDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -13,6 +15,7 @@ import java.util.List;
 public class RideNotificationServiceImpl implements RideNotificationService {
 
     private final MailService mailService;
+    private final SimpMessagingTemplate messagingTemplate;
 
     @Override
     public void sendRideOrderNotifications(String driverEmail, String creatorEmail, Long rideId, String rideStatus, LocalDateTime scheduledAt, List<String> passengerEmails) {
@@ -37,6 +40,17 @@ public class RideNotificationServiceImpl implements RideNotificationService {
                     mailService.sendRideDetailsShared(email, rideId, creatorEmail);
                 } catch (Exception e) {
                     log.warn("Failed to send ride details email to passenger {}: {}", email, e.getMessage());
+                }
+
+                try {
+                    UserNotificationDto notification = UserNotificationDto.builder()
+                            .rideId(rideId)
+                            .status(rideStatus)
+                            .message("You have been added to a ride and it has been accepted.")
+                            .build();
+                    messagingTemplate.convertAndSend("/topic/notifications/" + email, notification);
+                } catch (Exception e) {
+                    log.warn("Failed to send WebSocket notification to passenger {}: {}", email, e.getMessage());
                 }
             }
         }
@@ -79,9 +93,20 @@ public class RideNotificationServiceImpl implements RideNotificationService {
             }
             try {
                 mailService.sendRideCompleted(email, rideId, finalPrice);
-                log.info("Sent ride completion notification to {}", email);
+                log.info("Sent ride completion email to {}", email);
             } catch (Exception e) {
                 log.warn("Failed to send ride completion email to {}: {}", email, e.getMessage());
+            }
+
+            try {
+                UserNotificationDto notification = UserNotificationDto.builder()
+                        .rideId(rideId)
+                        .status("COMPLETED")
+                        .message("Your ride has been successfully completed.")
+                        .build();
+                messagingTemplate.convertAndSend("/topic/notifications/" + email, notification);
+            } catch (Exception e) {
+                log.warn("Failed to send WebSocket completion notification to {}: {}", email, e.getMessage());
             }
         }
     }

@@ -33,21 +33,21 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
         String token = null;
 
-        // First, try to get token from cookie
-        Cookie[] cookies = request.getCookies();
-        if (cookies != null) {
-            token = Arrays.stream(cookies)
-                    .filter(cookie -> "jwt".equals(cookie.getName()))
-                    .map(Cookie::getValue)
-                    .findFirst()
-                    .orElse(null);
+        // First, try Authorization header
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            token = authHeader.substring(7);
         }
 
-        // If not found in cookie, try Authorization header as fallback
+        // If not found in header, try cookie
         if (token == null) {
-            String authHeader = request.getHeader("Authorization");
-            if (authHeader != null && authHeader.startsWith("Bearer ")) {
-                token = authHeader.substring(7);
+            Cookie[] cookies = request.getCookies();
+            if (cookies != null) {
+                token = Arrays.stream(cookies)
+                        .filter(cookie -> "jwt".equals(cookie.getName()))
+                        .map(Cookie::getValue)
+                        .findFirst()
+                        .orElse(null);
             }
         }
 

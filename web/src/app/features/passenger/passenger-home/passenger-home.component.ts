@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, OnInit, inject, ChangeDetectorRef, ViewChild, ViewChildren, QueryList } from '@angular/core';
 import { FormArray, FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Subscription } from 'rxjs';
+import { filter, take } from 'rxjs/operators';
 import { RideApiService, OrderRideResponse, RideEstimateResponse, LocationPoint, FavoriteRoute } from '../../../core/services/ride-api.service';
 import { GeocodingService } from '../../../core/services/geocoding.service';
 import { WebSocketService, RideTrackingUpdate } from '../../../core/services/websocket.service';
@@ -248,8 +249,11 @@ export class PassengerHomeComponent implements OnInit, OnDestroy {
     this.wsService.connect();
 
     // Wait for connection before subscribing
-    const connectionSub = this.wsService.isConnected$.subscribe(connected => {
-      if (connected && !this.trackingSubscription) {
+    this.wsService.isConnected$.pipe(
+      filter(connected => connected),
+      take(1)
+    ).subscribe(() => {
+      if (!this.trackingSubscription) {
         console.log('[PassengerHome] WebSocket connected, subscribing to tracking');
         this.trackingSubscription = this.wsService.subscribeToRideTracking(rideId).subscribe({
           next: (update: RideTrackingUpdate) => {
@@ -277,7 +281,6 @@ export class PassengerHomeComponent implements OnInit, OnDestroy {
             console.error('[PassengerHome] Tracking subscription error:', err);
           }
         });
-        connectionSub.unsubscribe();
       }
     });
   }

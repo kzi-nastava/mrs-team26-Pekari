@@ -12,6 +12,28 @@
       </a>
     </div>
     <div class="nav-links">
+      <div class="notification-area" *ngIf="notificationService.notifications().length > 0 || notificationService.unreadCount() > 0">
+        <button class="bell-btn" (click)="toggleNotifications()">
+          🔔 <span class="badge" *ngIf="notificationService.unreadCount() > 0">{{ notificationService.unreadCount() }}</span>
+        </button>
+
+        <div class="notif-dropdown" *ngIf="showNotifications()">
+          <div class="notif-header">
+            <span>Notifications</span>
+            <button (click)="notificationService.clearNotifications()">Clear</button>
+          </div>
+          <div class="notif-list">
+            <div *ngFor="let n of notificationService.notifications()"
+                 class="notif-item"
+                 [class.unread]="!n.read"
+                 (click)="goToRide(n.rideId)">
+              <div class="notif-msg">{{ n.message }}</div>
+              <div class="notif-time">{{ n.timestamp | date:'shortTime' }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <a *ngFor="let link of navLinksRight()"
          [routerLink]="link.path"
          [href]="link.onClick ? '' : null"
