@@ -1,0 +1,154 @@
+<div class="user-management-container">
+  <div class="user-management-card">
+    <h1 class="page-title">User Management</h1>
+    <p class="page-subtitle">Block or unblock drivers and passengers. Blocked drivers are excluded from ride assignment; blocked passengers cannot order new rides.</p>
+
+    @if (errorMessage()) {
+      <div class="error-message">
+        {{ errorMessage() }}
+      </div>
+    }
+    @if (successMessage()) {
+      <div class="success-message">
+        {{ successMessage() }}
+      </div>
+    }
+
+    @if (loading()) {
+      <div class="loading">Loading users...</div>
+    } @else {
+      <div class="sections">
+        <!-- Drivers -->
+        <section class="section">
+          <h2 class="section-title">Drivers</h2>
+          @if (drivers().length === 0) {
+            <div class="empty-state">No drivers found.</div>
+          } @else {
+            <div class="table-wrap">
+              <table class="user-table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Status</th>
+                    <th>Note</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (user of drivers(); track user.id) {
+                    <tr>
+                      <td>{{ fullName(user) }}</td>
+                      <td>{{ user.email }}</td>
+                      <td>
+                        <span class="status-badge" [class.blocked]="user.blocked">
+                          {{ user.blocked ? 'Blocked' : 'Active' }}
+                        </span>
+                      </td>
+                      <td class="note-cell">{{ notePreview(user.blockedNote) }}</td>
+                      <td class="actions-cell">
+                        @if (user.blocked) {
+                          <button type="button" class="btn btn-unblock" (click)="unblock(user)">
+                            Unblock
+                          </button>
+                        } @else {
+                          <button type="button" class="btn btn-block" (click)="openBlockModal(user)">
+                            Block
+                          </button>
+                        }
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        </section>
+
+        <!-- Passengers -->
+        <section class="section">
+          <h2 class="section-title">Passengers</h2>
+          @if (passengers().length === 0) {
+            <div class="empty-state">No passengers found.</div>
+          } @else {
+            <div class="table-wrap">
+              <table class="user-table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Status</th>
+                    <th>Note</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (user of passengers(); track user.id) {
+                    <tr>
+                      <td>{{ fullName(user) }}</td>
+                      <td>{{ user.email }}</td>
+                      <td>
+                        <span class="status-badge" [class.blocked]="user.blocked">
+                          {{ user.blocked ? 'Blocked' : 'Active' }}
+                        </span>
+                      </td>
+                      <td class="note-cell">{{ notePreview(user.blockedNote) }}</td>
+                      <td class="actions-cell">
+                        @if (user.blocked) {
+                          <button type="button" class="btn btn-unblock" (click)="unblock(user)">
+                            Unblock
+                          </button>
+                        } @else {
+                          <button type="button" class="btn btn-block" (click)="openBlockModal(user)">
+                            Block
+                          </button>
+                        }
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        </section>
+      </div>
+    }
+  </div>
+</div>
+
+<!-- Block modal -->
+@if (showBlockModal()) {
+  <div class="modal-overlay" (click)="closeBlockModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <button type="button" class="modal-close" (click)="closeBlockModal()">×</button>
+      <h2>Block user</h2>
+      @if (blockTarget(); as target) {
+        <p class="modal-user-info">{{ fullName(target) }} ({{ target.email }})</p>
+        <div class="form-group">
+          <label for="blockNote">Reason / note (optional)</label>
+          <textarea
+            id="blockNote"
+            [ngModel]="blockNote()"
+            (ngModelChange)="blockNote.set($event)"
+            class="form-input textarea"
+            rows="3"
+            placeholder="e.g. Violation of terms..."
+          ></textarea>
+        </div>
+        <div class="modal-actions">
+          <button
+            type="button"
+            class="btn btn-primary"
+            (click)="submitBlock()"
+            [disabled]="blockSubmitting()"
+          >
+            {{ blockSubmitting() ? 'Blocking...' : 'Block user' }}
+          </button>
+          <button type="button" class="btn btn-secondary" (click)="closeBlockModal()" [disabled]="blockSubmitting()">
+            Cancel
+          </button>
+        </div>
+      }
+    </div>
+  </div>
+}

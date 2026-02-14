@@ -37,7 +37,7 @@ export class AuthService {
 
   login(credentials: { email: string; password: string }): Observable<User> {
     return this.http
-      .post<{ token: string; id?: string; userId?: string; email: string; role: string }>(`${this.env.getApiUrl()}/auth/login`, credentials, {
+      .post<{ token: string; id?: string; userId?: string; email: string; role: string; blocked?: boolean }>(`${this.env.getApiUrl()}/auth/login`, credentials, {
         withCredentials: true // Enable cookies to be sent/received
       })
       .pipe(
@@ -51,7 +51,8 @@ export class AuthService {
             id: resp.id || resp.userId || resp.email,
             email: resp.email,
             username: resp.email,
-            role
+            role,
+            blocked: resp.blocked ?? false
           };
           this.currentUserSignal.set(user);
           return user;
@@ -117,7 +118,7 @@ export class AuthService {
   }
 
   checkSession(): Observable<User | null> {
-    return this.http.get<{ id?: string; userId?: string; email: string; role: string }>(`${this.env.getApiUrl()}/auth/me`, {
+    return this.http.get<{ id?: string; userId?: string; email: string; role: string; blocked?: boolean }>(`${this.env.getApiUrl()}/auth/me`, {
       withCredentials: true
     }).pipe(
       map((resp) => {
@@ -130,7 +131,8 @@ export class AuthService {
           id: resp.id || resp.userId || resp.email,
           email: resp.email,
           username: resp.email,
-          role
+          role,
+          blocked: resp.blocked ?? false
         };
         this.currentUserSignal.set(user);
         return user;

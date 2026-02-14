@@ -35,4 +35,6 @@ public class WebDriverProfileResponse {
     private Double averageRating;
     private Integer totalRides;
     private Boolean isActive;
+    private Boolean blocked;
+    private String blockedNote;
 }

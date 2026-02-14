@@ -12,4 +12,5 @@ public class WebAuthResponse {
     private String token;
     private String email;
     private String role;
+    private Boolean blocked;
 }

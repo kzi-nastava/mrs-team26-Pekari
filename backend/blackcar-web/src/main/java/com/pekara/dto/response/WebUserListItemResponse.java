@@ -1,19 +1,19 @@
 package com.pekara.dto.response;
 
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-public class AuthResponse {
-    private String message;
-    private String token;
-    private Long userId;
+public class WebUserListItemResponse {
+
+    private String id;
     private String email;
+    private String firstName;
+    private String lastName;
     private String role;
     private Boolean blocked;
+    private String blockedNote;
 }

@@ -732,8 +732,18 @@ export class PassengerHomeComponent implements OnInit, OnDestroy {
           this.cdr.detectChanges();
         },
         error: (err) => {
-          if (err?.status === 401 || err?.status === 403) {
+          if (err?.status === 401) {
             this.error = 'Please log in to request a ride.';
+            this.cdr.detectChanges();
+            return;
+          }
+          if (err?.status === 403 && err?.error?.code === 'USER_BLOCKED') {
+            this.error = err?.error?.message || 'You have been blocked and cannot order rides. Contact support.';
+            this.cdr.detectChanges();
+            return;
+          }
+          if (err?.status === 403) {
+            this.error = 'You do not have permission to request a ride.';
             this.cdr.detectChanges();
             return;
           }

@@ -11,6 +11,7 @@ import com.pekara.dto.response.RideEstimateResponse;
 import com.pekara.exception.ActiveRideConflictException;
 import com.pekara.exception.InvalidScheduleTimeException;
 import com.pekara.exception.NoDriversAvailableException;
+import com.pekara.exception.UserBlockedException;
 import com.pekara.model.Driver;
 import com.pekara.model.DriverState;
 import com.pekara.model.Ride;
@@ -79,6 +80,14 @@ public class RideServiceImpl implements RideService {
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
         entityManager.flush();
+
+        if (Boolean.TRUE.equals(creator.getBlocked())) {
+            String reason = creator.getBlockedNote() != null && !creator.getBlockedNote().isBlank()
+                    ? creator.getBlockedNote()
+                    : "Contact support for details.";
+            String message = "You have been blocked by an administrator and cannot order new rides. Reason: " + reason;
+            throw new UserBlockedException(message);
+        }
 
         validateNoActiveRides(creator, creatorEmail);
         validateScheduleTime(request.getScheduledAt(), now);
