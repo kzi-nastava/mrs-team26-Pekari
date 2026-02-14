@@ -859,6 +859,9 @@ export class PassengerHomeComponent implements OnInit, OnDestroy {
     }
 
     this.reportSubmitting = true;
+    this.reportSuccess = undefined;
+    this.error = undefined;
+
     this.rides.reportInconsistency(this.orderResult.rideId, this.reportText.trim()).subscribe({
       next: (response) => {
         this.reportSubmitting = false;
@@ -869,7 +872,9 @@ export class PassengerHomeComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         this.reportSubmitting = false;
-        this.error = err?.error?.message || 'Failed to submit report';
+        const backendMsg = err?.error?.message;
+        const plainMsg = typeof err?.error === 'string' ? err.error : undefined;
+        this.error = backendMsg || plainMsg || err?.message || 'Failed to submit report';
         this.cdr.detectChanges();
       }
     });

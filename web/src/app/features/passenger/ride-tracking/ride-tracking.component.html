@@ -52,6 +52,37 @@
               </div>
             </div>
           </div>
+
+          <!-- Report inconsistency section -->
+          <div class="report-section" *ngIf="ride()?.status === 'IN_PROGRESS' || ride()?.status === 'STOP_REQUESTED'">
+            <button
+              class="link report-link"
+              type="button"
+              (click)="toggleReportForm()"
+            >
+              {{ showReportForm() ? 'Cancel Report' : 'Report Driver Inconsistency' }}
+            </button>
+
+            <div class="report-form" *ngIf="showReportForm()">
+              <textarea
+                class="input report-textarea"
+                [(ngModel)]="reportText"
+                placeholder="Describe the issue..."
+                rows="3"
+              ></textarea>
+              <button
+                class="primary-btn submit-report-btn"
+                type="button"
+                [disabled]="reportSubmitting() || !reportText.trim()"
+                (click)="submitReport()"
+              >
+                {{ reportSubmitting() ? 'Submitting...' : 'Submit Report' }}
+              </button>
+            </div>
+
+            <p class="success-message" *ngIf="reportSuccess()">{{ reportSuccess() }}</p>
+            <p class="error-message" *ngIf="error()">{{ error() }}</p>
+          </div>
         </div>
 
         <button class="primary-btn" (click)="ride()?.status === 'COMPLETED' ? router.navigate(['/']) : null" *ngIf="ride()?.status === 'COMPLETED'">

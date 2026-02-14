@@ -125,3 +125,75 @@
   height: 100%;
   color: var(--secondary);
 }
+
+/* Report section */
+.report-section {
+  border-top: 1px solid var(--border);
+  padding-top: 20px;
+  margin-top: 20px;
+}
+
+.report-link {
+  background: none;
+  border: none;
+  color: #fbbf24;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 0;
+  font-weight: 500;
+  text-decoration: underline;
+}
+
+.report-link:hover {
+  color: #f59e0b;
+}
+
+.report-form {
+  display: grid;
+  gap: 12px;
+  margin-top: 15px;
+}
+
+.report-textarea {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  color: var(--primary);
+  outline: none;
+  font-size: 14px;
+  resize: vertical;
+  min-height: 80px;
+  font-family: inherit;
+}
+
+.report-textarea::placeholder {
+  color: var(--secondary);
+  opacity: 0.5;
+}
+
+.submit-report-btn {
+  width: 100%;
+  padding: 12px;
+  font-weight: 600;
+}
+
+.success-message {
+  margin: 12px 0 0 0;
+  color: var(--accent);
+  font-size: 13px;
+  text-align: center;
+}
+
+.error-message {
+  margin: 12px 0 0 0;
+  color: #ef4444;
+  font-size: 13px;
+  text-align: center;
+}
+
+.primary-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
