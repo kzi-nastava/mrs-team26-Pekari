@@ -2,6 +2,7 @@ package com.pekara.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.pekara.dto.PricingDto;
 import com.pekara.dto.RouteDto;
 import com.pekara.dto.common.LocationPointDto;
 import lombok.RequiredArgsConstructor;
@@ -18,10 +19,9 @@ import java.util.List;
 @RequiredArgsConstructor
 public class RideEstimationServiceImpl implements RideEstimationService {
 
-    private static final BigDecimal PRICE_PER_KM = new BigDecimal("120");
-
     private final RoutingService routingService;
     private final ObjectMapper objectMapper;
+    private final PricingService pricingService;
 
     @Override
     public RouteData calculateRouteWithStops(LocationPointDto pickup, LocationPointDto dropoff, List<LocationPointDto> stops) {
@@ -47,8 +47,9 @@ public class RideEstimationServiceImpl implements RideEstimationService {
 
     @Override
     public BigDecimal calculatePrice(String vehicleType, double distanceKm) {
-        BigDecimal base = basePrice(vehicleType);
-        BigDecimal kmPart = PRICE_PER_KM.multiply(BigDecimal.valueOf(distanceKm));
+        PricingDto pricing = pricingService.getPricingByVehicleType(vehicleType);
+        BigDecimal base = pricing.getBasePrice();
+        BigDecimal kmPart = pricing.getPricePerKm().multiply(BigDecimal.valueOf(distanceKm));
         return base.add(kmPart).setScale(2, RoundingMode.HALF_UP);
     }
 
@@ -83,15 +84,4 @@ public class RideEstimationServiceImpl implements RideEstimationService {
         }
     }
 
-    private BigDecimal basePrice(String vehicleType) {
-        if (vehicleType == null) {
-            return new BigDecimal("0");
-        }
-        return switch (vehicleType.toUpperCase()) {
-            case "STANDARD" -> new BigDecimal("200");
-            case "VAN" -> new BigDecimal("300");
-            case "LUX" -> new BigDecimal("500");
-            default -> new BigDecimal("200");
-        };
-    }
 }
