@@ -2,6 +2,7 @@ export interface WebChatMessage {
   id?: number;
   conversationId: number;
   senderEmail: string;
+  senderRole?: string;
   content: string;
   createdAt?: string;
 }

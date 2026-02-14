@@ -29,6 +29,7 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
   isConnected = toSignal(this.ws.isConnected$, { initialValue: false });
 
   private chatSubscription?: Subscription;
+  private adminSubscription?: Subscription;
   private conversationsSubscription?: Subscription;
 
   @ViewChild('scrollMe') private myScrollContainer!: ElementRef;
@@ -39,8 +40,12 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
       const user = this.currentUser();
       if (user) {
         this.loadConversations();
+        if (user.role === 'admin') {
+          this.subscribeToAdminsTopic();
+        }
       } else {
         this.closeChat();
+        this.adminSubscription?.unsubscribe();
       }
     });
   }
@@ -49,6 +54,7 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
 
   ngOnDestroy(): void {
     this.unsubscribeFromActiveChat();
+    this.adminSubscription?.unsubscribe();
   }
 
   ngAfterViewChecked() {
@@ -81,8 +87,8 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
     const user = this.currentUser();
     if (!user || user.role === 'admin') return;
 
-    // Direct support chat to admin/tech support
-    this.chatService.getOrCreateConversation([user.email, 'support@test.com']).subscribe(conv => {
+    // Direct support chat to admins
+    this.chatService.getOrCreateConversation([user.email]).subscribe(conv => {
       this.selectConversation(conv);
     });
   }
@@ -102,7 +108,24 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
 
   private subscribeToChat(convId: number) {
     this.chatSubscription = this.chatService.subscribeToConversation(convId).subscribe(msg => {
-      this.messages.update(msgs => [...msgs, msg]);
+      this.messages.update(msgs => {
+        if (msgs.find(m => m.id === msg.id)) return msgs;
+        return [...msgs, msg];
+      });
+    });
+  }
+
+  private subscribeToAdminsTopic() {
+    this.adminSubscription?.unsubscribe();
+    this.adminSubscription = this.chatService.subscribeToAdminsTopic().subscribe(msg => {
+      this.loadConversations();
+      const active = this.activeConversation();
+      if (active && active.id === msg.conversationId) {
+        this.messages.update(msgs => {
+          if (msgs.find(m => m.id === msg.id)) return msgs;
+          return [...msgs, msg];
+        });
+      }
     });
   }
 
@@ -141,5 +164,16 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.activeConversation.set(null);
     this.messages.set([]);
     this.loadConversations();
+  }
+
+  getChatPartner(conv: WebConversation): string {
+    const user = this.currentUser();
+    if (!user) return 'Unknown';
+    // Find the first email that is NOT the current user's email
+    const partner = conv.participantEmails.find(e => e !== user.email);
+    // If it's a support chat created by a user with only themselves as participant,
+    // and we are an admin, partner will be that user.
+    // If we are that user, partner will be undefined.
+    return partner || 'Self (Support Chat)';
   }
 }

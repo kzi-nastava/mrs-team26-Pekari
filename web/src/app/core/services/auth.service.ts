@@ -128,9 +128,7 @@ export class AuthService {
       withCredentials: true
     }).pipe(
       map((resp) => {
-        if (resp.token) {
-          localStorage.setItem('auth_token', resp.token);
-        }
+
 
         const role = this.normalizeRole(resp.role);
         if (!role) {

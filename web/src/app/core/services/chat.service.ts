@@ -35,6 +35,10 @@ export class ChatService {
     return this.ws.subscribeToChat(conversationId);
   }
 
+  subscribeToAdminsTopic(): Observable<WebChatMessage> {
+    return this.ws.subscribeToAdminsChat();
+  }
+
   unsubscribeFromConversation(conversationId: number): void {
     this.ws.unsubscribeFromChat(conversationId);
   }

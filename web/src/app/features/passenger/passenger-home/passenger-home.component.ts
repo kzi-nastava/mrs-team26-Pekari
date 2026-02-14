@@ -130,9 +130,6 @@ export class PassengerHomeComponent implements OnInit, OnDestroy {
     this.refreshScheduleBounds();
     this.scheduleBoundsTimer = window.setInterval(() => this.refreshScheduleBounds(), 60_000);
 
-    // Convenience: show current time in the picker, but don't actually schedule unless user changes it.
-    this.form.patchValue({ scheduledAt: this.scheduledMin }, { emitEvent: false });
-
     // Subscribe to form changes
     this.form.valueChanges.subscribe(() => {
       this.estimate = undefined;
@@ -563,12 +560,20 @@ export class PassengerHomeComponent implements OnInit, OnDestroy {
   private refreshScheduleBounds() {
     const now = new Date();
     const max = new Date(now.getTime() + 5 * 60 * 60 * 1000);
-    this.scheduledMin = this.toDatetimeLocalValue(now);
-    this.scheduledMax = this.toDatetimeLocalValue(max);
+    const newMin = this.toDatetimeLocalValue(now);
+    const newMax = this.toDatetimeLocalValue(max);
 
-    // Keep the displayed default aligned with current time.
-    // Scheduling is inferred from the selected time (must be at least 1 minute in the future).
-    this.form.patchValue({ scheduledAt: this.scheduledMin }, { emitEvent: false });
+    if (this.scheduledMin !== newMin) {
+      this.scheduledMin = newMin;
+    }
+    if (this.scheduledMax !== newMax) {
+      this.scheduledMax = newMax;
+    }
+
+    // Keep the displayed default aligned with current time if no ride is active.
+    if (!this.isRideActive) {
+      this.form.patchValue({ scheduledAt: this.scheduledMin }, { emitEvent: false });
+    }
   }
 
   private toDatetimeLocalValue(date: Date): string {

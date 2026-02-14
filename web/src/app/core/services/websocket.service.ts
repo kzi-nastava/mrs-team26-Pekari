@@ -125,6 +125,11 @@ export class WebSocketService implements OnDestroy {
     return this.subscribeTo<any>(topic);
   }
 
+  subscribeToAdminsChat(): Observable<any> {
+    const topic = `/topic/chat/admins`;
+    return this.subscribeTo<any>(topic);
+  }
+
   unsubscribeFromChat(conversationId: number): void {
     const topic = `/topic/chat/${conversationId}`;
     this.unsubscribeFrom(topic);

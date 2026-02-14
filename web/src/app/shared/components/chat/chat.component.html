@@ -18,7 +18,7 @@
       <div *ngIf="conversations().length === 0" class="no-chats">No active conversations</div>
       <div *ngFor="let conv of conversations()" class="conversation-item" (click)="selectConversation(conv)">
         <div class="conv-info">
-          <span class="conv-id">Chat #{{ conv.id }}</span>
+          <span class="conv-id">{{ getChatPartner(conv) }}</span>
           <span class="last-msg" *ngIf="conv.lastMessage">{{ conv.lastMessage.content }}</span>
         </div>
         <span class="conv-date">{{ conv.createdAt | date:'shortTime' }}</span>

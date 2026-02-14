@@ -10,9 +10,9 @@
   width: 60px;
   height: 60px;
   border-radius: 50%;
-  background-color: #007bff;
-  color: white;
-  border: none;
+  background-color: var(--card);
+  color: var(--primary);
+  border: 1px solid var(--border);
   cursor: pointer;
   box-shadow: 0 4px 8px rgba(0,0,0,0.2);
   display: flex;
@@ -29,8 +29,8 @@
   position: absolute;
   top: 0;
   right: 0;
-  background-color: red;
-  color: white;
+  background-color: var(--accent);
+  color: black;
   border-radius: 50%;
   padding: 2px 6px;
   font-size: 12px;
@@ -39,26 +39,32 @@
 .chat-window {
   width: 350px;
   height: 500px;
-  background: white;
-  border-radius: 10px;
-  box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 16px rgba(0,0,0,0.4);
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border: 1px solid #ddd;
+  border: 1px solid var(--border);
 }
 
 .chat-header {
-  background: #007bff;
-  color: white;
+  background: var(--bg);
+  color: var(--primary);
   padding: 10px 15px;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  border-bottom: 1px solid var(--border);
 }
 
 .chat-header .title {
   font-weight: bold;
+}
+
+.message-content{
+  background-color: transparent;
+  color: inherit;
 }
 
 .close-btn, .back-btn {
@@ -76,7 +82,7 @@
 
 .conversation-item {
   padding: 12px 15px;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--border);
   cursor: pointer;
   display: flex;
   justify-content: space-between;
@@ -84,7 +90,7 @@
 }
 
 .conversation-item:hover {
-  background: #f8f9fa;
+  background: var(--bg);
 }
 
 .conv-info {
@@ -98,7 +104,7 @@
 
 .last-msg {
   font-size: 13px;
-  color: #666;
+  color: var(--secondary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -107,14 +113,14 @@
 
 .conv-date {
   font-size: 11px;
-  color: #999;
+  color: var(--secondary);
 }
 
 .messages-area {
   flex: 1;
   padding: 15px;
   overflow-y: auto;
-  background: #f4f7f6;
+  background: var(--bg);
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -123,18 +129,20 @@
 .message {
   max-width: 80%;
   padding: 8px 12px;
-  border-radius: 15px;
+  border-radius: 12px;
   font-size: 14px;
   position: relative;
   align-self: flex-start;
-  background: white;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  background: var(--card);
+  color: var(--primary);
+  border: 1px solid var(--border);
 }
 
 .message.mine {
   align-self: flex-end;
-  background: #007bff;
-  color: white;
+  background: var(--accent);
+  color: black;
+  border: none;
 }
 
 .message-time {
@@ -146,34 +154,39 @@
 
 .chat-input {
   padding: 10px;
-  border-top: 1px solid #eee;
+  border-top: 1px solid var(--border);
   display: flex;
   gap: 10px;
+  background: var(--card);
 }
 
 .chat-input input {
   flex: 1;
-  border: 1px solid #ddd;
+  background: var(--input-bg);
+  border: 1px solid var(--border);
   border-radius: 20px;
   padding: 8px 15px;
   outline: none;
+  color: var(--primary);
 }
 
 .chat-input button {
-  background: #007bff;
-  color: white;
+  background: var(--accent);
+  color: black;
   border: none;
   padding: 0 15px;
   border-radius: 20px;
   cursor: pointer;
+  font-weight: 600;
 }
 
 .chat-input button:disabled {
-  background: #ccc;
+  background: var(--border);
+  color: var(--secondary);
 }
 
 .no-chats, .no-messages {
   text-align: center;
-  color: #999;
+  color: var(--secondary);
   margin-top: 50px;
 }
