@@ -1,14 +1,16 @@
-import { Component, inject, computed } from '@angular/core';
+import { Component, inject, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet, Router } from '@angular/router';
 import { AuthService } from './core/services/auth.service';
 import { EnvironmentService } from './core/services/environment.service';
+import { WebSocketService } from './core/services/websocket.service';
 import { HeaderComponent, type NavLink } from './shared/components/header/header.component';
 import { DevLoginHelperComponent } from './core/components/dev-login-helper.component';
+import { ChatComponent } from './shared/components/chat/chat.component';
 
 @Component({
   selector: 'app-root',
-  imports: [CommonModule, RouterOutlet, HeaderComponent, DevLoginHelperComponent],
+  imports: [CommonModule, RouterOutlet, HeaderComponent, DevLoginHelperComponent, ChatComponent],
   templateUrl: './app.html',
   styleUrl: './app.css'
 })
@@ -16,7 +18,19 @@ export class App {
   private authService = inject(AuthService);
   private router = inject(Router);
   private environmentService = inject(EnvironmentService);
+  private wsService = inject(WebSocketService);
   title = 'BlackCar';
+
+  constructor() {
+    effect(() => {
+      const user = this.authService.currentUser();
+      if (user) {
+        this.wsService.connect();
+      } else {
+        this.wsService.disconnect();
+      }
+    });
+  }
 
   navLinksLeft = computed(() => {
     return [] as NavLink[];

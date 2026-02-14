@@ -1,0 +1,43 @@
+<div class="chat-container" [class.open]="isOpen()" *ngIf="currentUser()">
+  <!-- Chat Bubble -->
+  <button class="chat-bubble" (click)="toggleChat()" *ngIf="!isOpen()">
+    <i class="chat-icon">💬</i>
+    <span class="badge" *ngIf="conversations().length > 0 && currentUser()?.role === 'admin'">{{ conversations().length }}</span>
+  </button>
+
+  <!-- Chat Window -->
+  <div class="chat-window" *ngIf="isOpen()">
+    <div class="chat-header">
+      <button class="back-btn" *ngIf="activeConversation() && currentUser()?.role === 'admin'" (click)="backToList()">←</button>
+      <span class="title">{{ activeConversation() ? 'Conversation #' + activeConversation()?.id : 'Support Chat' }}</span>
+      <button class="close-btn" (click)="toggleChat()">×</button>
+    </div>
+
+    <!-- Conversations List (Admin only) -->
+    <div class="conversations-list" *ngIf="!activeConversation() && currentUser()?.role === 'admin'">
+      <div *ngIf="conversations().length === 0" class="no-chats">No active conversations</div>
+      <div *ngFor="let conv of conversations()" class="conversation-item" (click)="selectConversation(conv)">
+        <div class="conv-info">
+          <span class="conv-id">{{ getChatPartner(conv) }}</span>
+          <span class="last-msg" *ngIf="conv.lastMessage">{{ conv.lastMessage.content }}</span>
+        </div>
+        <span class="conv-date">{{ conv.createdAt | date:'shortTime' }}</span>
+      </div>
+    </div>
+
+    <!-- Messages Area -->
+    <div class="messages-area" *ngIf="activeConversation()" #scrollMe>
+      <div *ngFor="let msg of messages()" class="message" [class.mine]="msg.senderEmail === currentUser()?.email">
+        <div class="message-content">{{ msg.content }}</div>
+        <div class="message-time">{{ msg.createdAt | date:'shortTime' }}</div>
+      </div>
+      <div *ngIf="messages().length === 0" class="no-messages">No messages yet. Say hi!</div>
+    </div>
+
+    <!-- Input Area -->
+    <div class="chat-input" *ngIf="activeConversation()">
+      <input type="text" [(ngModel)]="newMessageContent" (keyup.enter)="sendMessage()" [placeholder]="isConnected() ? 'Type a message...' : 'Connecting...'" [disabled]="!isConnected()">
+      <button (click)="sendMessage()" [disabled]="!newMessageContent.trim() || !isConnected()">{{ isConnected() ? 'Send' : '...' }}</button>
+    </div>
+  </div>
+</div>
