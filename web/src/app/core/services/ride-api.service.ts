@@ -364,21 +364,21 @@ export class RideApiService {
 
   // Favorite routes methods
   getFavoriteRoutes() {
-    const token = localStorage.getItem('auth_token');
+    const token = sessionStorage.getItem('auth_token') || localStorage.getItem('auth_token');
     return this.http.get<FavoriteRoute[]>(`${this.env.getApiUrl()}/profile/favourite-routes`, {
       headers: token ? { 'Authorization': `Bearer ${token}` } : {}
     });
   }
 
   createFavoriteRoute(request: CreateFavoriteRouteRequest) {
-    const token = localStorage.getItem('auth_token');
+    const token = sessionStorage.getItem('auth_token') || localStorage.getItem('auth_token');
     return this.http.post<FavoriteRoute>(`${this.env.getApiUrl()}/profile/favourite-routes`, request, {
       headers: token ? { 'Authorization': `Bearer ${token}` } : {}
     });
   }
 
   deleteFavoriteRoute(id: number) {
-    const token = localStorage.getItem('auth_token');
+    const token = sessionStorage.getItem('auth_token') || localStorage.getItem('auth_token');
     return this.http.delete<MessageResponse>(`${this.env.getApiUrl()}/profile/favourite-routes/${id}`, {
       headers: token ? { 'Authorization': `Bearer ${token}` } : {}
     });

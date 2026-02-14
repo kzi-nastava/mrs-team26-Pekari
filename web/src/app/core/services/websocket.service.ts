@@ -51,6 +51,12 @@ export class WebSocketService implements OnDestroy {
       return;
     }
 
+    const token = sessionStorage.getItem('auth_token') || localStorage.getItem('auth_token');
+    if (!token) {
+      console.warn('[WebSocket] Cannot connect: No auth token found');
+      return;
+    }
+
     const apiUrl = this.env.getApiUrl();
     // Convert http://localhost:8080/api/v1 to ws://localhost:8080/ws
     const wsUrl = apiUrl.replace('/api/v1', '/ws').replace('http', 'ws');
@@ -146,7 +152,7 @@ export class WebSocketService implements OnDestroy {
     });
   }
 
-  private subscribeTo<T>(topic: string): Observable<T> {
+  public subscribeTo<T>(topic: string): Observable<T> {
     // If we already have a subject for this topic, return it
     if (this.messageSubjects.has(topic)) {
       return this.messageSubjects.get(topic)!.asObservable();
@@ -218,7 +224,7 @@ export class WebSocketService implements OnDestroy {
   }
 
   private getAuthHeaders(): Record<string, string> {
-    const token = localStorage.getItem('auth_token');
+    const token = sessionStorage.getItem('auth_token') || localStorage.getItem('auth_token');
     if (token) {
       return { Authorization: `Bearer ${token}` };
     }

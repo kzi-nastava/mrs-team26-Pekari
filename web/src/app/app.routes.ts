@@ -13,6 +13,7 @@ import { AddDriverComponent } from './features/admin/add-driver/add-driver.compo
 import { PanicPanel } from './features/admin/panic-panel/panic-panel';
 import { UserManagementComponent } from './features/admin/user-management/user-management.component';
 import { AdminRidesComponent } from './features/admin/admin-rides/admin-rides.component';
+import { RideTrackingComponent } from './features/passenger/ride-tracking/ride-tracking.component';
 import { authGuard, roleGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
@@ -40,6 +41,11 @@ export const routes: Routes = [
   {
     path: 'passenger-history',
     component: PassengerHistoryComponent,
+    canActivate: [roleGuard(['passenger'])]
+  },
+  {
+    path: 'rides/:id/track',
+    component: RideTrackingComponent,
     canActivate: [roleGuard(['passenger'])]
   },
   {
