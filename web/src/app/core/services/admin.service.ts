@@ -13,6 +13,12 @@ export interface UserListItem {
   blockedNote: string | null;
 }
 
+export interface Pricing {
+  vehicleType: string;
+  basePrice: number;
+  pricePerKm: number;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -37,5 +43,13 @@ export class AdminService {
       blocked,
       blockedNote: blocked ? (note ?? null) : null
     });
+  }
+
+  getPricing(): Observable<Pricing[]> {
+    return this.http.get<Pricing[]>(`${this.adminUrl}/pricing`);
+  }
+
+  updatePricing(pricing: Pricing): Observable<Pricing> {
+    return this.http.put<Pricing>(`${this.adminUrl}/pricing`, pricing);
   }
 }

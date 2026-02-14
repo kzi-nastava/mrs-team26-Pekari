@@ -1,0 +1,61 @@
+<div class="main-container">
+  <div class="pricing-header">
+    <h2 class="section-title">Ride Pricing Management</h2>
+    <p class="helper-text">Configure base prices for different vehicle types.</p>
+  </div>
+
+  <div *ngIf="loading() && pricingList().length === 0" class="loading-state">
+    <div class="spinner"></div>
+    <p>Loading pricing data...</p>
+  </div>
+
+  <div *ngIf="error()" class="error-banner">{{ error() }}</div>
+  <div *ngIf="success()" class="success-banner">{{ success() }}</div>
+
+  <div class="pricing-grid" *ngIf="pricingList().length > 0">
+    <div class="pricing-card card" *ngFor="let p of pricingList()">
+      <div class="card-header">
+        <span class="vehicle-icon">🚗</span>
+        <h3>{{ p.vehicleType }}</h3>
+      </div>
+      <div class="price-info">
+        <div class="price-row">
+          <span class="label">Base Price</span>
+          <span class="value">{{ p.basePrice | currency:'RSD' }}</span>
+        </div>
+        <div class="price-row">
+          <span class="label">Price per Km</span>
+          <span class="value">{{ p.pricePerKm | currency:'RSD' }}</span>
+        </div>
+      </div>
+      <button class="btn btn-primary" (click)="startEdit(p)">Edit Base Price</button>
+    </div>
+  </div>
+
+  <!-- Edit Modal -->
+  <div class="modal-overlay" *ngIf="editingPricing()" (click)="cancelEdit()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <button class="modal-close" (click)="cancelEdit()">&times;</button>
+      <h3>Edit {{ editingPricing()?.vehicleType }} Pricing</h3>
+      <p class="helper-text mb-4">Adjust the starting fare for this vehicle type.</p>
+
+      <div class="form-group">
+        <label>Base Price ($)</label>
+        <input type="number" class="form-input" [(ngModel)]="editingPricing()!.basePrice" step="0.1" min="0">
+      </div>
+
+      <div class="form-group">
+        <label>Price per Km ($)</label>
+        <input type="number" class="form-input" [value]="editingPricing()!.pricePerKm" disabled>
+        <small class="helper-text">Only basePrice is changeable per requirements.</small>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn btn-secondary" (click)="cancelEdit()">Cancel</button>
+        <button class="btn btn-primary" (click)="savePricing()" [disabled]="loading()">
+          {{ loading() ? 'Saving...' : 'Save Changes' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
