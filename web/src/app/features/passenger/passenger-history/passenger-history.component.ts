@@ -28,6 +28,20 @@ export class PassengerHistoryComponent implements OnInit {
   startDate: string = '2024-01-01';
   endDate: string = new Date().toISOString().split('T')[0];
 
+  // Sorting state
+  sortField: string = 'date';
+  sortDirection: 'asc' | 'desc' = 'desc';
+
+  sortOptions = [
+    { value: 'date', label: 'Date' },
+    { value: 'price', label: 'Price' },
+    { value: 'distance', label: 'Distance' },
+    { value: 'vehicleType', label: 'Vehicle Type' },
+    { value: 'status', label: 'Status' },
+    { value: 'pickup', label: 'Pickup Address' },
+    { value: 'dropoff', label: 'Dropoff Address' }
+  ];
+
   ngOnInit(): void {
     this.loadRides();
     this.loadFavoriteRoutes();
@@ -45,6 +59,7 @@ export class PassengerHistoryComponent implements OnInit {
     this.rides.getPassengerRideHistory(filter).subscribe({
       next: (response) => {
         this.ridesList = response.content.map(ride => this.mapRideForDisplay(ride));
+        this.sortRides();
         this.loading = false;
         this.cdr.detectChanges();
       },
@@ -116,7 +131,59 @@ export class PassengerHistoryComponent implements OnInit {
   resetFilter() {
     this.startDate = '2024-01-01';
     this.endDate = new Date().toISOString().split('T')[0];
+    this.sortField = 'date';
+    this.sortDirection = 'desc';
     this.loadRides();
+  }
+
+  onSortChange() {
+    this.sortRides();
+  }
+
+  toggleSortDirection() {
+    this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+    this.sortRides();
+  }
+
+  private sortRides() {
+    this.ridesList.sort((a, b) => {
+      let comparison = 0;
+
+      switch (this.sortField) {
+        case 'date':
+          const dateA = a.rawRide.startTime ? new Date(a.rawRide.startTime).getTime() : 0;
+          const dateB = b.rawRide.startTime ? new Date(b.rawRide.startTime).getTime() : 0;
+          comparison = dateA - dateB;
+          break;
+        case 'price':
+          comparison = (a.rawRide.price || 0) - (b.rawRide.price || 0);
+          break;
+        case 'distance':
+          comparison = (a.rawRide.distanceKm || 0) - (b.rawRide.distanceKm || 0);
+          break;
+        case 'vehicleType':
+          comparison = (a.vehicleType || '').localeCompare(b.vehicleType || '');
+          break;
+        case 'status':
+          comparison = (a.rawRide.status || '').localeCompare(b.rawRide.status || '');
+          break;
+        case 'pickup':
+          const pickupA = a.locations[0]?.address || '';
+          const pickupB = b.locations[0]?.address || '';
+          comparison = pickupA.localeCompare(pickupB);
+          break;
+        case 'dropoff':
+          const dropoffA = a.locations[a.locations.length - 1]?.address || '';
+          const dropoffB = b.locations[b.locations.length - 1]?.address || '';
+          comparison = dropoffA.localeCompare(dropoffB);
+          break;
+        default:
+          comparison = 0;
+      }
+
+      return this.sortDirection === 'asc' ? comparison : -comparison;
+    });
+    this.cdr.detectChanges();
   }
 
   loadFavoriteRoutes() {

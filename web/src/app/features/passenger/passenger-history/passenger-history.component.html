@@ -13,6 +13,17 @@
         <label>To</label>
         <input type="date" id="dateTo" [(ngModel)]="endDate">
       </div>
+      <div class="filter-group">
+        <label>Sort by</label>
+        <div class="sort-controls">
+          <select [(ngModel)]="sortField" (change)="onSortChange()">
+            <option *ngFor="let opt of sortOptions" [value]="opt.value">{{ opt.label }}</option>
+          </select>
+          <button class="sort-direction-btn" (click)="toggleSortDirection()" [attr.aria-label]="sortDirection === 'asc' ? 'Ascending' : 'Descending'">
+            {{ sortDirection === 'asc' ? '↑' : '↓' }}
+          </button>
+        </div>
+      </div>
       <button class="filter-btn" (click)="applyFilter()">Filter</button>
       <button class="filter-btn reset-btn" (click)="resetFilter()">Reset</button>
     </div>
