@@ -56,6 +56,9 @@ public class RideServiceImplTest {
     @Mock
     private RideEstimationService rideEstimationService;
 
+    @Mock
+    private RideNotificationService rideNotificationService;
+
     @InjectMocks
     private RideServiceImpl rideService;
 
@@ -248,6 +251,76 @@ public class RideServiceImplTest {
         assertThatThrownBy(() -> rideService.stopRideEarly(999L, "driver@test.com", newStopLocation))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Ride not found");
+
+        verify(rideRepository, never()).save(any());
+    }
+
+    // ========================================
+    // completeRide() Tests
+    // ========================================
+
+    @Test(description = "Should successfully complete ride")
+    public void completeRide_Success() {
+        ride.setStatus(RideStatus.IN_PROGRESS);
+        when(rideRepository.findById(1L)).thenReturn(Optional.of(ride));
+        when(rideRepository.save(any(Ride.class))).thenReturn(ride);
+
+        rideService.completeRide(1L, "driver@test.com");
+
+        ArgumentCaptor<Ride> rideCaptor = ArgumentCaptor.forClass(Ride.class);
+        verify(rideRepository).save(rideCaptor.capture());
+
+        Ride savedRide = rideCaptor.getValue();
+        assertThat(savedRide.getStatus()).isEqualTo(RideStatus.COMPLETED);
+        assertThat(savedRide.getCompletedAt()).isNotNull();
+
+        verify(driverStateManagementService).releaseDriverAfterRide(3L);
+        verify(rideWorkLogService).completeWorkLog(eq(1L), any(LocalDateTime.class));
+        verify(rideNotificationService).sendRideCompletionNotifications(eq(1L), anyList(), any(BigDecimal.class));
+    }
+
+    @Test(description = "Should throw exception when ride not found in completeRide")
+    public void completeRide_RideNotFound() {
+        when(rideRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> rideService.completeRide(999L, "driver@test.com"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Ride not found");
+
+        verify(rideRepository, never()).save(any());
+    }
+
+    @Test(description = "Should throw exception when driver is not assigned to ride")
+    public void completeRide_UnauthorizedDriver() {
+        when(rideRepository.findById(1L)).thenReturn(Optional.of(ride));
+
+        assertThatThrownBy(() -> rideService.completeRide(1L, "wrong_driver@test.com"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("You are not the driver assigned to this ride");
+
+        verify(rideRepository, never()).save(any());
+    }
+
+    @DataProvider(name = "invalidCompleteStatuses")
+    public Object[][] invalidCompleteStatuses() {
+        return new Object[][] {
+            {RideStatus.ACCEPTED},
+            {RideStatus.COMPLETED},
+            {RideStatus.CANCELLED},
+            {RideStatus.SCHEDULED},
+            {RideStatus.STOP_REQUESTED} // completeRide only allows IN_PROGRESS, stopRideEarly handles STOP_REQUESTED
+        };
+    }
+
+    @Test(dataProvider = "invalidCompleteStatuses",
+          description = "Should throw exception when ride status is not IN_PROGRESS for completeRide")
+    public void completeRide_InvalidStatus(RideStatus status) {
+        ride.setStatus(status);
+        when(rideRepository.findById(1L)).thenReturn(Optional.of(ride));
+
+        assertThatThrownBy(() -> rideService.completeRide(1L, "driver@test.com"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Only in-progress rides can be completed");
 
         verify(rideRepository, never()).save(any());
     }
