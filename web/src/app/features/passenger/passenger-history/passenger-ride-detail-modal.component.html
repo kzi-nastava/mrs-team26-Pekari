@@ -1,0 +1,215 @@
+<div class="modal-backdrop" (click)="onBackdropClick($event)">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2 class="modal-title">Ride Details #{{ rideId }}</h2>
+      <button class="close-btn" (click)="onClose()">&times;</button>
+    </div>
+
+    <div class="modal-body" *ngIf="!loading && rideDetail">
+      <!-- Status and Basic Info -->
+      <div class="info-section">
+        <div class="section-header">
+          <h3>Status</h3>
+          <span class="status-badge" [ngClass]="getStatusClass()">
+            <span *ngIf="rideDetail.panicActivated" class="panic-icon">⚠️</span>
+            {{ getStatusLabel() }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Map Section -->
+      <div class="map-section" *ngIf="rideDetail.pickup && rideDetail.dropoff">
+        <h3>Route</h3>
+        <div class="map-container">
+          <app-ride-map
+            [pickupLocation]="rideDetail.pickup"
+            [dropoffLocation]="rideDetail.dropoff"
+            [stops]="rideDetail.stops || []"
+            [estimatedRoute]="routePoints"
+            [driverLocation]="driverLocation"
+            [locked]="true"
+            [zoom]="13"
+          ></app-ride-map>
+        </div>
+      </div>
+
+      <!-- Locations -->
+      <div class="info-section">
+        <h3>Locations</h3>
+        <div class="location-list">
+          <div class="location-item">
+            <span class="location-icon pickup">📍</span>
+            <div>
+              <div class="location-label">Pickup</div>
+              <div class="location-address">{{ rideDetail.pickupAddress }}</div>
+            </div>
+          </div>
+          <div class="location-item" *ngFor="let stop of rideDetail.stops; let i = index">
+            <span class="location-icon stop">🔵</span>
+            <div>
+              <div class="location-label">Stop {{ i + 1 }}</div>
+              <div class="location-address">{{ stop.address }}</div>
+            </div>
+          </div>
+          <div class="location-item">
+            <span class="location-icon dropoff">🏁</span>
+            <div>
+              <div class="location-label">Dropoff</div>
+              <div class="location-address">{{ rideDetail.dropoffAddress }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ride Information -->
+      <div class="info-section">
+        <h3>Ride Information</h3>
+        <div class="info-grid">
+          <div class="info-item" *ngIf="rideDetail.createdAt">
+            <span class="info-label">Created</span>
+            <span class="info-value">{{ formatDateTime(rideDetail.createdAt) }}</span>
+          </div>
+          <div class="info-item" *ngIf="rideDetail.scheduledAt">
+            <span class="info-label">Scheduled</span>
+            <span class="info-value">{{ formatDateTime(rideDetail.scheduledAt) }}</span>
+          </div>
+          <div class="info-item" *ngIf="rideDetail.startedAt">
+            <span class="info-label">Started</span>
+            <span class="info-value">{{ formatDateTime(rideDetail.startedAt) }}</span>
+          </div>
+          <div class="info-item" *ngIf="rideDetail.completedAt">
+            <span class="info-label">Completed</span>
+            <span class="info-value">{{ formatDateTime(rideDetail.completedAt) }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Price</span>
+            <span class="info-value price">{{ formatPrice(rideDetail.price) }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Distance</span>
+            <span class="info-value">{{ formatDistance(rideDetail.distanceKm) }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Duration</span>
+            <span class="info-value">{{ rideDetail.estimatedDurationMinutes }} min</span>
+          </div>
+          <div class="info-item eta-item" *ngIf="estimatedTimeMinutes !== undefined">
+            <span class="info-label">Estimated Arrival</span>
+            <span class="info-value highlight">{{ estimatedTimeMinutes }} min</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Vehicle Type</span>
+            <span class="info-value">{{ rideDetail.vehicleType }}</span>
+          </div>
+          <div class="info-item" *ngIf="rideDetail.babyTransport || rideDetail.petTransport">
+            <span class="info-label">Options</span>
+            <span class="info-value">
+              <span *ngIf="rideDetail.babyTransport" class="option-badge">Baby Seat</span>
+              <span *ngIf="rideDetail.petTransport" class="option-badge">Pet Friendly</span>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cancellation Info -->
+      <div class="info-section alert-section" *ngIf="rideDetail.cancelled">
+        <h3>Cancellation Details</h3>
+        <div class="info-grid">
+          <div class="info-item">
+            <span class="info-label">Cancelled By</span>
+            <span class="info-value">{{ rideDetail.cancelledBy || '-' }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Cancelled At</span>
+            <span class="info-value">{{ formatDateTime(rideDetail.cancelledAt) }}</span>
+          </div>
+          <div class="info-item full-width" *ngIf="rideDetail.cancellationReason">
+            <span class="info-label">Reason</span>
+            <span class="info-value">{{ rideDetail.cancellationReason }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Driver Details -->
+      <div class="info-section" *ngIf="rideDetail.driver">
+        <h3>Driver Details</h3>
+        <div class="person-card">
+          <div class="person-header">
+            <div class="person-info">
+              <div class="person-name">{{ rideDetail.driver.firstName }} {{ rideDetail.driver.lastName }}</div>
+              <div class="person-email">{{ rideDetail.driver.email }}</div>
+              <div class="person-phone">{{ rideDetail.driver.phoneNumber }}</div>
+            </div>
+          </div>
+          <div class="person-details">
+            <div class="detail-item">
+              <span class="detail-label">Vehicle</span>
+              <span class="detail-value">{{ rideDetail.driver.vehicleModel }} ({{ rideDetail.driver.licensePlate }})</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Average Rating</span>
+              <span class="detail-value">{{ rideDetail.driver.averageRating?.toFixed(1) || 'N/A' }} ⭐</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ratings -->
+      <div class="info-section">
+        <h3>Ride Ratings</h3>
+        <div class="ratings-list" *ngIf="rideDetail.ratings && rideDetail.ratings.length > 0">
+          <div class="rating-card" *ngFor="let rating of rideDetail.ratings">
+            <div class="rating-header">
+              <span class="rating-passenger">{{ rating.passengerName }}</span>
+              <span class="rating-date">{{ formatDateTime(rating.ratedAt) }}</span>
+            </div>
+            <div class="rating-scores">
+              <div class="score-item">
+                <span class="score-label">Driver</span>
+                <span class="score-value">{{ getStars(rating.driverRating) }}</span>
+              </div>
+              <div class="score-item">
+                <span class="score-label">Vehicle</span>
+                <span class="score-value">{{ getStars(rating.vehicleRating) }}</span>
+              </div>
+            </div>
+            <div class="rating-comment" *ngIf="rating.comment">
+              <span class="comment-label">Comment:</span>
+              <span class="comment-text">{{ rating.comment }}</span>
+            </div>
+          </div>
+        </div>
+        <div class="empty-message" *ngIf="!rideDetail.ratings || rideDetail.ratings.length === 0">
+          No ratings provided for this ride.
+        </div>
+      </div>
+
+      <!-- Inconsistency Reports -->
+      <div class="info-section">
+        <h3>Inconsistency Reports</h3>
+        <div class="reports-list" *ngIf="rideDetail.inconsistencyReports && rideDetail.inconsistencyReports.length > 0">
+          <div class="report-card" *ngFor="let report of rideDetail.inconsistencyReports">
+            <div class="report-header">
+              <span class="report-by">Reported by {{ report.reportedByName }}</span>
+              <span class="report-date">{{ formatDateTime(report.reportedAt) }}</span>
+            </div>
+            <div class="report-description">{{ report.description }}</div>
+          </div>
+        </div>
+        <div class="empty-message" *ngIf="!rideDetail.inconsistencyReports || rideDetail.inconsistencyReports.length === 0">
+          No inconsistency reports for this ride.
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-body loading-state" *ngIf="loading">
+      <div class="spinner"></div>
+      <p>Loading ride details...</p>
+    </div>
+
+    <div class="modal-body error-state" *ngIf="error">
+      <p class="error-message">{{ error }}</p>
+      <button class="retry-btn" (click)="loadRideDetail()">Retry</button>
+    </div>
+  </div>
+</div>

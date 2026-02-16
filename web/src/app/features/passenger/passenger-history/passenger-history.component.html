@@ -21,7 +21,7 @@
   <p class="error" *ngIf="error" style="margin: 16px 0; color: #ef4444; text-align: center;">{{ error }}</p>
 
   <div class="rides-list">
-    <div *ngFor="let ride of ridesList" class="ride-card">
+    <div *ngFor="let ride of ridesList" class="ride-card clickable" (click)="onRideClick(ride)">
       <div class="ride-header">
         <div class="ride-date-time">
           <div class="ride-date">{{ ride.date }}</div>
@@ -35,7 +35,7 @@
           <button
             class="favorite-btn"
             [class.favorited]="isFavorite(ride)"
-            (click)="toggleFavorite(ride)"
+            (click)="toggleFavorite(ride); $event.stopPropagation()"
             [disabled]="loading || !ride.locations[0].latitude"
             [attr.aria-label]="isFavorite(ride) ? 'Remove from favorites' : 'Add to favorites'"
             title="{{ isFavorite(ride) ? 'Remove from favorites' : (ride.locations[0].latitude ? 'Add to favorites' : 'Missing coordinates') }}"
@@ -94,3 +94,10 @@
     </div>
   </div>
 </div>
+
+<!-- Ride Detail Modal -->
+<app-passenger-ride-detail-modal
+  *ngIf="showModal && selectedRideId"
+  [rideId]="selectedRideId"
+  (close)="closeModal()"
+></app-passenger-ride-detail-modal>

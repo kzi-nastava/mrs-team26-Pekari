@@ -2,11 +2,12 @@ import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RideApiService, FavoriteRoute, CreateFavoriteRouteRequest, LocationPoint, PassengerRideHistoryResponse } from '../../../core/services/ride-api.service';
+import { PassengerRideDetailModalComponent } from './passenger-ride-detail-modal.component';
 
 @Component({
   selector: 'app-passenger-history',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, PassengerRideDetailModalComponent],
   templateUrl: './passenger-history.component.html',
   styleUrls: ['./passenger-history.component.css']
 })
@@ -19,6 +20,10 @@ export class PassengerHistoryComponent implements OnInit {
   favoriteRoutes: FavoriteRoute[] = [];
   loading = false;
   error?: string;
+
+  // Modal state
+  selectedRideId?: number;
+  showModal = false;
 
   startDate: string = '2024-01-01';
   endDate: string = new Date().toISOString().split('T')[0];
@@ -218,5 +223,15 @@ export class PassengerHistoryComponent implements OnInit {
       favRoute.pickup?.address === pickupAddress &&
       favRoute.dropoff?.address === dropoffAddress
     ) || ride.favoriteRouteId !== undefined;
+  }
+
+  onRideClick(ride: any) {
+    this.selectedRideId = ride.id;
+    this.showModal = true;
+  }
+
+  closeModal() {
+    this.showModal = false;
+    this.selectedRideId = undefined;
   }
 }
