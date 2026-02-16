@@ -25,6 +25,15 @@ export class PassengerHistoryComponent implements OnInit {
   selectedRideId?: number;
   showModal = false;
 
+  // Rating state
+  showRatingModal = false;
+  vehicleRating = 0;
+  driverRating = 0;
+  ratingComment = '';
+  ratingSubmitting = false;
+  ratingSuccess?: string;
+  completedRideId?: number;
+
   startDate: string = '2024-01-01';
   endDate: string = new Date().toISOString().split('T')[0];
 
@@ -93,11 +102,21 @@ export class PassengerHistoryComponent implements OnInit {
       else statuses.push('cancelled-passenger');
     }
 
+    // Check if ride is ratable (completed < 3 days ago)
+    let isRatable = false;
+    if (ride.status === 'COMPLETED' && endTime) {
+      const now = new Date();
+      const diffMs = now.getTime() - endTime.getTime();
+      const diffDays = diffMs / (1000 * 60 * 60 * 24);
+      isRatable = diffDays < 3;
+    }
+
     return {
       id: ride.id,
       date: startTime ? this.formatDate(startTime) : 'Unknown date',
       time: timeRange,
       status: statuses,
+      isRatable: isRatable,
       locations: [
         { type: 'start', label: 'Start', address: ride.pickup?.address || ride.pickupLocation, latitude: ride.pickup?.latitude, longitude: ride.pickup?.longitude },
         { type: 'end', label: 'Finish', address: ride.dropoff?.address || ride.dropoffLocation, latitude: ride.dropoff?.latitude, longitude: ride.dropoff?.longitude }
@@ -300,5 +319,68 @@ export class PassengerHistoryComponent implements OnInit {
   closeModal() {
     this.showModal = false;
     this.selectedRideId = undefined;
+  }
+
+  openRatingModal(ride: any) {
+    this.completedRideId = ride.id;
+    this.showRatingModal = true;
+    this.vehicleRating = 0;
+    this.driverRating = 0;
+    this.ratingComment = '';
+    this.ratingSuccess = undefined;
+    this.error = undefined;
+    this.cdr.detectChanges();
+  }
+
+  setVehicleRating(rating: number): void {
+    this.vehicleRating = rating;
+  }
+
+  setDriverRating(rating: number): void {
+    this.driverRating = rating;
+  }
+
+  submitRating(): void {
+    if (!this.completedRideId || this.vehicleRating === 0 || this.driverRating === 0) {
+      this.error = 'Please provide both vehicle and driver ratings';
+      return;
+    }
+
+    this.ratingSubmitting = true;
+    this.error = undefined;
+
+    this.rides.rateRide(this.completedRideId, {
+      vehicleRating: this.vehicleRating,
+      driverRating: this.driverRating,
+      comment: this.ratingComment.trim() || undefined
+    }).subscribe({
+      next: (response) => {
+        this.ratingSubmitting = false;
+        this.ratingSuccess = response.message || 'Rating submitted successfully!';
+        setTimeout(() => {
+          this.closeRatingModal();
+        }, 2000);
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        this.ratingSubmitting = false;
+        this.error = err?.error?.message || 'Failed to submit rating';
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  closeRatingModal(): void {
+    this.showRatingModal = false;
+    this.vehicleRating = 0;
+    this.driverRating = 0;
+    this.ratingComment = '';
+    this.ratingSuccess = undefined;
+    this.completedRideId = undefined;
+    this.cdr.detectChanges();
+  }
+
+  skipRating(): void {
+    this.closeRatingModal();
   }
 }
