@@ -8,6 +8,7 @@ import com.pekara.dto.request.RideRatingRequest;
 import com.pekara.dto.response.ActiveRideResponse;
 import com.pekara.dto.response.DriverRideHistoryResponse;
 import com.pekara.dto.response.OrderRideResponse;
+import com.pekara.dto.response.PassengerRideDetailResponse;
 import com.pekara.dto.response.PassengerRideHistoryResponse;
 import com.pekara.dto.response.RideEstimateResponse;
 
@@ -47,4 +48,6 @@ public interface RideService {
     void reportInconsistency(Long rideId, String passengerEmail, InconsistencyReportRequest request);
 
     Optional<ActiveRideResponse> getNextScheduledRideForDriver(String driverEmail);
+
+    PassengerRideDetailResponse getPassengerRideDetail(Long rideId, String passengerEmail);
 }

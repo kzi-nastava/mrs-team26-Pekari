@@ -481,30 +481,20 @@ public class RideController {
         return ResponseEntity.ok(rideDetails);
     }
 
-    @Operation(summary = "Get ride details (Passenger)", description = "View simplified ride information - Protected endpoint (Passengers only)")
+    @Operation(summary = "Get ride details (Passenger)", description = "View detailed ride information with route, driver details, ratings, and inconsistency reports - Protected endpoint (Passengers only)")
     @PreAuthorize("hasRole('PASSENGER')")
     @GetMapping("/{rideId}")
     public ResponseEntity<WebPassengerRideDetailResponse> getRideDetailsForPassenger(
             @PathVariable Long rideId,
-            @AuthenticationPrincipal UserDetails currentUser) {
+            @AuthenticationPrincipal String currentUserEmail) {
 
-        log.debug("Requesting passenger details for rideId: {}", rideId);
+        log.debug("Requesting passenger details for rideId: {} by user: {}", rideId, currentUserEmail);
 
-        // TODO: Implement ride detail retrieval via RideService
-        // - Get current user's ID from UserDetails
-        // - Fetch ride information
-        // - Verify user is a passenger on this ride, otherwise -> throw 403 Forbidden
-        // - Return simplified ride information including:
-        //   * Start/end times
-        //   * Pickup/dropoff locations and stops
-        //   * Price and status
-        //   * Driver basic info (name, phone)
-        //   * Passenger's own rating if exists
-
-        WebPassengerRideDetailResponse rideDetails = new WebPassengerRideDetailResponse();
+        var serviceResponse = rideService.getPassengerRideDetail(rideId, currentUserEmail);
+        WebPassengerRideDetailResponse response = rideMapper.toWebPassengerRideDetailResponse(serviceResponse);
 
         log.debug("Retrieved passenger details for rideId: {}", rideId);
-        return ResponseEntity.ok(rideDetails);
+        return ResponseEntity.ok(response);
     }
 
 

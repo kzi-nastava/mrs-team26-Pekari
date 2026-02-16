@@ -1,6 +1,6 @@
 package com.pekara.dto.response;
 
-import com.pekara.dto.common.WebLocationPoint;
+import com.pekara.dto.common.LocationPointDto;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -11,14 +11,14 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * Web response DTO for detailed ride information for passengers.
+ * Response DTO for detailed ride information for passengers.
  * Includes route coordinates for map display, driver details, ratings, and inconsistency reports.
  */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class WebPassengerRideDetailResponse {
+public class PassengerRideDetailResponse {
 
     private Long id;
     private String status;
@@ -32,9 +32,9 @@ public class WebPassengerRideDetailResponse {
     // Locations
     private String pickupAddress;
     private String dropoffAddress;
-    private WebLocationPoint pickup;
-    private WebLocationPoint dropoff;
-    private List<WebLocationPoint> stops;
+    private LocationPointDto pickup;
+    private LocationPointDto dropoff;
+    private List<LocationPointDto> stops;
 
     // Route for map display
     private String routeCoordinates;
