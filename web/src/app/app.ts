@@ -50,12 +50,14 @@ export class App {
         { label: 'Home', path: '/driver-home' },
         { label: 'Profile', path: '/profile', danger: user.blocked },
         { label: 'History', path: '/driver-history' },
+        { label: 'Statistics', path: '/driver/stats' },
         { label: 'Logout', onClick: () => this.handleLogout() }
       );
     } else if (user.role === 'passenger') {
       links.push(
         { label: 'Home', path: '/passenger-home' },
         { label: 'History', path: '/passenger-history' },
+        { label: 'Statistics', path: '/passenger/stats' },
         { label: 'Profile', path: '/profile', danger: user.blocked },
         { label: 'Logout', onClick: () => this.handleLogout() }
       );
@@ -64,7 +66,7 @@ export class App {
         { label: 'User management', path: '/admin/user-management' },
         { label: 'Rides', path: '/admin/rides' },
         { label: 'Pricing', path: '/admin/pricing' },
-        { label: 'Management', path: '/admin/management' },
+        { label: 'Statistics', path: '/admin/management' },
         { label: 'Add Driver', path: '/admin/add-driver' },
         { label: '🚨 Panic Panel', path: '/admin/panic-panel' },
         { label: 'Logout', onClick: () => this.handleLogout() }

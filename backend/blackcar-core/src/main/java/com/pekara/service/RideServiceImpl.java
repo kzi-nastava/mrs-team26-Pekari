@@ -10,6 +10,8 @@ import com.pekara.dto.response.ActiveRideResponse;
 import com.pekara.dto.response.OrderRideResponse;
 import com.pekara.dto.response.PassengerRideDetailResponse;
 import com.pekara.dto.response.RideEstimateResponse;
+import com.pekara.dto.response.RideStatsDayDto;
+import com.pekara.dto.response.RideStatsResponse;
 import com.pekara.exception.ActiveRideConflictException;
 import com.pekara.exception.InvalidScheduleTimeException;
 import com.pekara.exception.NoDriversAvailableException;
@@ -34,9 +36,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -599,6 +603,84 @@ public class RideServiceImpl implements RideService {
         return rides.stream()
                 .map(this::mapToPassengerRideHistoryResponse)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public RideStatsResponse getDriverRideStats(String driverEmail, LocalDateTime startDate, LocalDateTime endDate) {
+        User driver = userRepository.findByEmail(driverEmail)
+                .orElseThrow(() -> new IllegalArgumentException("Driver not found"));
+
+        List<Ride> rides = rideRepository.findDriverRideHistory(driver.getId(), startDate, endDate);
+        return buildRideStatsResponse(rides, startDate, endDate);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public RideStatsResponse getPassengerRideStats(String passengerEmail, LocalDateTime startDate, LocalDateTime endDate) {
+        User passenger = userRepository.findByEmail(passengerEmail)
+                .orElseThrow(() -> new IllegalArgumentException("Passenger not found"));
+
+        List<Ride> rides = rideRepository.findPassengerRideHistory(passenger.getId(), startDate, endDate);
+        return buildRideStatsResponse(rides, startDate, endDate);
+    }
+
+    private RideStatsResponse buildRideStatsResponse(List<Ride> rides, LocalDateTime startDate, LocalDateTime endDate) {
+        List<Ride> completedRides = rides.stream()
+                .filter(r -> r.getStatus() == RideStatus.COMPLETED)
+                .collect(Collectors.toList());
+
+        LocalDate start = startDate.toLocalDate();
+        LocalDate end = endDate.toLocalDate();
+        long daysInRange = java.time.temporal.ChronoUnit.DAYS.between(start, end) + 1;
+
+        Map<LocalDate, List<Ride>> ridesByDate = completedRides.stream()
+                .collect(Collectors.groupingBy(r -> {
+                    LocalDateTime dt = r.getCompletedAt() != null ? r.getCompletedAt()
+                            : (r.getStartedAt() != null ? r.getStartedAt() : r.getCreatedAt());
+                    return dt.toLocalDate();
+                }));
+
+        List<RideStatsDayDto> dailyData = new ArrayList<>();
+        long totalRides = 0;
+        double totalDistanceKm = 0;
+        BigDecimal totalAmount = BigDecimal.ZERO;
+
+        for (LocalDate date = start; !date.isAfter(end); date = date.plusDays(1)) {
+            List<Ride> dayRides = ridesByDate.getOrDefault(date, List.of());
+            long count = dayRides.size();
+            double distance = dayRides.stream()
+                    .mapToDouble(r -> r.getDistanceKm() != null ? r.getDistanceKm() : 0.0)
+                    .sum();
+            BigDecimal amount = dayRides.stream()
+                    .map(r -> r.getEstimatedPrice() != null ? r.getEstimatedPrice() : BigDecimal.ZERO)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            dailyData.add(RideStatsDayDto.builder()
+                    .date(date)
+                    .rideCount(count)
+                    .distanceKm(distance)
+                    .amount(amount)
+                    .build());
+
+            totalRides += count;
+            totalDistanceKm += distance;
+            totalAmount = totalAmount.add(amount);
+        }
+
+        double avgRidesPerDay = daysInRange > 0 ? (double) totalRides / daysInRange : 0;
+        double avgDistancePerDay = daysInRange > 0 ? totalDistanceKm / daysInRange : 0;
+        BigDecimal avgAmountPerDay = daysInRange > 0 ? totalAmount.divide(BigDecimal.valueOf(daysInRange), 2, java.math.RoundingMode.HALF_UP) : BigDecimal.ZERO;
+
+        return RideStatsResponse.builder()
+                .dailyData(dailyData)
+                .totalRides(totalRides)
+                .totalDistanceKm(totalDistanceKm)
+                .totalAmount(totalAmount)
+                .avgRidesPerDay(avgRidesPerDay)
+                .avgDistancePerDay(avgDistancePerDay)
+                .avgAmountPerDay(avgAmountPerDay)
+                .build();
     }
 
     private com.pekara.dto.response.DriverRideHistoryResponse mapToDriverRideHistoryResponse(Ride ride) {

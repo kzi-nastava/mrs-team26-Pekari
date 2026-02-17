@@ -2,13 +2,18 @@ package com.pekara.controller;
 
 import com.pekara.dto.PricingDto;
 import com.pekara.dto.request.WebBlockUserRequest;
+import com.pekara.dto.response.DriverBasicDto;
+import com.pekara.dto.response.PassengerBasicDto;
+import com.pekara.dto.response.WebDriverBasicDto;
 import com.pekara.dto.response.WebMessageResponse;
+import com.pekara.dto.response.WebPassengerBasicDto;
 import com.pekara.dto.response.WebUserListItemResponse;
 import com.pekara.model.Driver;
 import com.pekara.model.User;
 import com.pekara.model.UserRole;
 import com.pekara.repository.DriverRepository;
 import com.pekara.repository.UserRepository;
+import com.pekara.service.AdminService;
 import com.pekara.service.PricingService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -20,6 +25,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j
 @RestController
@@ -29,6 +35,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AdminController {
 
+    private final AdminService adminService;
     private final UserRepository userRepository;
     private final DriverRepository driverRepository;
     private final PricingService pricingService;
@@ -58,6 +65,22 @@ public class AdminController {
         return ResponseEntity.ok(response);
     }
 
+    @Operation(summary = "List all drivers (basic)", description = "Get list of all drivers for admin dropdown")
+    @GetMapping("/drivers/basic")
+    public ResponseEntity<List<WebDriverBasicDto>> listDrivers() {
+        log.debug("Admin requested list of drivers");
+        List<DriverBasicDto> drivers = adminService.listDriversForAdmin();
+        List<WebDriverBasicDto> response = drivers.stream()
+                .map(d -> WebDriverBasicDto.builder()
+                        .id(d.getId())
+                        .firstName(d.getFirstName())
+                        .lastName(d.getLastName())
+                        .email(d.getEmail())
+                        .build())
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(response);
+    }
+
     @Operation(summary = "List all passengers", description = "Get list of passengers for block/unblock management")
     @GetMapping("/passengers")
     public ResponseEntity<List<WebUserListItemResponse>> getPassengers() {
@@ -66,6 +89,22 @@ public class AdminController {
         List<WebUserListItemResponse> response = passengers.stream()
                 .map(this::toUserListItem)
                 .toList();
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "List all passengers (basic)", description = "Get list of all passengers for admin dropdown")
+    @GetMapping("/passengers/basic")
+    public ResponseEntity<List<WebPassengerBasicDto>> listPassengers() {
+        log.debug("Admin requested list of passengers");
+        List<PassengerBasicDto> passengers = adminService.listPassengersForAdmin();
+        List<WebPassengerBasicDto> response = passengers.stream()
+                .map(p -> WebPassengerBasicDto.builder()
+                        .id(p.getId())
+                        .firstName(p.getFirstName())
+                        .lastName(p.getLastName())
+                        .email(p.getEmail())
+                        .build())
+                .collect(Collectors.toList());
         return ResponseEntity.ok(response);
     }
 

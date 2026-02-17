@@ -1,22 +1,38 @@
 package com.pekara.service;
 
+import com.pekara.constant.RideStatsScope;
 import com.pekara.constant.RideStatus;
 import com.pekara.dto.common.LocationPointDto;
 import com.pekara.dto.response.AdminRideDetailResponse;
 import com.pekara.dto.response.AdminRideHistoryResponse;
-import com.pekara.model.*;
+import com.pekara.dto.response.DriverBasicDto;
+import com.pekara.dto.response.PassengerBasicDto;
+import com.pekara.dto.response.RideStatsDayDto;
+import com.pekara.dto.response.RideStatsResponse;
+import com.pekara.model.Driver;
+import com.pekara.model.InconsistencyReport;
+import com.pekara.model.Ride;
+import com.pekara.model.RideRating;
+import com.pekara.model.RideStop;
+import com.pekara.model.User;
+import com.pekara.model.UserRole;
+import com.pekara.repository.DriverRepository;
 import com.pekara.repository.InconsistencyReportRepository;
 import com.pekara.repository.RideRatingRepository;
 import com.pekara.repository.RideRepository;
+import com.pekara.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -27,6 +43,8 @@ public class AdminServiceImpl implements AdminService {
     private final RideRepository rideRepository;
     private final RideRatingRepository rideRatingRepository;
     private final InconsistencyReportRepository inconsistencyReportRepository;
+    private final DriverRepository driverRepository;
+    private final UserRepository userRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -60,14 +78,131 @@ public class AdminServiceImpl implements AdminService {
     @Transactional(readOnly = true)
     public AdminRideDetailResponse getRideDetail(Long rideId) {
         log.debug("Fetching ride detail for rideId: {}", rideId);
-        
+
         Ride ride = rideRepository.findById(rideId)
                 .orElseThrow(() -> new IllegalArgumentException("Ride not found: " + rideId));
-        
+
         List<RideRating> ratings = rideRatingRepository.findAllByRideId(rideId);
         List<InconsistencyReport> reports = inconsistencyReportRepository.findAllByRideId(rideId);
-        
+
         return mapToDetailResponse(ride, ratings, reports);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public RideStatsResponse getRideStatsAdmin(LocalDateTime startDate, LocalDateTime endDate, RideStatsScope scope, Long userId) {
+        log.debug("Admin ride stats requested: scope={}, userId={}, range {} to {}", scope, userId, startDate, endDate);
+
+        List<Ride> rides = rideRepository.findAllRidesHistory(startDate, endDate);
+        List<Ride> filteredRides = filterRidesByScope(rides, scope, userId);
+        return buildRideStatsResponse(filteredRides, startDate, endDate);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<DriverBasicDto> listDriversForAdmin() {
+        return driverRepository.findAll().stream()
+                .map(d -> DriverBasicDto.builder()
+                        .id(d.getId())
+                        .firstName(d.getFirstName())
+                        .lastName(d.getLastName())
+                        .email(d.getEmail())
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<PassengerBasicDto> listPassengersForAdmin() {
+        return userRepository.findByRole(UserRole.PASSENGER).stream()
+                .map(u -> PassengerBasicDto.builder()
+                        .id(u.getId())
+                        .firstName(u.getFirstName())
+                        .lastName(u.getLastName())
+                        .email(u.getEmail())
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    private List<Ride> filterRidesByScope(List<Ride> rides, RideStatsScope scope, Long userId) {
+        List<Ride> completed = rides.stream()
+                .filter(r -> r.getStatus() == RideStatus.COMPLETED)
+                .collect(Collectors.toList());
+
+        return switch (scope) {
+            case ALL_DRIVERS -> completed.stream()
+                    .filter(r -> r.getDriver() != null)
+                    .collect(Collectors.toList());
+            case ALL_PASSENGERS -> completed.stream()
+                    .filter(r -> r.getPassengers() != null && !r.getPassengers().isEmpty())
+                    .collect(Collectors.toList());
+            case DRIVER -> {
+                if (userId == null) throw new IllegalArgumentException("userId required for DRIVER scope");
+                yield completed.stream()
+                        .filter(r -> r.getDriver() != null && r.getDriver().getId().equals(userId))
+                        .collect(Collectors.toList());
+            }
+            case PASSENGER -> {
+                if (userId == null) throw new IllegalArgumentException("userId required for PASSENGER scope");
+                yield completed.stream()
+                        .filter(r -> r.getPassengers().stream().anyMatch(p -> p.getId().equals(userId)))
+                        .collect(Collectors.toList());
+            }
+        };
+    }
+
+    private RideStatsResponse buildRideStatsResponse(List<Ride> rides, LocalDateTime startDate, LocalDateTime endDate) {
+        LocalDate start = startDate.toLocalDate();
+        LocalDate end = endDate.toLocalDate();
+        long daysInRange = java.time.temporal.ChronoUnit.DAYS.between(start, end) + 1;
+
+        Map<LocalDate, List<Ride>> ridesByDate = rides.stream()
+                .collect(Collectors.groupingBy(r -> {
+                    LocalDateTime dt = r.getCompletedAt() != null ? r.getCompletedAt()
+                            : (r.getStartedAt() != null ? r.getStartedAt() : r.getCreatedAt());
+                    return dt.toLocalDate();
+                }));
+
+        List<RideStatsDayDto> dailyData = new ArrayList<>();
+        long totalRides = 0;
+        double totalDistanceKm = 0;
+        BigDecimal totalAmount = BigDecimal.ZERO;
+
+        for (LocalDate date = start; !date.isAfter(end); date = date.plusDays(1)) {
+            List<Ride> dayRides = ridesByDate.getOrDefault(date, List.of());
+            long count = dayRides.size();
+            double distance = dayRides.stream()
+                    .mapToDouble(r -> r.getDistanceKm() != null ? r.getDistanceKm() : 0.0)
+                    .sum();
+            BigDecimal amount = dayRides.stream()
+                    .map(r -> r.getEstimatedPrice() != null ? r.getEstimatedPrice() : BigDecimal.ZERO)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            dailyData.add(RideStatsDayDto.builder()
+                    .date(date)
+                    .rideCount(count)
+                    .distanceKm(distance)
+                    .amount(amount)
+                    .build());
+
+            totalRides += count;
+            totalDistanceKm += distance;
+            totalAmount = totalAmount.add(amount);
+        }
+
+        double avgRidesPerDay = daysInRange > 0 ? (double) totalRides / daysInRange : 0;
+        double avgDistancePerDay = daysInRange > 0 ? totalDistanceKm / daysInRange : 0;
+        BigDecimal avgAmountPerDay = daysInRange > 0 ? totalAmount.divide(BigDecimal.valueOf(daysInRange), 2, java.math.RoundingMode.HALF_UP) : BigDecimal.ZERO;
+
+        return RideStatsResponse.builder()
+                .dailyData(dailyData)
+                .totalRides(totalRides)
+                .totalDistanceKm(totalDistanceKm)
+                .totalAmount(totalAmount)
+                .avgRidesPerDay(avgRidesPerDay)
+                .avgDistancePerDay(avgDistancePerDay)
+                .avgAmountPerDay(avgAmountPerDay)
+                .build();
     }
 
     private AdminRideHistoryResponse mapToHistoryResponse(Ride ride) {

@@ -19,6 +19,7 @@ import com.pekara.dto.response.WebPassengerRideDetailResponse;
 import com.pekara.dto.response.WebPassengerRideHistoryResponse;
 import com.pekara.dto.response.WebRideDetailResponse;
 import com.pekara.dto.response.WebRideEstimateResponse;
+import com.pekara.dto.response.WebRideStatsResponse;
 import com.pekara.dto.response.WebRideTrackingResponse;
 import com.pekara.mapper.RideMapper;
 import com.pekara.service.AdminService;
@@ -35,6 +36,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
+
+import com.pekara.constant.RideStatsScope;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -357,6 +360,63 @@ public class RideController {
 
         log.debug("Retrieved {} rides for driver", history.size());
         return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "Get driver ride stats", description = "View driver's ride statistics (rides per day, distance, earnings) for date range - Protected endpoint (Drivers only)")
+    @PreAuthorize("hasRole('DRIVER')")
+    @GetMapping("/stats/driver")
+    public ResponseEntity<WebRideStatsResponse> getDriverRideStats(
+            @RequestParam String startDate,
+            @RequestParam String endDate,
+            @AuthenticationPrincipal String currentUserEmail) {
+
+        log.debug("Driver ride stats requested: startDate={}, endDate={}", startDate, endDate);
+
+        var serviceResponse = rideService.getDriverRideStats(
+                currentUserEmail,
+                LocalDateTime.parse(startDate + "T00:00:00"),
+                LocalDateTime.parse(endDate + "T23:59:59"));
+
+        return ResponseEntity.ok(rideMapper.toWebRideStatsResponse(serviceResponse));
+    }
+
+    @Operation(summary = "Get passenger ride stats", description = "View passenger's ride statistics (rides per day, distance, spending) for date range - Protected endpoint (Passengers only)")
+    @PreAuthorize("hasRole('PASSENGER')")
+    @GetMapping("/stats/passenger")
+    public ResponseEntity<WebRideStatsResponse> getPassengerRideStats(
+            @RequestParam String startDate,
+            @RequestParam String endDate,
+            @AuthenticationPrincipal String currentUserEmail) {
+
+        log.debug("Passenger ride stats requested: startDate={}, endDate={}", startDate, endDate);
+
+        var serviceResponse = rideService.getPassengerRideStats(
+                currentUserEmail,
+                LocalDateTime.parse(startDate + "T00:00:00"),
+                LocalDateTime.parse(endDate + "T23:59:59"));
+
+        return ResponseEntity.ok(rideMapper.toWebRideStatsResponse(serviceResponse));
+    }
+
+    @Operation(summary = "Get ride stats (Admin)", description = "View ride statistics for all drivers/passengers or a single person - Protected endpoint (Admins only)")
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/stats/admin")
+    public ResponseEntity<WebRideStatsResponse> getAdminRideStats(
+            @RequestParam String startDate,
+            @RequestParam String endDate,
+            @RequestParam String scope,
+            @RequestParam(required = false) Long userId) {
+
+        log.debug("Admin ride stats requested: scope={}, userId={}, startDate={}, endDate={}", scope, userId, startDate, endDate);
+
+        RideStatsScope rideStatsScope = RideStatsScope.valueOf(scope.toUpperCase());
+        var serviceResponse = adminService.getRideStatsAdmin(
+                LocalDateTime.parse(startDate + "T00:00:00"),
+                LocalDateTime.parse(endDate + "T23:59:59"),
+                rideStatsScope,
+                userId);
+
+        return ResponseEntity.ok(rideMapper.toWebRideStatsResponse(serviceResponse));
     }
 
     @Operation(summary = "Get passenger ride history", description = "View passenger's ride history with date filtering - Protected endpoint (Passengers only)")
