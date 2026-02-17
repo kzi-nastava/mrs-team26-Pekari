@@ -61,6 +61,14 @@
             app:exitAnim="@android:anim/slide_out_right"
             app:popEnterAnim="@android:anim/slide_in_left"
             app:popExitAnim="@android:anim/slide_out_right" />
+
+        <action
+            android:id="@+id/action_home_to_admin_history"
+            app:destination="@id/adminHistoryFragment"
+            app:enterAnim="@android:anim/slide_in_left"
+            app:exitAnim="@android:anim/slide_out_right"
+            app:popEnterAnim="@android:anim/slide_in_left"
+            app:popExitAnim="@android:anim/slide_out_right" />
     </fragment>
 
     <!-- Driver History Fragment -->
@@ -76,6 +84,13 @@
         android:name="com.example.blackcar.presentation.history.views.PassengerHistoryFragment"
         android:label="@string/title_passenger_history"
         tools:layout="@layout/fragment_passenger_history" />
+
+    <!-- Admin History Fragment -->
+    <fragment
+        android:id="@+id/adminHistoryFragment"
+        android:name="com.example.blackcar.presentation.history.views.AdminHistoryFragment"
+        android:label="@string/title_admin_history"
+        tools:layout="@layout/fragment_admin_history" />
 
     <!-- Profile Fragment -->
     <fragment
