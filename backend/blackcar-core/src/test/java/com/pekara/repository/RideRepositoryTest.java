@@ -431,4 +431,137 @@ public class RideRepositoryTest extends AbstractTransactionalTestNGSpringContext
         assertThat(updatedRide.getDistanceKm()).isEqualTo(3.5);
         assertThat(updatedRide.getEstimatedPrice()).isEqualTo(new BigDecimal("420.00"));
     }
+
+    // ========================================
+    // Additional Custom Query Tests
+    // ========================================
+
+    @Test(description = "Should find scheduled rides starting within time window")
+    public void findScheduledRidesStartingBefore_Success() {
+        LocalDateTime now = LocalDateTime.now();
+        Ride scheduledRide = createRide(passenger1, driver1, RideStatus.SCHEDULED);
+        scheduledRide.setScheduledAt(now.plusMinutes(20));
+        rideRepository.save(scheduledRide);
+
+        Ride tooLateRide = createRide(passenger2, driver2, RideStatus.SCHEDULED);
+        tooLateRide.setScheduledAt(now.plusMinutes(60));
+        rideRepository.save(tooLateRide);
+
+        entityManager.flush();
+
+        List<Ride> result = rideRepository.findScheduledRidesStartingBefore(
+                RideStatus.SCHEDULED, now, now.plusMinutes(30));
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getId()).isEqualTo(scheduledRide.getId());
+    }
+
+    @Test(description = "Should find driver rides since specified time")
+    public void findDriverRidesSince_Success() {
+        LocalDateTime since = LocalDateTime.now().minusHours(1);
+        Ride recentRide = createRide(passenger1, driver1, RideStatus.COMPLETED);
+        recentRide.setStartedAt(since.plusMinutes(10));
+        rideRepository.save(recentRide);
+
+        Ride oldRide = createRide(passenger1, driver1, RideStatus.COMPLETED);
+        oldRide.setStartedAt(since.minusMinutes(10));
+        rideRepository.save(oldRide);
+
+        entityManager.flush();
+
+        List<Ride> result = rideRepository.findDriverRidesSince(driver1.getId(), RideStatus.COMPLETED, since);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getId()).isEqualTo(recentRide.getId());
+    }
+
+    @Test(description = "Should find driver in-progress rides")
+    public void findDriverInProgressRides_Success() {
+        Ride inProgressRide = createRide(passenger1, driver1, RideStatus.IN_PROGRESS);
+        createRide(passenger1, driver1, RideStatus.ACCEPTED);
+        entityManager.flush();
+
+        List<Ride> result = rideRepository.findDriverInProgressRides(driver1.getId(), RideStatus.IN_PROGRESS);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getId()).isEqualTo(inProgressRide.getId());
+    }
+
+    @Test(description = "Should find driver ride history within date range")
+    public void findDriverRideHistory_Success() {
+        LocalDateTime start = LocalDateTime.now().minusDays(2);
+        LocalDateTime end = LocalDateTime.now().plusDays(1);
+        
+        Ride ride = createRide(passenger1, driver1, RideStatus.COMPLETED);
+        ride.setCreatedAt(LocalDateTime.now().minusDays(1));
+        rideRepository.save(ride);
+
+        entityManager.flush();
+
+        List<Ride> result = rideRepository.findDriverRideHistory(driver1.getId(), start, end);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getId()).isEqualTo(ride.getId());
+    }
+
+    @Test(description = "Should find passenger ride history within date range")
+    public void findPassengerRideHistory_Success() {
+        LocalDateTime start = LocalDateTime.now().minusDays(2);
+        LocalDateTime end = LocalDateTime.now().plusDays(1);
+
+        Ride ride = createRide(passenger1, driver1, RideStatus.COMPLETED);
+        ride.setCreatedAt(LocalDateTime.now().minusDays(1));
+        rideRepository.save(ride);
+
+        entityManager.flush();
+
+        List<Ride> result = rideRepository.findPassengerRideHistory(passenger1.getId(), start, end);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getId()).isEqualTo(ride.getId());
+    }
+
+    @Test(description = "Should find active panic rides")
+    public void findActivePanicRides_Success() {
+        Ride panicRide = createRide(passenger1, driver1, RideStatus.IN_PROGRESS);
+        panicRide.setPanicActivated(true);
+        rideRepository.save(panicRide);
+
+        createRide(passenger2, driver2, RideStatus.IN_PROGRESS); // No panic
+
+        entityManager.flush();
+
+        List<Ride> result = rideRepository.findActivePanicRides(List.of(RideStatus.IN_PROGRESS));
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getId()).isEqualTo(panicRide.getId());
+    }
+
+    @Test(description = "Should find all rides history for admin")
+    public void findAllRidesHistory_Success() {
+        LocalDateTime start = LocalDateTime.now().minusDays(2);
+        LocalDateTime end = LocalDateTime.now().plusDays(1);
+
+        createRide(passenger1, driver1, RideStatus.COMPLETED);
+        createRide(passenger2, driver2, RideStatus.CANCELLED);
+
+        entityManager.flush();
+
+        List<Ride> result = rideRepository.findAllRidesHistory(start, end);
+
+        assertThat(result).hasSize(2);
+    }
+
+    @Test(description = "Should find all active rides for admin")
+    public void findAllActiveRides_Success() {
+        createRide(passenger1, driver1, RideStatus.IN_PROGRESS);
+        createRide(passenger2, driver2, RideStatus.ACCEPTED);
+        createRide(passenger1, driver1, RideStatus.COMPLETED);
+
+        entityManager.flush();
+
+        List<Ride> result = rideRepository.findAllActiveRides(List.of(RideStatus.IN_PROGRESS, RideStatus.ACCEPTED));
+
+        assertThat(result).hasSize(2);
+    }
 }
