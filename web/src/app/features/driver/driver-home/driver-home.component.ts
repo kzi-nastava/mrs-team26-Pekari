@@ -105,6 +105,7 @@ export class DriverHomeComponent implements OnInit, OnDestroy {
 
     this.rideService.completeRide(ride.rideId).subscribe({
       next: () => {
+        localStorage.removeItem(`ride_progress_${ride.rideId}`);
         this.actionInProgress.set(false);
         this.stopRequested.set(false);
         this.loadActiveRide(); // Reload to check for new rides
@@ -139,6 +140,7 @@ export class DriverHomeComponent implements OnInit, OnDestroy {
           longitude: location.longitude
         }).subscribe({
           next: () => {
+            localStorage.removeItem(`ride_progress_${ride.rideId}`);
             this.actionInProgress.set(false);
             this.stopRequested.set(false);
             this.loadActiveRide(); // Reload to check for new rides
@@ -161,6 +163,7 @@ export class DriverHomeComponent implements OnInit, OnDestroy {
           longitude: location.longitude
         }).subscribe({
           next: () => {
+            localStorage.removeItem(`ride_progress_${ride.rideId}`);
             this.actionInProgress.set(false);
             this.stopRequested.set(false);
             this.loadActiveRide();
@@ -184,6 +187,7 @@ export class DriverHomeComponent implements OnInit, OnDestroy {
 
     this.rideService.cancelRide(ride.rideId, 'Cancelled by driver').subscribe({
       next: () => {
+        localStorage.removeItem(`ride_progress_${ride.rideId}`);
         this.actionInProgress.set(false);
         this.loadActiveRide(); // Reload to check for new rides
       },
@@ -386,8 +390,17 @@ export class DriverHomeComponent implements OnInit, OnDestroy {
 
   private startSimulation(rideId: number) {
     this.stopSimulation();
-    this.currentRouteIndex = 0;
-    let previousPoint = this.routePoints[0];
+
+    // Try to resume from saved progress
+    const savedProgress = localStorage.getItem(`ride_progress_${rideId}`);
+    this.currentRouteIndex = savedProgress ? parseInt(savedProgress, 10) : 0;
+
+    // Ensure index is within bounds
+    if (this.currentRouteIndex >= this.routePoints.length) {
+      this.currentRouteIndex = 0;
+    }
+
+    let previousPoint = this.routePoints[this.currentRouteIndex];
     this.sendLocationUpdate(rideId, previousPoint, null);
 
     this.simulationTimer = setInterval(() => {
@@ -398,6 +411,8 @@ export class DriverHomeComponent implements OnInit, OnDestroy {
 
       if (this.currentRouteIndex >= this.routePoints.length - 1) {
         this.stopSimulation();
+        // Clear progress when finished
+        localStorage.removeItem(`ride_progress_${rideId}`);
         // Auto-complete the ride when route is finished
         this.autoCompleteRide(rideId);
         return;
@@ -408,6 +423,9 @@ export class DriverHomeComponent implements OnInit, OnDestroy {
       const heading = this.calculateHeading(previousPoint, nextPoint);
 
       this.currentRouteIndex = nextIndex;
+      // Persist progress
+      localStorage.setItem(`ride_progress_${rideId}`, this.currentRouteIndex.toString());
+
       previousPoint = nextPoint;
 
       this.carMarker.setLatLng(nextPoint);

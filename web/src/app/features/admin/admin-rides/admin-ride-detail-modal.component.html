@@ -26,6 +26,7 @@
             [dropoffLocation]="rideDetail.dropoff"
             [stops]="rideDetail.stops || []"
             [estimatedRoute]="routePoints"
+            [driverLocation]="driverLocation"
             [locked]="true"
             [zoom]="13"
           ></app-ride-map>
@@ -91,6 +92,10 @@
           <div class="info-item">
             <span class="info-label">Duration</span>
             <span class="info-value">{{ rideDetail.estimatedDurationMinutes }} min</span>
+          </div>
+          <div class="info-item eta-item" *ngIf="estimatedTimeMinutes !== undefined">
+            <span class="info-label">Estimated Arrival</span>
+            <span class="info-value highlight">{{ estimatedTimeMinutes }} min</span>
           </div>
           <div class="info-item">
             <span class="info-label">Vehicle Type</span>

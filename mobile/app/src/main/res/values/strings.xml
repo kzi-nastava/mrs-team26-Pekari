@@ -4,6 +4,7 @@
     <string name="action_settings">Settings</string>
     <string name="title_home">Home</string>
     <string name="title_driver_history">Ride History</string>
+    <string name="title_passenger_history">Ride History</string>
     <string name="title_profile">Profile</string>
     <string name="title_login">Login</string>
     <string name="title_forgot_password">Forgot Password</string>
@@ -56,18 +57,18 @@
     <string name="next">Next</string>
     <string name="previous">Previous</string>
 
-    <!-- Driver History Feature -->
-    <string name="driver_history_title">Ride History</string>
-    <string name="driver_history_filter_by_date">Filter by date</string>
-    <string name="driver_history_clear_filter">Clear Filter</string>
-    <string name="driver_history_empty_state_title">No rides found</string>
-    <string name="driver_history_empty_state_subtitle">Try adjusting your date filter</string>
-    <string name="driver_history_error_loading">Failed to load ride history</string>
-    <string name="driver_history_passengers_label">Passengers: %s</string>
-    <string name="driver_history_canceled_by">Canceled by %s</string>
-    <string name="driver_history_panic_triggered">⚠ PANIC triggered</string>
-    <string name="driver_history_price_format">%.2f RSD</string>
-    <string name="driver_history_date_picker_title">Filter by date</string>
+    <!-- Passenger History Feature -->
+    <string name="passenger_history_title">Ride History</string>
+    <string name="passenger_history_filter_by_date">Filter by date</string>
+    <string name="passenger_history_clear_filter">Clear Filter</string>
+    <string name="passenger_history_empty_state_title">No rides found</string>
+    <string name="passenger_history_empty_state_subtitle">Try adjusting your date filter</string>
+    <string name="passenger_history_error_loading">Failed to load ride history</string>
+    <string name="passenger_history_driver_label">Driver: %s</string>
+    <string name="passenger_history_canceled_by">Canceled by %s</string>
+    <string name="passenger_history_panic_triggered">⚠ PANIC triggered</string>
+    <string name="passenger_history_price_format">%.2f RSD</string>
+    <string name="passenger_history_date_picker_title">Filter by date</string>
 
     <string name="lorem_ipsum">
         Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam in scelerisque sem. Mauris

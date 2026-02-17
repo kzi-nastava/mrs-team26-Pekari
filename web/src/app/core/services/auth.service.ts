@@ -37,11 +37,16 @@ export class AuthService {
 
   login(credentials: { email: string; password: string }): Observable<User> {
     return this.http
-      .post<{ token: string; id?: string; userId?: string; email: string; role: string }>(`${this.env.getApiUrl()}/auth/login`, credentials, {
+      .post<{ token: string; id?: string; userId?: string; email: string; role: string; blocked?: boolean }>(`${this.env.getApiUrl()}/auth/login`, credentials, {
         withCredentials: true // Enable cookies to be sent/received
       })
       .pipe(
         map((resp) => {
+          if (resp.token) {
+            sessionStorage.setItem('auth_token', resp.token);
+            localStorage.setItem('auth_token', resp.token);
+          }
+
           const role = this.normalizeRole(resp.role);
           if (!role) {
             throw new Error('Unsupported role');
@@ -51,7 +56,8 @@ export class AuthService {
             id: resp.id || resp.userId || resp.email,
             email: resp.email,
             username: resp.email,
-            role
+            role,
+            blocked: resp.blocked ?? false
           };
           this.currentUserSignal.set(user);
           return user;
@@ -102,10 +108,14 @@ export class AuthService {
       withCredentials: true // Send cookies to backend
     }).pipe(
       map(() => {
+        sessionStorage.removeItem('auth_token');
+        localStorage.removeItem('auth_token');
         this.currentUserSignal.set(null);
       }),
       catchError(err => {
         // Even if logout fails, clear the user locally
+        sessionStorage.removeItem('auth_token');
+        localStorage.removeItem('auth_token');
         this.currentUserSignal.set(null);
         return of(void 0);
       })
@@ -117,12 +127,26 @@ export class AuthService {
   }
 
   checkSession(): Observable<User | null> {
-    return this.http.get<{ id?: string; userId?: string; email: string; role: string }>(`${this.env.getApiUrl()}/auth/me`, {
+    const token = sessionStorage.getItem('auth_token') || localStorage.getItem('auth_token');
+    if (!token) {
+      this.currentUserSignal.set(null);
+      return of(null);
+    }
+
+    // If token found in localStorage but not in sessionStorage, sync it
+    // This happens on reload or opening a new tab
+    if (!sessionStorage.getItem('auth_token')) {
+      sessionStorage.setItem('auth_token', token);
+    }
+
+    return this.http.get<{ id?: string; userId?: string; email: string; role: string; blocked?: boolean }>(`${this.env.getApiUrl()}/auth/me`, {
       withCredentials: true
     }).pipe(
       map((resp) => {
         const role = this.normalizeRole(resp.role);
         if (!role) {
+          console.warn('[AuthService] checkSession: Unsupported role:', resp.role);
+          this.currentUserSignal.set(null);
           return null;
         }
 
@@ -130,13 +154,18 @@ export class AuthService {
           id: resp.id || resp.userId || resp.email,
           email: resp.email,
           username: resp.email,
-          role
+          role,
+          blocked: resp.blocked ?? false
         };
         this.currentUserSignal.set(user);
         return user;
       }),
-      catchError(() => {
+      catchError((err) => {
+        console.error('[AuthService] checkSession failed:', err);
         this.currentUserSignal.set(null);
+        // Clear invalid tokens
+        sessionStorage.removeItem('auth_token');
+        localStorage.removeItem('auth_token');
         return of(null);
       })
     );

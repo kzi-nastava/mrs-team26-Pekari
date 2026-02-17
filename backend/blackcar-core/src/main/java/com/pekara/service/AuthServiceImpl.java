@@ -249,6 +249,7 @@ public class AuthServiceImpl implements AuthService {
                 .userId(user.getId())
                 .email(user.getEmail())
                 .role(user.getRole().name())
+                .blocked(user.getBlocked())
                 .build();
     }
 
@@ -263,6 +264,7 @@ public class AuthServiceImpl implements AuthService {
                 .userId(user.getId())
                 .email(user.getEmail())
                 .role(user.getRole().name())
+                .blocked(user.getBlocked())
                 .build();
     }
 }

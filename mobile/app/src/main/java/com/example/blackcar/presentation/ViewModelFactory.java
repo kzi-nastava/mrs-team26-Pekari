@@ -8,7 +8,7 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.example.blackcar.presentation.auth.viewmodel.LoginViewModel;
 import com.example.blackcar.presentation.auth.viewmodel.RegisterViewModel;
-import com.example.blackcar.presentation.history.viewmodel.DriverHistoryViewModel;
+import com.example.blackcar.presentation.history.viewmodel.PassengerHistoryViewModel;
 import com.example.blackcar.presentation.profile.viewmodel.ProfileViewModel;
 
 public class ViewModelFactory implements ViewModelProvider.Factory {
@@ -28,8 +28,8 @@ public class ViewModelFactory implements ViewModelProvider.Factory {
             return (T) new RegisterViewModel(context);
         } else if (modelClass.isAssignableFrom(ProfileViewModel.class)) {
             return (T) new ProfileViewModel(context);
-        } else if (modelClass.isAssignableFrom(DriverHistoryViewModel.class)) {
-            return (T) new DriverHistoryViewModel();
+        } else if (modelClass.isAssignableFrom(PassengerHistoryViewModel.class)) {
+            return (T) new PassengerHistoryViewModel();
         }
         throw new IllegalArgumentException("Unknown ViewModel class: " + modelClass.getName());
     }

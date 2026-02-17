@@ -8,7 +8,10 @@ import com.pekara.dto.request.RideLocationUpdateRequest;
 import com.pekara.dto.response.RideTrackingResponse;
 import com.pekara.model.Ride;
 import com.pekara.model.RideStop;
+import com.pekara.model.User;
+import com.pekara.model.UserRole;
 import com.pekara.repository.RideRepository;
+import com.pekara.repository.UserRepository;
 import com.pekara.tracking.RideLocationCacheEntry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,6 +33,7 @@ public class RideTrackingServiceImpl implements RideTrackingService {
     private static final Duration LOCATION_TTL = Duration.ofHours(6);
 
     private final RideRepository rideRepository;
+    private final UserRepository userRepository;
     private final RoutingService routingService;
     private final RedisTemplate<String, RideLocationCacheEntry> rideLocationRedisTemplate;
 
@@ -159,6 +163,11 @@ public class RideTrackingServiceImpl implements RideTrackingService {
     }
 
     private boolean isParticipant(Ride ride, String requesterEmail) {
+        User user = userRepository.findByEmail(requesterEmail).orElse(null);
+        if (user != null && user.getRole() == UserRole.ADMIN) {
+            return true;
+        }
+
         boolean isDriver = ride.getDriver() != null && ride.getDriver().getEmail().equals(requesterEmail);
         boolean isCreator = ride.getCreator() != null && ride.getCreator().getEmail().equals(requesterEmail);
         boolean isPassenger = ride.getPassengers().stream()

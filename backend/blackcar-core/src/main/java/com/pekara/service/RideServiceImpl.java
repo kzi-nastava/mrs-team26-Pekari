@@ -3,23 +3,28 @@ package com.pekara.service;
 import com.pekara.constant.RideStatus;
 import com.pekara.dto.common.LocationPointDto;
 import com.pekara.dto.request.EstimateRideRequest;
+import com.pekara.dto.request.InconsistencyReportRequest;
 import com.pekara.dto.request.OrderRideRequest;
 import com.pekara.dto.request.RideRatingRequest;
 import com.pekara.dto.response.ActiveRideResponse;
 import com.pekara.dto.response.OrderRideResponse;
+import com.pekara.dto.response.PassengerRideDetailResponse;
 import com.pekara.dto.response.RideEstimateResponse;
 import com.pekara.dto.response.RideStatsDayDto;
 import com.pekara.dto.response.RideStatsResponse;
 import com.pekara.exception.ActiveRideConflictException;
 import com.pekara.exception.InvalidScheduleTimeException;
 import com.pekara.exception.NoDriversAvailableException;
+import com.pekara.exception.UserBlockedException;
 import com.pekara.model.Driver;
 import com.pekara.model.DriverState;
+import com.pekara.model.InconsistencyReport;
 import com.pekara.model.Ride;
 import com.pekara.model.RideRating;
 import com.pekara.model.RideStop;
 import com.pekara.model.User;
 import com.pekara.repository.DriverStateRepository;
+import com.pekara.repository.InconsistencyReportRepository;
 import com.pekara.repository.RideRatingRepository;
 import com.pekara.repository.RideRepository;
 import com.pekara.repository.UserRepository;
@@ -47,6 +52,7 @@ public class RideServiceImpl implements RideService {
     private final UserRepository userRepository;
     private final RideRepository rideRepository;
     private final RideRatingRepository rideRatingRepository;
+    private final InconsistencyReportRepository inconsistencyReportRepository;
     private final DriverStateRepository driverStateRepository;
     private final EntityManager entityManager;
 
@@ -83,6 +89,14 @@ public class RideServiceImpl implements RideService {
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
         entityManager.flush();
+
+        if (Boolean.TRUE.equals(creator.getBlocked())) {
+            String reason = creator.getBlockedNote() != null && !creator.getBlockedNote().isBlank()
+                    ? creator.getBlockedNote()
+                    : "Contact support for details.";
+            String message = "You have been blocked by an administrator and cannot order new rides. Reason: " + reason;
+            throw new UserBlockedException(message);
+        }
 
         validateNoActiveRides(creator, creatorEmail);
         validateScheduleTime(request.getScheduledAt(), now);
@@ -864,6 +878,44 @@ public class RideServiceImpl implements RideService {
     }
 
     @Override
+    @Transactional
+    public void reportInconsistency(Long rideId, String passengerEmail, InconsistencyReportRequest request) {
+        // Get passenger user
+        User passenger = userRepository.findByEmail(passengerEmail)
+                .orElseThrow(() -> new IllegalArgumentException("Passenger not found"));
+
+        // Get ride
+        Ride ride = rideRepository.findById(rideId)
+                .orElseThrow(() -> new IllegalArgumentException("Ride not found"));
+
+        // Verify user is a passenger on this ride
+        boolean isPassenger = ride.getPassengers().stream()
+                .anyMatch(p -> p.getId().equals(passenger.getId()));
+        if (!isPassenger) {
+            throw new IllegalArgumentException("You are not a passenger on this ride");
+        }
+
+        // Verify ride is currently IN_PROGRESS or STOP_REQUESTED
+        if (ride.getStatus() != RideStatus.IN_PROGRESS && ride.getStatus() != RideStatus.STOP_REQUESTED) {
+            throw new IllegalArgumentException("Inconsistency reports can only be filed for active rides");
+        }
+
+        // Store report
+        InconsistencyReport report = InconsistencyReport.builder()
+                .ride(ride)
+                .reportedBy(passenger)
+                .description(request.getDescription())
+                .build();
+
+        inconsistencyReportRepository.save(report);
+
+        log.info("Inconsistency reported for ride {} by passenger {}: {}",
+                rideId, passengerEmail, request.getDescription());
+
+        // TODO: Notify admin about the report
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public List<com.pekara.dto.response.DriverRideHistoryResponse> getActivePanicRides() {
         List<RideStatus> activeStatuses = List.of(RideStatus.IN_PROGRESS, RideStatus.STOP_REQUESTED);
@@ -893,5 +945,142 @@ public class RideServiceImpl implements RideService {
                 .min((r1, r2) -> r1.getScheduledAt().compareTo(r2.getScheduledAt()));
 
         return nextRide.map(this::mapToActiveRideResponse);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PassengerRideDetailResponse getPassengerRideDetail(Long rideId, String passengerEmail) {
+        log.debug("Fetching ride detail for rideId: {} by passenger: {}", rideId, passengerEmail);
+
+        User passenger = userRepository.findByEmail(passengerEmail)
+                .orElseThrow(() -> new IllegalArgumentException("Passenger not found"));
+
+        Ride ride = rideRepository.findById(rideId)
+                .orElseThrow(() -> new IllegalArgumentException("Ride not found: " + rideId));
+
+        // Verify user is a passenger on this ride
+        boolean isPassenger = ride.getPassengers().stream()
+                .anyMatch(p -> p.getId().equals(passenger.getId()));
+        if (!isPassenger) {
+            throw new IllegalArgumentException("You are not authorized to view this ride");
+        }
+
+        List<RideRating> ratings = rideRatingRepository.findAllByRideId(rideId);
+        List<InconsistencyReport> reports = inconsistencyReportRepository.findAllByRideId(rideId);
+
+        return mapToPassengerRideDetailResponse(ride, ratings, reports);
+    }
+
+    private PassengerRideDetailResponse mapToPassengerRideDetailResponse(Ride ride, List<RideRating> ratings, List<InconsistencyReport> reports) {
+        // Get pickup and dropoff from stops (first and last)
+        List<RideStop> stops = ride.getStops();
+        RideStop pickup = stops.isEmpty() ? null : stops.get(0);
+        RideStop dropoff = stops.isEmpty() ? null : stops.get(stops.size() - 1);
+
+        // Get intermediate stops (excluding first and last)
+        List<LocationPointDto> intermediateStops = new ArrayList<>();
+        if (stops.size() > 2) {
+            for (int i = 1; i < stops.size() - 1; i++) {
+                RideStop stop = stops.get(i);
+                intermediateStops.add(LocationPointDto.builder()
+                        .latitude(stop.getLatitude())
+                        .longitude(stop.getLongitude())
+                        .address(stop.getAddress())
+                        .build());
+            }
+        }
+
+        return PassengerRideDetailResponse.builder()
+                .id(ride.getId())
+                .status(ride.getStatus().name())
+                // Dates
+                .createdAt(ride.getCreatedAt())
+                .scheduledAt(ride.getScheduledAt())
+                .startedAt(ride.getStartedAt())
+                .completedAt(ride.getCompletedAt())
+                // Locations
+                .pickupAddress(pickup != null ? pickup.getAddress() : null)
+                .dropoffAddress(dropoff != null ? dropoff.getAddress() : null)
+                .pickup(pickup != null ? LocationPointDto.builder()
+                        .latitude(pickup.getLatitude())
+                        .longitude(pickup.getLongitude())
+                        .address(pickup.getAddress())
+                        .build() : null)
+                .dropoff(dropoff != null ? LocationPointDto.builder()
+                        .latitude(dropoff.getLatitude())
+                        .longitude(dropoff.getLongitude())
+                        .address(dropoff.getAddress())
+                        .build() : null)
+                .stops(intermediateStops)
+                // Route for map
+                .routeCoordinates(ride.getRouteCoordinates())
+                // Cancellation
+                .cancelled(ride.getCancelledBy() != null)
+                .cancelledBy(ride.getCancelledBy())
+                .cancellationReason(ride.getCancellationReason())
+                .cancelledAt(ride.getCancelledAt())
+                // Pricing
+                .price(ride.getEstimatedPrice())
+                .distanceKm(ride.getDistanceKm())
+                .estimatedDurationMinutes(ride.getEstimatedDurationMinutes())
+                // Panic
+                .panicActivated(ride.getPanicActivated())
+                // Vehicle
+                .vehicleType(ride.getVehicleType())
+                .babyTransport(ride.getBabyTransport())
+                .petTransport(ride.getPetTransport())
+                // Driver details
+                .driver(mapPassengerDriverDetailInfo(ride.getDriver()))
+                // Ratings
+                .ratings(mapPassengerRatings(ratings))
+                // Inconsistency reports
+                .inconsistencyReports(mapPassengerInconsistencyReports(reports))
+                .build();
+    }
+
+    private PassengerRideDetailResponse.DriverDetailInfo mapPassengerDriverDetailInfo(Driver driver) {
+        if (driver == null) return null;
+
+        return PassengerRideDetailResponse.DriverDetailInfo.builder()
+                .id(driver.getId())
+                .firstName(driver.getFirstName())
+                .lastName(driver.getLastName())
+                .email(driver.getEmail())
+                .phoneNumber(driver.getPhoneNumber())
+                .profilePicture(driver.getProfilePicture())
+                .vehicleModel(driver.getVehicleModel())
+                .licensePlate(driver.getLicensePlate())
+                .averageRating(driver.getAverageRating())
+                .build();
+    }
+
+    private List<PassengerRideDetailResponse.RideRatingInfo> mapPassengerRatings(List<RideRating> ratings) {
+        if (ratings == null || ratings.isEmpty()) return new ArrayList<>();
+
+        return ratings.stream()
+                .map(r -> PassengerRideDetailResponse.RideRatingInfo.builder()
+                        .id(r.getId())
+                        .passengerId(r.getPassenger().getId())
+                        .passengerName(r.getPassenger().getFirstName() + " " + r.getPassenger().getLastName())
+                        .vehicleRating(r.getVehicleRating())
+                        .driverRating(r.getDriverRating())
+                        .comment(r.getComment())
+                        .ratedAt(r.getCreatedAt())
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    private List<PassengerRideDetailResponse.InconsistencyReportInfo> mapPassengerInconsistencyReports(List<InconsistencyReport> reports) {
+        if (reports == null || reports.isEmpty()) return new ArrayList<>();
+
+        return reports.stream()
+                .map(r -> PassengerRideDetailResponse.InconsistencyReportInfo.builder()
+                        .id(r.getId())
+                        .reportedByUserId(r.getReportedBy().getId())
+                        .reportedByName(r.getReportedBy().getFirstName() + " " + r.getReportedBy().getLastName())
+                        .description(r.getDescription())
+                        .reportedAt(r.getCreatedAt())
+                        .build())
+                .collect(Collectors.toList());
     }
 }

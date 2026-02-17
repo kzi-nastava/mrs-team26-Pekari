@@ -13,8 +13,11 @@ import { PassengerStatsComponent } from './features/passenger/passenger-stats/pa
 import { ProfileComponent } from './features/profile/profile.component';
 import { AddDriverComponent } from './features/admin/add-driver/add-driver.component';
 import { PanicPanel } from './features/admin/panic-panel/panic-panel';
+import { UserManagementComponent } from './features/admin/user-management/user-management.component';
 import { ManagementComponent } from './features/admin/management/management.component';
 import { AdminRidesComponent } from './features/admin/admin-rides/admin-rides.component';
+import { PricingManagementComponent } from './features/admin/pricing-management/pricing-management.component';
+import { RideTrackingComponent } from './features/passenger/ride-tracking/ride-tracking.component';
 import { authGuard, roleGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
@@ -50,6 +53,11 @@ export const routes: Routes = [
     canActivate: [roleGuard(['passenger'])]
   },
   {
+    path: 'rides/:id/track',
+    component: RideTrackingComponent,
+    canActivate: [roleGuard(['passenger'])]
+  },
+  {
     path: 'passenger/stats',
     component: PassengerStatsComponent,
     canActivate: [roleGuard(['passenger'])]
@@ -65,8 +73,18 @@ export const routes: Routes = [
     canActivate: [roleGuard(['admin'])]
   },
   {
+    path: 'admin/user-management',
+    component: UserManagementComponent,
+    canActivate: [roleGuard(['admin'])]
+  },
+  {
     path: 'admin/rides',
     component: AdminRidesComponent,
+    canActivate: [roleGuard(['admin'])]
+  },
+  {
+    path: 'admin/pricing',
+    component: PricingManagementComponent,
     canActivate: [roleGuard(['admin'])]
   },
   {

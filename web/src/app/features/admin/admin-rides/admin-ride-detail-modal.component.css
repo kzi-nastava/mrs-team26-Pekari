@@ -249,8 +249,12 @@
 }
 
 .info-value.price {
-  font-size: 18px;
   color: var(--accent);
+  font-weight: 700;
+}
+
+.info-value.highlight {
+  color: #3b82f6;
   font-weight: 700;
 }
 

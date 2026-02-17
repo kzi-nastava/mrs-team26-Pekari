@@ -14,6 +14,8 @@ public interface AdminService {
 
     List<AdminRideHistoryResponse> getAllRidesHistory(LocalDateTime startDate, LocalDateTime endDate);
 
+    List<AdminRideHistoryResponse> getActiveRides();
+
     AdminRideDetailResponse getRideDetail(Long rideId);
 
     RideStatsResponse getRideStatsAdmin(LocalDateTime startDate, LocalDateTime endDate, RideStatsScope scope, Long userId);

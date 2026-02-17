@@ -122,11 +122,13 @@ public class MailServiceImpl implements MailService {
     @Async
     @Override
     public void sendRideDetailsShared(String toEmail, Long rideId, String creatorEmail) {
+        String trackingLink = frontendUrl + "/rides/" + rideId + "/track";
         sendPlainText(
                 toEmail,
                 "Ride Details Shared (Ride #" + rideId + ")",
                 creatorEmail + " shared ride details with you.\n\n" +
-                "Ride ID: " + rideId + "\n\n" +
+                "Ride ID: " + rideId + "\n" +
+                "You can track your ride here: " + trackingLink + "\n\n" +
                 "BlackCar Team"
         );
     }
@@ -160,7 +162,7 @@ public class MailServiceImpl implements MailService {
     @Override
     public void sendRideCompleted(String toEmail, Long rideId, java.math.BigDecimal finalPrice) {
         try {
-            String rideDetailsLink = frontendUrl + "/rides/" + rideId;
+            String rideDetailsLink = frontendUrl + "/rides/" + rideId + "/track";
 
             SimpleMailMessage message = new SimpleMailMessage();
             message.setFrom(fromEmail);
@@ -170,7 +172,7 @@ public class MailServiceImpl implements MailService {
                     "Your ride has been completed!\n\n" +
                             "Ride ID: " + rideId + "\n" +
                             "Final Price: " + (finalPrice != null ? finalPrice + " RSD" : "N/A") + "\n\n" +
-                            "You can now rate your ride and driver at:\n" +
+                            "You can see your ride details here:\n" +
                             rideDetailsLink + "\n\n" +
                             "Thank you for choosing BlackCar!\n\n" +
                             "Best regards,\n" +

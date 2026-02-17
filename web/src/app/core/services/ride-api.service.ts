@@ -346,6 +346,66 @@ export interface AdminInconsistencyReportInfo {
   reportedAt: string;
 }
 
+// Passenger ride detail interfaces
+export interface PassengerRideDetailResponse {
+  id: number;
+  status: string;
+  createdAt: string | null;
+  scheduledAt: string | null;
+  startedAt: string | null;
+  completedAt: string | null;
+  pickupAddress: string;
+  dropoffAddress: string;
+  pickup: LocationPoint;
+  dropoff: LocationPoint;
+  stops: LocationPoint[];
+  routeCoordinates: string | null;
+  cancelled: boolean;
+  cancelledBy: string | null;
+  cancellationReason: string | null;
+  cancelledAt: string | null;
+  price: number;
+  distanceKm: number;
+  estimatedDurationMinutes: number;
+  panicActivated: boolean;
+  vehicleType: string;
+  babyTransport: boolean;
+  petTransport: boolean;
+  driver: PassengerDriverDetailInfo | null;
+  ratings: PassengerRideRatingInfo[];
+  inconsistencyReports: PassengerInconsistencyReportInfo[];
+}
+
+export interface PassengerDriverDetailInfo {
+  id: number;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phoneNumber: string;
+  profilePicture: string | null;
+  vehicleModel: string;
+  licensePlate: string;
+  averageRating: number | null;
+}
+
+export interface PassengerRideRatingInfo {
+  id: number;
+  passengerId: number;
+  passengerName: string;
+  vehicleRating: number;
+  driverRating: number;
+  comment: string | null;
+  ratedAt: string;
+}
+
+export interface PassengerInconsistencyReportInfo {
+  id: number;
+  reportedByUserId: number;
+  reportedByName: string;
+  description: string;
+  reportedAt: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -396,21 +456,21 @@ export class RideApiService {
 
   // Favorite routes methods
   getFavoriteRoutes() {
-    const token = localStorage.getItem('auth_token');
+    const token = sessionStorage.getItem('auth_token') || localStorage.getItem('auth_token');
     return this.http.get<FavoriteRoute[]>(`${this.env.getApiUrl()}/profile/favourite-routes`, {
       headers: token ? { 'Authorization': `Bearer ${token}` } : {}
     });
   }
 
   createFavoriteRoute(request: CreateFavoriteRouteRequest) {
-    const token = localStorage.getItem('auth_token');
+    const token = sessionStorage.getItem('auth_token') || localStorage.getItem('auth_token');
     return this.http.post<FavoriteRoute>(`${this.env.getApiUrl()}/profile/favourite-routes`, request, {
       headers: token ? { 'Authorization': `Bearer ${token}` } : {}
     });
   }
 
   deleteFavoriteRoute(id: number) {
-    const token = localStorage.getItem('auth_token');
+    const token = sessionStorage.getItem('auth_token') || localStorage.getItem('auth_token');
     return this.http.delete<MessageResponse>(`${this.env.getApiUrl()}/profile/favourite-routes/${id}`, {
       headers: token ? { 'Authorization': `Bearer ${token}` } : {}
     });
@@ -459,6 +519,15 @@ export class RideApiService {
     return this.http.get<AdminRideDetailResponse>(`${this.env.getApiUrl()}/rides/admin/${rideId}`);
   }
 
+  getAllActiveRides() {
+    return this.http.get<AdminRideHistoryResponse[]>(`${this.env.getApiUrl()}/rides/active/all`);
+  }
+
+  // Passenger ride detail
+  getPassengerRideDetail(rideId: number) {
+    return this.http.get<PassengerRideDetailResponse>(`${this.env.getApiUrl()}/rides/${rideId}`);
+  }
+
   // Ride stats methods
   getDriverRideStats(startDate: string, endDate: string) {
     return this.http.get<RideStatsResponse>(
@@ -481,10 +550,10 @@ export class RideApiService {
   }
 
   getAdminDrivers() {
-    return this.http.get<DriverBasicInfo[]>(`${this.env.getApiUrl()}/admin/drivers`);
+    return this.http.get<DriverBasicInfo[]>(`${this.env.getApiUrl()}/admin/drivers/basic`);
   }
 
   getAdminPassengers() {
-    return this.http.get<PassengerBasicInfo[]>(`${this.env.getApiUrl()}/admin/passengers`);
+    return this.http.get<PassengerBasicInfo[]>(`${this.env.getApiUrl()}/admin/passengers/basic`);
   }
 }

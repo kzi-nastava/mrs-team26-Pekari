@@ -90,5 +90,15 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
                 throw new IllegalArgumentException("Not authorized for ride tracking");
             }
         }
+
+        // Add guard for user notifications
+        if (destination.startsWith("/topic/notifications/")) {
+            String topicEmail = destination.substring("/topic/notifications/".length());
+            String currentUserEmail = accessor.getUser().getName();
+            if (!topicEmail.equals(currentUserEmail)) {
+                log.warn("Blocking notification subscription: user {} tried to access {}", currentUserEmail, topicEmail);
+                throw new IllegalArgumentException("Unauthorized notification subscription");
+            }
+        }
     }
 }

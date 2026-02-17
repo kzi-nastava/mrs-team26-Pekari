@@ -10,6 +10,8 @@ export interface ProfileData {
   profilePicture?: string; // Base64 or URL
   createdAt: Date;
   updatedAt: Date;
+  blocked?: boolean;
+  blockedNote?: string | null;
 }
 
 export interface DriverInfo {

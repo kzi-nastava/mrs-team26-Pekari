@@ -51,6 +51,12 @@ export class WebSocketService implements OnDestroy {
       return;
     }
 
+    const token = sessionStorage.getItem('auth_token') || localStorage.getItem('auth_token');
+    if (!token) {
+      console.warn('[WebSocket] Cannot connect: No auth token found');
+      return;
+    }
+
     const apiUrl = this.env.getApiUrl();
     // Convert http://localhost:8080/api/v1 to ws://localhost:8080/ws
     const wsUrl = apiUrl.replace('/api/v1', '/ws').replace('http', 'ws');
@@ -120,7 +126,33 @@ export class WebSocketService implements OnDestroy {
     this.unsubscribeFrom(topic);
   }
 
-  private subscribeTo<T>(topic: string): Observable<T> {
+  subscribeToChat(conversationId: number): Observable<any> {
+    const topic = `/topic/chat/${conversationId}`;
+    return this.subscribeTo<any>(topic);
+  }
+
+  subscribeToAdminsChat(): Observable<any> {
+    const topic = `/topic/chat/admins`;
+    return this.subscribeTo<any>(topic);
+  }
+
+  unsubscribeFromChat(conversationId: number): void {
+    const topic = `/topic/chat/${conversationId}`;
+    this.unsubscribeFrom(topic);
+  }
+
+  publish(destination: string, body: any): void {
+    if (!this.client?.active) {
+      console.error('[WebSocket] Cannot publish, not connected');
+      return;
+    }
+    this.client.publish({
+      destination,
+      body: JSON.stringify(body)
+    });
+  }
+
+  public subscribeTo<T>(topic: string): Observable<T> {
     // If we already have a subject for this topic, return it
     if (this.messageSubjects.has(topic)) {
       return this.messageSubjects.get(topic)!.asObservable();
@@ -192,7 +224,7 @@ export class WebSocketService implements OnDestroy {
   }
 
   private getAuthHeaders(): Record<string, string> {
-    const token = localStorage.getItem('auth_token');
+    const token = sessionStorage.getItem('auth_token') || localStorage.getItem('auth_token');
     if (token) {
       return { Authorization: `Bearer ${token}` };
     }

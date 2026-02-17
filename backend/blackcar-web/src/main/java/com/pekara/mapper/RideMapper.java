@@ -4,11 +4,13 @@ import com.pekara.dto.common.LocationPointDto;
 import com.pekara.dto.common.RideLocationDto;
 import com.pekara.dto.common.WebLocationPoint;
 import com.pekara.dto.request.EstimateRideRequest;
+import com.pekara.dto.request.InconsistencyReportRequest;
 import com.pekara.dto.request.OrderRideRequest;
 import com.pekara.dto.request.RideLocationUpdateRequest;
 import com.pekara.dto.request.RideRatingRequest;
 import com.pekara.dto.request.StopRideEarlyRequest;
 import com.pekara.dto.request.WebEstimateRideRequest;
+import com.pekara.dto.request.WebInconsistencyReportRequest;
 import com.pekara.dto.request.WebOrderRideRequest;
 import com.pekara.dto.request.WebRideLocationUpdateRequest;
 import com.pekara.dto.request.WebRideRatingRequest;
@@ -17,6 +19,7 @@ import com.pekara.dto.response.ActiveRideResponse;
 import com.pekara.dto.response.AdminRideDetailResponse;
 import com.pekara.dto.response.AdminRideHistoryResponse;
 import com.pekara.dto.response.DriverRideHistoryResponse;
+import com.pekara.dto.response.PassengerRideDetailResponse;
 import com.pekara.dto.response.PassengerRideHistoryResponse;
 import com.pekara.dto.response.RideStatsDayDto;
 import com.pekara.dto.response.RideStatsResponse;
@@ -25,6 +28,7 @@ import com.pekara.dto.response.WebActiveRideResponse;
 import com.pekara.dto.response.WebAdminRideDetailResponse;
 import com.pekara.dto.response.WebAdminRideHistoryResponse;
 import com.pekara.dto.response.WebDriverRideHistoryResponse;
+import com.pekara.dto.response.WebPassengerRideDetailResponse;
 import com.pekara.dto.response.WebPassengerRideHistoryResponse;
 import com.pekara.dto.response.WebRideStatsDayDto;
 import com.pekara.dto.response.WebRideStatsResponse;
@@ -75,6 +79,15 @@ public class RideMapper {
         }
         return StopRideEarlyRequest.builder()
                 .stopLocation(toLocation(web.getStopLocation()))
+                .build();
+    }
+
+    public InconsistencyReportRequest toServiceInconsistencyReportRequest(WebInconsistencyReportRequest web) {
+        if (web == null) {
+            return null;
+        }
+        return InconsistencyReportRequest.builder()
+                .description(web.getDescription())
                 .build();
     }
 
@@ -432,6 +445,90 @@ public class RideMapper {
             return null;
         }
         return WebAdminRideDetailResponse.InconsistencyReportInfo.builder()
+                .id(report.getId())
+                .reportedByUserId(report.getReportedByUserId())
+                .reportedByName(report.getReportedByName())
+                .description(report.getDescription())
+                .reportedAt(report.getReportedAt())
+                .build();
+    }
+
+    // Passenger ride detail mapping
+    public WebPassengerRideDetailResponse toWebPassengerRideDetailResponse(PassengerRideDetailResponse response) {
+        if (response == null) {
+            return null;
+        }
+
+        return WebPassengerRideDetailResponse.builder()
+                .id(response.getId())
+                .status(response.getStatus())
+                .createdAt(response.getCreatedAt())
+                .scheduledAt(response.getScheduledAt())
+                .startedAt(response.getStartedAt())
+                .completedAt(response.getCompletedAt())
+                .pickupAddress(response.getPickupAddress())
+                .dropoffAddress(response.getDropoffAddress())
+                .pickup(toWebLocation(response.getPickup()))
+                .dropoff(toWebLocation(response.getDropoff()))
+                .stops(response.getStops() == null ? null :
+                        response.getStops().stream().map(this::toWebLocation).collect(Collectors.toList()))
+                .routeCoordinates(response.getRouteCoordinates())
+                .cancelled(response.getCancelled())
+                .cancelledBy(response.getCancelledBy())
+                .cancellationReason(response.getCancellationReason())
+                .cancelledAt(response.getCancelledAt())
+                .price(response.getPrice())
+                .distanceKm(response.getDistanceKm())
+                .estimatedDurationMinutes(response.getEstimatedDurationMinutes())
+                .panicActivated(response.getPanicActivated())
+                .vehicleType(response.getVehicleType())
+                .babyTransport(response.getBabyTransport())
+                .petTransport(response.getPetTransport())
+                .driver(mapPassengerDriverDetailInfo(response.getDriver()))
+                .ratings(response.getRatings() == null ? null :
+                        response.getRatings().stream().map(this::mapPassengerRideRatingInfo).collect(Collectors.toList()))
+                .inconsistencyReports(response.getInconsistencyReports() == null ? null :
+                        response.getInconsistencyReports().stream().map(this::mapPassengerInconsistencyReportInfo).collect(Collectors.toList()))
+                .build();
+    }
+
+    private WebPassengerRideDetailResponse.DriverDetailInfo mapPassengerDriverDetailInfo(PassengerRideDetailResponse.DriverDetailInfo driver) {
+        if (driver == null) {
+            return null;
+        }
+        return WebPassengerRideDetailResponse.DriverDetailInfo.builder()
+                .id(driver.getId())
+                .firstName(driver.getFirstName())
+                .lastName(driver.getLastName())
+                .email(driver.getEmail())
+                .phoneNumber(driver.getPhoneNumber())
+                .profilePicture(driver.getProfilePicture())
+                .vehicleModel(driver.getVehicleModel())
+                .licensePlate(driver.getLicensePlate())
+                .averageRating(driver.getAverageRating())
+                .build();
+    }
+
+    private WebPassengerRideDetailResponse.RideRatingInfo mapPassengerRideRatingInfo(PassengerRideDetailResponse.RideRatingInfo rating) {
+        if (rating == null) {
+            return null;
+        }
+        return WebPassengerRideDetailResponse.RideRatingInfo.builder()
+                .id(rating.getId())
+                .passengerId(rating.getPassengerId())
+                .passengerName(rating.getPassengerName())
+                .vehicleRating(rating.getVehicleRating())
+                .driverRating(rating.getDriverRating())
+                .comment(rating.getComment())
+                .ratedAt(rating.getRatedAt())
+                .build();
+    }
+
+    private WebPassengerRideDetailResponse.InconsistencyReportInfo mapPassengerInconsistencyReportInfo(PassengerRideDetailResponse.InconsistencyReportInfo report) {
+        if (report == null) {
+            return null;
+        }
+        return WebPassengerRideDetailResponse.InconsistencyReportInfo.builder()
                 .id(report.getId())
                 .reportedByUserId(report.getReportedByUserId())
                 .reportedByName(report.getReportedByName())

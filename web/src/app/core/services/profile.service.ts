@@ -23,6 +23,8 @@ interface DriverProfileResponse {
   averageRating: number;
   totalRides: number;
   isActive: boolean;
+  blocked?: boolean;
+  blockedNote?: string | null;
 }
 
 interface PassengerProfileResponse {
@@ -38,6 +40,8 @@ interface PassengerProfileResponse {
   updatedAt: string;
   totalRides: number;
   averageRating: number;
+  blocked?: boolean;
+  blockedNote?: string | null;
 }
 
 @Injectable({
@@ -87,7 +91,9 @@ export class ProfileService {
       role: 'driver',
       profilePicture: response.profilePicture || undefined,
       createdAt: new Date(response.createdAt),
-      updatedAt: new Date(response.updatedAt)
+      updatedAt: new Date(response.updatedAt),
+      blocked: response.blocked,
+      blockedNote: response.blockedNote ?? undefined
     };
   }
 
@@ -103,7 +109,9 @@ export class ProfileService {
       role: role,
       profilePicture: response.profilePicture || undefined,
       createdAt: new Date(response.createdAt),
-      updatedAt: new Date(response.updatedAt)
+      updatedAt: new Date(response.updatedAt),
+      blocked: response.blocked,
+      blockedNote: response.blockedNote ?? undefined
     };
   }
 

@@ -2,11 +2,12 @@ import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RideApiService, FavoriteRoute, CreateFavoriteRouteRequest, LocationPoint, PassengerRideHistoryResponse } from '../../../core/services/ride-api.service';
+import { PassengerRideDetailModalComponent } from './passenger-ride-detail-modal.component';
 
 @Component({
   selector: 'app-passenger-history',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, PassengerRideDetailModalComponent],
   templateUrl: './passenger-history.component.html',
   styleUrls: ['./passenger-history.component.css']
 })
@@ -20,8 +21,35 @@ export class PassengerHistoryComponent implements OnInit {
   loading = false;
   error?: string;
 
+  // Modal state
+  selectedRideId?: number;
+  showModal = false;
+
+  // Rating state
+  showRatingModal = false;
+  vehicleRating = 0;
+  driverRating = 0;
+  ratingComment = '';
+  ratingSubmitting = false;
+  ratingSuccess?: string;
+  completedRideId?: number;
+
   startDate: string = '2024-01-01';
   endDate: string = new Date().toISOString().split('T')[0];
+
+  // Sorting state
+  sortField: string = 'date';
+  sortDirection: 'asc' | 'desc' = 'desc';
+
+  sortOptions = [
+    { value: 'date', label: 'Date' },
+    { value: 'price', label: 'Price' },
+    { value: 'distance', label: 'Distance' },
+    { value: 'vehicleType', label: 'Vehicle Type' },
+    { value: 'status', label: 'Status' },
+    { value: 'pickup', label: 'Pickup Address' },
+    { value: 'dropoff', label: 'Dropoff Address' }
+  ];
 
   ngOnInit(): void {
     this.loadRides();
@@ -40,6 +68,7 @@ export class PassengerHistoryComponent implements OnInit {
     this.rides.getPassengerRideHistory(filter).subscribe({
       next: (response) => {
         this.ridesList = response.content.map(ride => this.mapRideForDisplay(ride));
+        this.sortRides();
         this.loading = false;
         this.cdr.detectChanges();
       },
@@ -73,11 +102,21 @@ export class PassengerHistoryComponent implements OnInit {
       else statuses.push('cancelled-passenger');
     }
 
+    // Check if ride is ratable (completed < 3 days ago)
+    let isRatable = false;
+    if (ride.status === 'COMPLETED' && endTime) {
+      const now = new Date();
+      const diffMs = now.getTime() - endTime.getTime();
+      const diffDays = diffMs / (1000 * 60 * 60 * 24);
+      isRatable = diffDays < 3;
+    }
+
     return {
       id: ride.id,
       date: startTime ? this.formatDate(startTime) : 'Unknown date',
       time: timeRange,
       status: statuses,
+      isRatable: isRatable,
       locations: [
         { type: 'start', label: 'Start', address: ride.pickup?.address || ride.pickupLocation, latitude: ride.pickup?.latitude, longitude: ride.pickup?.longitude },
         { type: 'end', label: 'Finish', address: ride.dropoff?.address || ride.dropoffLocation, latitude: ride.dropoff?.latitude, longitude: ride.dropoff?.longitude }
@@ -111,7 +150,59 @@ export class PassengerHistoryComponent implements OnInit {
   resetFilter() {
     this.startDate = '2024-01-01';
     this.endDate = new Date().toISOString().split('T')[0];
+    this.sortField = 'date';
+    this.sortDirection = 'desc';
     this.loadRides();
+  }
+
+  onSortChange() {
+    this.sortRides();
+  }
+
+  toggleSortDirection() {
+    this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+    this.sortRides();
+  }
+
+  private sortRides() {
+    this.ridesList.sort((a, b) => {
+      let comparison = 0;
+
+      switch (this.sortField) {
+        case 'date':
+          const dateA = a.rawRide.startTime ? new Date(a.rawRide.startTime).getTime() : 0;
+          const dateB = b.rawRide.startTime ? new Date(b.rawRide.startTime).getTime() : 0;
+          comparison = dateA - dateB;
+          break;
+        case 'price':
+          comparison = (a.rawRide.price || 0) - (b.rawRide.price || 0);
+          break;
+        case 'distance':
+          comparison = (a.rawRide.distanceKm || 0) - (b.rawRide.distanceKm || 0);
+          break;
+        case 'vehicleType':
+          comparison = (a.vehicleType || '').localeCompare(b.vehicleType || '');
+          break;
+        case 'status':
+          comparison = (a.rawRide.status || '').localeCompare(b.rawRide.status || '');
+          break;
+        case 'pickup':
+          const pickupA = a.locations[0]?.address || '';
+          const pickupB = b.locations[0]?.address || '';
+          comparison = pickupA.localeCompare(pickupB);
+          break;
+        case 'dropoff':
+          const dropoffA = a.locations[a.locations.length - 1]?.address || '';
+          const dropoffB = b.locations[b.locations.length - 1]?.address || '';
+          comparison = dropoffA.localeCompare(dropoffB);
+          break;
+        default:
+          comparison = 0;
+      }
+
+      return this.sortDirection === 'asc' ? comparison : -comparison;
+    });
+    this.cdr.detectChanges();
   }
 
   loadFavoriteRoutes() {
@@ -218,5 +309,78 @@ export class PassengerHistoryComponent implements OnInit {
       favRoute.pickup?.address === pickupAddress &&
       favRoute.dropoff?.address === dropoffAddress
     ) || ride.favoriteRouteId !== undefined;
+  }
+
+  onRideClick(ride: any) {
+    this.selectedRideId = ride.id;
+    this.showModal = true;
+  }
+
+  closeModal() {
+    this.showModal = false;
+    this.selectedRideId = undefined;
+  }
+
+  openRatingModal(ride: any) {
+    this.completedRideId = ride.id;
+    this.showRatingModal = true;
+    this.vehicleRating = 0;
+    this.driverRating = 0;
+    this.ratingComment = '';
+    this.ratingSuccess = undefined;
+    this.error = undefined;
+    this.cdr.detectChanges();
+  }
+
+  setVehicleRating(rating: number): void {
+    this.vehicleRating = rating;
+  }
+
+  setDriverRating(rating: number): void {
+    this.driverRating = rating;
+  }
+
+  submitRating(): void {
+    if (!this.completedRideId || this.vehicleRating === 0 || this.driverRating === 0) {
+      this.error = 'Please provide both vehicle and driver ratings';
+      return;
+    }
+
+    this.ratingSubmitting = true;
+    this.error = undefined;
+
+    this.rides.rateRide(this.completedRideId, {
+      vehicleRating: this.vehicleRating,
+      driverRating: this.driverRating,
+      comment: this.ratingComment.trim() || undefined
+    }).subscribe({
+      next: (response) => {
+        this.ratingSubmitting = false;
+        this.ratingSuccess = response.message || 'Rating submitted successfully!';
+        setTimeout(() => {
+          this.closeRatingModal();
+        }, 2000);
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        this.ratingSubmitting = false;
+        this.error = err?.error?.message || 'Failed to submit rating';
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  closeRatingModal(): void {
+    this.showRatingModal = false;
+    this.vehicleRating = 0;
+    this.driverRating = 0;
+    this.ratingComment = '';
+    this.ratingSuccess = undefined;
+    this.completedRideId = undefined;
+    this.cdr.detectChanges();
+  }
+
+  skipRating(): void {
+    this.closeRatingModal();
   }
 }

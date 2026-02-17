@@ -234,7 +234,7 @@ public class RideController {
     }
     //fallback
     @Operation(summary = "Track ride", description = "Get real-time tracking information for an active ride - Protected endpoint")
-    @PreAuthorize("hasAnyRole('PASSENGER', 'DRIVER')")
+    @PreAuthorize("hasAnyRole('PASSENGER', 'DRIVER', 'ADMIN')")
     @GetMapping("/{rideId}/track")
     public ResponseEntity<WebRideTrackingResponse> trackRide(
             @PathVariable Long rideId,
@@ -258,7 +258,11 @@ public class RideController {
         rideTrackingService.updateLocation(rideId, currentUserEmail, rideMapper.toServiceRideLocationUpdateRequest(request));
         var tracking = rideTrackingService.getTracking(rideId, currentUserEmail);
         WebRideTrackingResponse payload = rideMapper.toWebRideTrackingResponse(tracking);
-        messagingTemplate.convertAndSend("/topic/rides/" + rideId + "/tracking", payload);
+        try {
+            messagingTemplate.convertAndSend("/topic/rides/" + rideId + "/tracking", payload);
+        } catch (Exception e) {
+            log.warn("Failed to send WebSocket location update for ride {}: {}", rideId, e.getMessage());
+        }
         return ResponseEntity.ok(new WebMessageResponse("Location updated."));
     }
 
@@ -267,19 +271,14 @@ public class RideController {
     @PostMapping("/{rideId}/report-inconsistency")
     public ResponseEntity<WebMessageResponse> reportInconsistency(
             @PathVariable Long rideId,
-            @Valid @RequestBody WebInconsistencyReportRequest request) {
+            @Valid @RequestBody WebInconsistencyReportRequest request,
+            @AuthenticationPrincipal String currentUserEmail) {
 
-        log.debug("Inconsistency report for rideId: {} - {}", rideId, request.getDescription());
+        log.debug("Inconsistency report for rideId: {} by user: {} - {}", rideId, currentUserEmail, request.getDescription());
 
-        // TODO: Implement inconsistency reporting via RideService
-        // - Verify user is a passenger on this ride
-        // - Verify ride is currently IN_PROGRESS
-        // - Create inconsistency report with passenger info and description
-        // - Store report linked to the ride
-        // - Reports will be shown in ride history and admin reports
-        // - Notify admin about the report
+        rideService.reportInconsistency(rideId, currentUserEmail, rideMapper.toServiceInconsistencyReportRequest(request));
 
-        log.info("Inconsistency reported for ride {}", rideId);
+        log.info("Inconsistency reported for ride {} by {}", rideId, currentUserEmail);
         return ResponseEntity.ok(new WebMessageResponse("Inconsistency reported successfully."));
     }
 
@@ -493,6 +492,21 @@ public class RideController {
         return ResponseEntity.ok(response);
     }
 
+    @Operation(summary = "Get all active rides (Admin)", description = "View all currently active rides - Protected endpoint (Admins only)")
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/active/all")
+    public ResponseEntity<List<WebAdminRideHistoryResponse>> getAllActiveRides() {
+        log.debug("Admin requesting all active rides");
+
+        var serviceResponse = adminService.getActiveRides();
+        List<WebAdminRideHistoryResponse> response = serviceResponse.stream()
+                .map(rideMapper::toWebAdminRideHistoryResponse)
+                .toList();
+
+        log.debug("Retrieved {} active rides for admin", response.size());
+        return ResponseEntity.ok(response);
+    }
+
     @Operation(summary = "Get ride details (Admin)", description = "View detailed ride information with route, ratings, and reports - Protected endpoint (Admins only)")
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/admin/{rideId}")
@@ -527,30 +541,20 @@ public class RideController {
         return ResponseEntity.ok(rideDetails);
     }
 
-    @Operation(summary = "Get ride details (Passenger)", description = "View simplified ride information - Protected endpoint (Passengers only)")
+    @Operation(summary = "Get ride details (Passenger)", description = "View detailed ride information with route, driver details, ratings, and inconsistency reports - Protected endpoint (Passengers only)")
     @PreAuthorize("hasRole('PASSENGER')")
     @GetMapping("/{rideId}")
     public ResponseEntity<WebPassengerRideDetailResponse> getRideDetailsForPassenger(
             @PathVariable Long rideId,
-            @AuthenticationPrincipal UserDetails currentUser) {
+            @AuthenticationPrincipal String currentUserEmail) {
 
-        log.debug("Requesting passenger details for rideId: {}", rideId);
+        log.debug("Requesting passenger details for rideId: {} by user: {}", rideId, currentUserEmail);
 
-        // TODO: Implement ride detail retrieval via RideService
-        // - Get current user's ID from UserDetails
-        // - Fetch ride information
-        // - Verify user is a passenger on this ride, otherwise -> throw 403 Forbidden
-        // - Return simplified ride information including:
-        //   * Start/end times
-        //   * Pickup/dropoff locations and stops
-        //   * Price and status
-        //   * Driver basic info (name, phone)
-        //   * Passenger's own rating if exists
-
-        WebPassengerRideDetailResponse rideDetails = new WebPassengerRideDetailResponse();
+        var serviceResponse = rideService.getPassengerRideDetail(rideId, currentUserEmail);
+        WebPassengerRideDetailResponse response = rideMapper.toWebPassengerRideDetailResponse(serviceResponse);
 
         log.debug("Retrieved passenger details for rideId: {}", rideId);
-        return ResponseEntity.ok(rideDetails);
+        return ResponseEntity.ok(response);
     }
 
 

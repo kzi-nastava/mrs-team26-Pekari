@@ -3,8 +3,6 @@ package com.pekara.repository;
 import com.pekara.model.User;
 import com.pekara.model.UserRole;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -20,6 +18,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
     boolean existsByEmail(String email);
 
     boolean existsByUsername(String username);
+
+    List<User> findByRoleOrderByEmail(UserRole role);
 
     List<User> findByRole(UserRole role);
 }

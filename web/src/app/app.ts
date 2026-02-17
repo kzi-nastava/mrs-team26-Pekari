@@ -1,14 +1,16 @@
-import { Component, inject, computed } from '@angular/core';
+import { Component, inject, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet, Router } from '@angular/router';
 import { AuthService } from './core/services/auth.service';
 import { EnvironmentService } from './core/services/environment.service';
+import { WebSocketService } from './core/services/websocket.service';
 import { HeaderComponent, type NavLink } from './shared/components/header/header.component';
 import { DevLoginHelperComponent } from './core/components/dev-login-helper.component';
+import { ChatComponent } from './shared/components/chat/chat.component';
 
 @Component({
   selector: 'app-root',
-  imports: [CommonModule, RouterOutlet, HeaderComponent, DevLoginHelperComponent],
+  imports: [CommonModule, RouterOutlet, HeaderComponent, DevLoginHelperComponent, ChatComponent],
   templateUrl: './app.html',
   styleUrl: './app.css'
 })
@@ -16,7 +18,19 @@ export class App {
   private authService = inject(AuthService);
   private router = inject(Router);
   private environmentService = inject(EnvironmentService);
+  private wsService = inject(WebSocketService);
   title = 'BlackCar';
+
+  constructor() {
+    effect(() => {
+      const user = this.authService.currentUser();
+      if (user) {
+        this.wsService.connect();
+      } else {
+        this.wsService.disconnect();
+      }
+    });
+  }
 
   navLinksLeft = computed(() => {
     return [] as NavLink[];
@@ -34,7 +48,7 @@ export class App {
     } else if (user.role === 'driver') {
       links.push(
         { label: 'Home', path: '/driver-home' },
-        { label: 'Profile', path: '/profile' },
+        { label: 'Profile', path: '/profile', danger: user.blocked },
         { label: 'History', path: '/driver-history' },
         { label: 'Statistics', path: '/driver/stats' },
         { label: 'Logout', onClick: () => this.handleLogout() }
@@ -44,12 +58,14 @@ export class App {
         { label: 'Home', path: '/passenger-home' },
         { label: 'History', path: '/passenger-history' },
         { label: 'Statistics', path: '/passenger/stats' },
-        { label: 'Profile', path: '/profile' },
+        { label: 'Profile', path: '/profile', danger: user.blocked },
         { label: 'Logout', onClick: () => this.handleLogout() }
       );
     } else if (user.role === 'admin') {
       links.push(
+        { label: 'User management', path: '/admin/user-management' },
         { label: 'Rides', path: '/admin/rides' },
+        { label: 'Pricing', path: '/admin/pricing' },
         { label: 'Statistics', path: '/admin/management' },
         { label: 'Add Driver', path: '/admin/add-driver' },
         { label: '🚨 Panic Panel', path: '/admin/panic-panel' },

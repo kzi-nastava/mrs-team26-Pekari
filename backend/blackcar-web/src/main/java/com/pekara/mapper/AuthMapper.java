@@ -33,7 +33,8 @@ public class AuthMapper {
         return new WebAuthResponse(
                 authResponse.getToken(),
                 authResponse.getEmail(),
-                authResponse.getRole()
+                authResponse.getRole(),
+                authResponse.getBlocked()
         );
     }
 

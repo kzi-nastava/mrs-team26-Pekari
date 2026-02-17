@@ -60,6 +60,22 @@ public class AdminServiceImpl implements AdminService {
 
     @Override
     @Transactional(readOnly = true)
+    public List<AdminRideHistoryResponse> getActiveRides() {
+        log.debug("Fetching all active rides for admin");
+        List<RideStatus> activeStatuses = List.of(
+                RideStatus.ACCEPTED,
+                RideStatus.SCHEDULED,
+                RideStatus.IN_PROGRESS,
+                RideStatus.STOP_REQUESTED
+        );
+        List<Ride> activeRides = rideRepository.findAllActiveRides(activeStatuses);
+        return activeRides.stream()
+                .map(this::mapToHistoryResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public AdminRideDetailResponse getRideDetail(Long rideId) {
         log.debug("Fetching ride detail for rideId: {}", rideId);
 

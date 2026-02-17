@@ -13,6 +13,17 @@
         <label>To</label>
         <input type="date" id="dateTo" [(ngModel)]="endDate">
       </div>
+      <div class="filter-group">
+        <label>Sort by</label>
+        <div class="sort-controls">
+          <select [(ngModel)]="sortField" (change)="onSortChange()">
+            <option *ngFor="let opt of sortOptions" [value]="opt.value">{{ opt.label }}</option>
+          </select>
+          <button class="sort-direction-btn" (click)="toggleSortDirection()" [attr.aria-label]="sortDirection === 'asc' ? 'Ascending' : 'Descending'">
+            {{ sortDirection === 'asc' ? '↑' : '↓' }}
+          </button>
+        </div>
+      </div>
       <button class="filter-btn" (click)="applyFilter()">Filter</button>
       <button class="filter-btn reset-btn" (click)="resetFilter()">Reset</button>
     </div>
@@ -21,7 +32,7 @@
   <p class="error" *ngIf="error" style="margin: 16px 0; color: #ef4444; text-align: center;">{{ error }}</p>
 
   <div class="rides-list">
-    <div *ngFor="let ride of ridesList" class="ride-card">
+    <div *ngFor="let ride of ridesList" class="ride-card clickable" (click)="onRideClick(ride)">
       <div class="ride-header">
         <div class="ride-date-time">
           <div class="ride-date">{{ ride.date }}</div>
@@ -33,9 +44,18 @@
           <span *ngIf="ride.status.includes('cancelled-driver')" class="status-badge status-cancelled">Canceled - Driver</span>
           <span *ngIf="ride.status.includes('cancelled-passenger')" class="status-badge status-cancelled">Canceled - Passenger</span>
           <button
+            *ngIf="ride.isRatable"
+            class="rate-btn"
+            (click)="openRatingModal(ride); $event.stopPropagation()"
+            title="Rate this ride"
+          >
+            <span class="rate-icon">★</span>
+            <span class="rate-text">Rate</span>
+          </button>
+          <button
             class="favorite-btn"
             [class.favorited]="isFavorite(ride)"
-            (click)="toggleFavorite(ride)"
+            (click)="toggleFavorite(ride); $event.stopPropagation()"
             [disabled]="loading || !ride.locations[0].latitude"
             [attr.aria-label]="isFavorite(ride) ? 'Remove from favorites' : 'Add to favorites'"
             title="{{ isFavorite(ride) ? 'Remove from favorites' : (ride.locations[0].latitude ? 'Add to favorites' : 'Missing coordinates') }}"
@@ -92,5 +112,87 @@
         </div>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- Ride Detail Modal -->
+<app-passenger-ride-detail-modal
+  *ngIf="showModal && selectedRideId"
+  [rideId]="selectedRideId"
+  (close)="closeModal()"
+></app-passenger-ride-detail-modal>
+
+<!-- Rating Modal -->
+<div class="modal-overlay" *ngIf="showRatingModal" (click)="skipRating()">
+  <div class="modal-content rating-modal" (click)="$event.stopPropagation()">
+    <h2 class="modal-title">Rate Your Ride</h2>
+    <p class="modal-subtitle">How was your experience?</p>
+
+    <div class="rating-section">
+      <div class="rating-group">
+        <label class="rating-label">Vehicle Rating</label>
+        <div class="star-rating">
+          <button
+            *ngFor="let star of [1, 2, 3, 4, 5]"
+            type="button"
+            class="star-btn"
+            [class.active]="star <= vehicleRating"
+            (click)="setVehicleRating(star)"
+          >
+            ★
+          </button>
+        </div>
+      </div>
+
+      <div class="rating-group">
+        <label class="rating-label">Driver Rating</label>
+        <div class="star-rating">
+          <button
+            *ngFor="let star of [1, 2, 3, 4, 5]"
+            type="button"
+            class="star-btn"
+            [class.active]="star <= driverRating"
+            (click)="setDriverRating(star)"
+          >
+            ★
+          </button>
+        </div>
+      </div>
+
+      <div class="rating-group">
+        <label class="rating-label">Comments (Optional)</label>
+        <textarea
+          class="input rating-textarea"
+          [(ngModel)]="ratingComment"
+          placeholder="Share your feedback..."
+          rows="3"
+          maxlength="500"
+        ></textarea>
+      </div>
+    </div>
+
+    <p class="error-message" *ngIf="error" style="color: #ef4444; font-size: 13px; text-align: center; margin-bottom: 8px;">{{ error }}</p>
+    <p class="success-message" *ngIf="ratingSuccess" style="color: #22c55e; font-size: 13px; text-align: center; margin-bottom: 8px;">{{ ratingSuccess }}</p>
+
+    <div class="modal-actions">
+      <button
+        class="secondary-btn"
+        type="button"
+        (click)="skipRating()"
+        [disabled]="ratingSubmitting"
+      >
+        Skip
+      </button>
+      <button
+        class="primary-btn"
+        type="button"
+        (click)="submitRating()"
+        [disabled]="ratingSubmitting || vehicleRating === 0 || driverRating === 0"
+      >
+        {{ ratingSubmitting ? 'Submitting...' : 'Submit Rating' }}
+      </button>
+    </div>
+
+    <p class="modal-note">You have 3 days to rate this ride</p>
   </div>
 </div>

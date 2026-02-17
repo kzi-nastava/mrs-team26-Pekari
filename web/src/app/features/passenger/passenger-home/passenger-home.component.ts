@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, OnInit, inject, ChangeDetectorRef, ViewChild, ViewChildren, QueryList } from '@angular/core';
 import { FormArray, FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Subscription } from 'rxjs';
+import { filter, take } from 'rxjs/operators';
 import { RideApiService, OrderRideResponse, RideEstimateResponse, LocationPoint, FavoriteRoute } from '../../../core/services/ride-api.service';
 import { GeocodingService } from '../../../core/services/geocoding.service';
 import { WebSocketService, RideTrackingUpdate } from '../../../core/services/websocket.service';
@@ -130,9 +131,6 @@ export class PassengerHomeComponent implements OnInit, OnDestroy {
     this.refreshScheduleBounds();
     this.scheduleBoundsTimer = window.setInterval(() => this.refreshScheduleBounds(), 60_000);
 
-    // Convenience: show current time in the picker, but don't actually schedule unless user changes it.
-    this.form.patchValue({ scheduledAt: this.scheduledMin }, { emitEvent: false });
-
     // Subscribe to form changes
     this.form.valueChanges.subscribe(() => {
       this.estimate = undefined;
@@ -251,8 +249,11 @@ export class PassengerHomeComponent implements OnInit, OnDestroy {
     this.wsService.connect();
 
     // Wait for connection before subscribing
-    const connectionSub = this.wsService.isConnected$.subscribe(connected => {
-      if (connected && !this.trackingSubscription) {
+    this.wsService.isConnected$.pipe(
+      filter(connected => connected),
+      take(1)
+    ).subscribe(() => {
+      if (!this.trackingSubscription) {
         console.log('[PassengerHome] WebSocket connected, subscribing to tracking');
         this.trackingSubscription = this.wsService.subscribeToRideTracking(rideId).subscribe({
           next: (update: RideTrackingUpdate) => {
@@ -280,7 +281,6 @@ export class PassengerHomeComponent implements OnInit, OnDestroy {
             console.error('[PassengerHome] Tracking subscription error:', err);
           }
         });
-        connectionSub.unsubscribe();
       }
     });
   }
@@ -563,12 +563,20 @@ export class PassengerHomeComponent implements OnInit, OnDestroy {
   private refreshScheduleBounds() {
     const now = new Date();
     const max = new Date(now.getTime() + 5 * 60 * 60 * 1000);
-    this.scheduledMin = this.toDatetimeLocalValue(now);
-    this.scheduledMax = this.toDatetimeLocalValue(max);
+    const newMin = this.toDatetimeLocalValue(now);
+    const newMax = this.toDatetimeLocalValue(max);
 
-    // Keep the displayed default aligned with current time.
-    // Scheduling is inferred from the selected time (must be at least 1 minute in the future).
-    this.form.patchValue({ scheduledAt: this.scheduledMin }, { emitEvent: false });
+    if (this.scheduledMin !== newMin) {
+      this.scheduledMin = newMin;
+    }
+    if (this.scheduledMax !== newMax) {
+      this.scheduledMax = newMax;
+    }
+
+    // Keep the displayed default aligned with current time if no ride is active.
+    if (!this.isRideActive) {
+      this.form.patchValue({ scheduledAt: this.scheduledMin }, { emitEvent: false });
+    }
   }
 
   private toDatetimeLocalValue(date: Date): string {
@@ -732,8 +740,18 @@ export class PassengerHomeComponent implements OnInit, OnDestroy {
           this.cdr.detectChanges();
         },
         error: (err) => {
-          if (err?.status === 401 || err?.status === 403) {
+          if (err?.status === 401) {
             this.error = 'Please log in to request a ride.';
+            this.cdr.detectChanges();
+            return;
+          }
+          if (err?.status === 403 && err?.error?.code === 'USER_BLOCKED') {
+            this.error = err?.error?.message || 'You have been blocked and cannot order rides. Contact support.';
+            this.cdr.detectChanges();
+            return;
+          }
+          if (err?.status === 403) {
+            this.error = 'You do not have permission to request a ride.';
             this.cdr.detectChanges();
             return;
           }
@@ -841,6 +859,9 @@ export class PassengerHomeComponent implements OnInit, OnDestroy {
     }
 
     this.reportSubmitting = true;
+    this.reportSuccess = undefined;
+    this.error = undefined;
+
     this.rides.reportInconsistency(this.orderResult.rideId, this.reportText.trim()).subscribe({
       next: (response) => {
         this.reportSubmitting = false;
@@ -851,7 +872,9 @@ export class PassengerHomeComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         this.reportSubmitting = false;
-        this.error = err?.error?.message || 'Failed to submit report';
+        const backendMsg = err?.error?.message;
+        const plainMsg = typeof err?.error === 'string' ? err.error : undefined;
+        this.error = backendMsg || plainMsg || err?.message || 'Failed to submit report';
         this.cdr.detectChanges();
       }
     });

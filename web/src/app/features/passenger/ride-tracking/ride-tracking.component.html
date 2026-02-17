@@ -1,0 +1,98 @@
+<main class="tracking-page">
+  <section class="tracking-split">
+    <aside class="map-panel">
+      <app-ride-map
+        [pickupLocation]="mapPickup"
+        [dropoffLocation]="mapDropoff"
+        [stops]="mapStops"
+        [estimatedRoute]="routePoints"
+        [driverLocation]="driverLocation()"
+        [locked]="true"
+      ></app-ride-map>
+    </aside>
+
+    <section class="info-panel">
+      <div class="tracking-card" *ngIf="ride()">
+        <h2 class="tracking-title">Track Your Ride</h2>
+
+        <div class="ride-info">
+          <div class="info-row">
+            <span>Status</span>
+            <strong class="status-badge" [class.active]="ride()?.status === 'ACCEPTED' || ride()?.status === 'IN_PROGRESS'">
+              {{ ride()?.status }}
+            </strong>
+          </div>
+
+          <div class="info-row" *ngIf="estimatedTimeMinutes() !== undefined">
+            <span>Estimated Arrival</span>
+            <strong class="eta-value">{{ estimatedTimeMinutes() }} min</strong>
+          </div>
+
+          <div class="info-details">
+             <div class="detail-item">
+               <span class="label">From:</span>
+               <span class="value">{{ ride()?.pickup?.address }}</span>
+             </div>
+             <div class="detail-item" *ngFor="let stop of mapStops; let i = index">
+                <span class="label">Stop {{ i + 1 }}:</span>
+                <span class="value">{{ stop.address }}</span>
+             </div>
+             <div class="detail-item">
+               <span class="label">To:</span>
+               <span class="value">{{ ride()?.dropoff?.address }}</span>
+             </div>
+          </div>
+
+          <div class="driver-section" *ngIf="ride()?.driver">
+            <h3 class="section-subtitle">Driver Information</h3>
+            <div class="driver-card">
+              <div class="driver-name">{{ ride()?.driver?.name }}</div>
+              <div class="vehicle-info">
+                {{ ride()?.driver?.vehicleType }} - {{ ride()?.driver?.licensePlate }}
+              </div>
+            </div>
+          </div>
+
+          <!-- Report inconsistency section -->
+          <div class="report-section" *ngIf="ride()?.status === 'IN_PROGRESS' || ride()?.status === 'STOP_REQUESTED'">
+            <button
+              class="link report-link"
+              type="button"
+              (click)="toggleReportForm()"
+            >
+              {{ showReportForm() ? 'Cancel Report' : 'Report Driver Inconsistency' }}
+            </button>
+
+            <div class="report-form" *ngIf="showReportForm()">
+              <textarea
+                class="input report-textarea"
+                [(ngModel)]="reportText"
+                placeholder="Describe the issue..."
+                rows="3"
+              ></textarea>
+              <button
+                class="primary-btn submit-report-btn"
+                type="button"
+                [disabled]="reportSubmitting() || !reportText.trim()"
+                (click)="submitReport()"
+              >
+                {{ reportSubmitting() ? 'Submitting...' : 'Submit Report' }}
+              </button>
+            </div>
+
+            <p class="success-message" *ngIf="reportSuccess()">{{ reportSuccess() }}</p>
+            <p class="error-message" *ngIf="error()">{{ error() }}</p>
+          </div>
+        </div>
+
+        <button class="primary-btn" (click)="ride()?.status === 'COMPLETED' ? router.navigate(['/']) : null" *ngIf="ride()?.status === 'COMPLETED'">
+          Return Home
+        </button>
+      </div>
+
+      <div class="loading-state" *ngIf="!ride()">
+        <p>Loading ride details...</p>
+      </div>
+    </section>
+  </section>
+</main>
