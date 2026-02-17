@@ -1,5 +1,8 @@
 package com.example.blackcar.data.api.service;
 
+import com.example.blackcar.data.api.model.AdminRideDetailResponse;
+import com.example.blackcar.data.api.model.AdminRideHistoryFilter;
+import com.example.blackcar.data.api.model.AdminRideHistoryResponse;
 import com.example.blackcar.data.api.model.DriverRideHistoryResponse;
 import com.example.blackcar.data.api.model.PaginatedResponse;
 import com.example.blackcar.data.api.model.PassengerRideDetailResponse;
@@ -32,6 +35,19 @@ public interface RideApiService {
 
     @GET("rides/{id}")
     Call<PassengerRideDetailResponse> getPassengerRideDetail(
+            @Path("id") Long rideId
+    );
+
+    // Admin endpoints
+    @POST("rides/history/admin/all")
+    Call<PaginatedResponse<AdminRideHistoryResponse>> getAdminRideHistory(
+            @Body AdminRideHistoryFilter filter,
+            @Query("page") int page,
+            @Query("size") int size
+    );
+
+    @GET("rides/admin/{id}")
+    Call<AdminRideDetailResponse> getAdminRideDetail(
             @Path("id") Long rideId
     );
 }

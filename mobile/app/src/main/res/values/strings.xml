@@ -70,6 +70,19 @@
     <string name="passenger_history_price_format">%.2f RSD</string>
     <string name="passenger_history_date_picker_title">Filter by date</string>
 
+    <!-- Admin History Feature -->
+    <string name="title_admin_history">All Rides</string>
+    <string name="admin_history_title">All Rides</string>
+    <string name="admin_history_filter_by_date">Filter by date</string>
+    <string name="admin_history_empty_state_title">No rides found</string>
+    <string name="admin_history_empty_state_subtitle">Try adjusting your date filter</string>
+    <string name="admin_history_error_loading">Failed to load ride history</string>
+    <string name="admin_history_driver_label">Driver: %s</string>
+    <string name="admin_history_passengers_count">%d passenger(s)</string>
+    <string name="admin_history_canceled_by">Cancelled by %s</string>
+    <string name="admin_history_panic_label">PANIC</string>
+    <string name="admin_ride_detail_title">Ride Details #%d</string>
+
     <string name="lorem_ipsum">
         Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam in scelerisque sem. Mauris
         volutpat, dolor id interdum ullamcorper, risus dolor egestas lectus, sit amet mattis purus

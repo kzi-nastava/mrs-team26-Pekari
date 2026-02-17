@@ -84,7 +84,9 @@ public class MainActivity extends AppCompatActivity {
 
     private void navigateToHistory() {
         String role = SessionManager.getRole();
-        if (role != null && role.equalsIgnoreCase("driver")) {
+        if (role != null && role.equalsIgnoreCase("admin")) {
+            navController.navigate(R.id.adminHistoryFragment);
+        } else if (role != null && role.equalsIgnoreCase("driver")) {
             navController.navigate(R.id.driverHistoryFragment);
         } else {
             navController.navigate(R.id.passengerHistoryFragment);

@@ -16,6 +16,8 @@
     <color name="accent_success">#22c55e</color>
     <!-- Danger (Panic) -->
     <color name="accent_danger">#ef4444</color>
+    <!-- Info (In Progress) -->
+    <color name="accent_info">#3b82f6</color>
     <!-- Tertiary Text -->
     <color name="text_tertiary">#999999</color>
     <!-- Divider -->
