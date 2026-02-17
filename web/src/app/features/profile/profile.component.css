@@ -94,6 +94,68 @@
   letter-spacing: 0;
 }
 
+/* ==================== CARD TABS ==================== */
+.card-tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 24px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 4px;
+}
+
+.card-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: var(--secondary);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.card-tab:hover {
+  color: var(--primary);
+}
+
+.card-tab.active {
+  background: var(--card);
+  color: var(--accent);
+  border: 1px solid var(--border);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.card-tab .tab-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+/* ==================== CARD ANIMATION ==================== */
+.profile-card,
+.driver-card {
+  animation: cardSlideIn 0.35s ease-out forwards;
+}
+
+@keyframes cardSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* ==================== PROFILE FORM ==================== */
 .profile-form {
   display: flex;
@@ -188,6 +250,26 @@
   gap: 12px;
 }
 
+.action-buttons-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 12px;
+  width: 100%;
+}
+
+.action-buttons-row .btn {
+  flex: 1;
+  min-width: 0;
+}
+
+.action-buttons-row .edit-buttons {
+  flex: 1;
+  display: flex;
+  gap: 12px;
+  min-width: 0;
+}
+
 .edit-buttons {
   display: flex;
   gap: 12px;
@@ -219,76 +301,18 @@
     font-size: 24px;
   }
 
-  .form-section {
-    padding: 20px;
+  .card-tabs {
+    padding: 3px;
   }
 
-  .form-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .form-row-three {
-    grid-template-columns: 1fr;
-  }
-
-  .vehicle-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .edit-buttons {
-    flex-direction: column;
-  }
-
-  .edit-buttons .btn {
-    width: 100%;
-  }
-
-  .modal-content {
-    width: 95%;
-    padding: 20px;
-  }
-
-  .modal-content h2 {
-    font-size: 18px;
-  }
-}
-
-@media (max-width: 480px) {
-  .profile-container {
-    padding: 15px 10px;
-  }
-
-  .profile-picture-container {
-    width: 100px;
-    height: 100px;
-  }
-
-  .profile-title {
-    font-size: 20px;
-  }
-
-  .form-section {
-    padding: 15px;
-  }
-
-  .section-title {
-    font-size: 12px;
-  }
-
-  .btn {
-    padding: 10px 16px;
+  .card-tab {
+    padding: 10px 14px;
     font-size: 13px;
   }
-}
 
-/* ==================== RESPONSIVE DESIGN ==================== */
-@media (max-width: 768px) {
-  .profile-container {
-    padding: 20px 15px;
-  }
-
-  .profile-title {
-    font-size: 24px;
+  .card-tab .tab-icon {
+    width: 16px;
+    height: 16px;
   }
 
   .form-section {
@@ -339,6 +363,16 @@
     font-size: 20px;
   }
 
+  .card-tab {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+
+  .card-tab .tab-icon {
+    width: 14px;
+    height: 14px;
+  }
+
   .form-section {
     padding: 15px;
   }
@@ -352,3 +386,4 @@
     font-size: 13px;
   }
 }
+

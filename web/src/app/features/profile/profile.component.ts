@@ -20,6 +20,7 @@ export class ProfileComponent {
   profile = signal<ProfileData | null>(null);
   driverInfo = signal<DriverInfo | null>(null);
   profilePicture = signal<string>('');
+  activeCard = signal<'profile' | 'driver'>('profile');
   isLoading = signal(false);
   isEditing = signal(false);
   showPasswordModal = signal(false);
@@ -54,6 +55,10 @@ export class ProfileComponent {
 
   get isDriver() {
     return this.currentUser?.role === 'driver';
+  }
+
+  setActiveCard(card: 'profile' | 'driver'): void {
+    this.activeCard.set(card);
   }
 
   constructor() {
