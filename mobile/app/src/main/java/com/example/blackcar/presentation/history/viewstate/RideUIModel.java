@@ -5,6 +5,7 @@ import java.util.Objects;
 
 public class RideUIModel {
 
+    public Long id;
     public String startTime;
     public String endTime;
     public String origin;
@@ -13,6 +14,10 @@ public class RideUIModel {
     public boolean panic;
     public double price;
     public List<String> passengers;
+    public Double distanceKm;
+    public String vehicleType;
+    public String status;
+    public String driverName; // For passenger history view
 
     public RideUIModel() { }
 
@@ -23,17 +28,22 @@ public class RideUIModel {
         RideUIModel that = (RideUIModel) o;
         return panic == that.panic &&
                Double.compare(that.price, price) == 0 &&
+               Objects.equals(id, that.id) &&
                Objects.equals(startTime, that.startTime) &&
                Objects.equals(endTime, that.endTime) &&
                Objects.equals(origin, that.origin) &&
                Objects.equals(destination, that.destination) &&
                Objects.equals(canceledBy, that.canceledBy) &&
-               Objects.equals(passengers, that.passengers);
+               Objects.equals(passengers, that.passengers) &&
+               Objects.equals(distanceKm, that.distanceKm) &&
+               Objects.equals(vehicleType, that.vehicleType) &&
+               Objects.equals(status, that.status) &&
+               Objects.equals(driverName, that.driverName);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(startTime, endTime, origin, destination,
-                          canceledBy, panic, price, passengers);
+        return Objects.hash(id, startTime, endTime, origin, destination,
+                          canceledBy, panic, price, passengers, distanceKm, vehicleType, status, driverName);
     }
 }

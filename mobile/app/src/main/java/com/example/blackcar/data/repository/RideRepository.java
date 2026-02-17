@@ -5,6 +5,9 @@ import androidx.annotation.NonNull;
 import com.example.blackcar.data.api.ApiClient;
 import com.example.blackcar.data.api.model.DriverRideHistoryResponse;
 import com.example.blackcar.data.api.model.PaginatedResponse;
+import com.example.blackcar.data.api.model.PassengerRideDetailResponse;
+import com.example.blackcar.data.api.model.PassengerRideHistoryResponse;
+import com.example.blackcar.data.api.model.RideHistoryFilterRequest;
 import com.example.blackcar.data.api.service.RideApiService;
 
 import retrofit2.Call;
@@ -44,6 +47,65 @@ public class RideRepository {
 
                     @Override
                     public void onFailure(@NonNull Call<PaginatedResponse<DriverRideHistoryResponse>> call,
+                                        @NonNull Throwable t) {
+                        callback.onError("Network error. Please check your internet connection.");
+                    }
+                });
+    }
+
+    public void getPassengerRideHistory(RideHistoryFilterRequest filter, int page, int size,
+                                        RepoCallback<PaginatedResponse<PassengerRideHistoryResponse>> callback) {
+        api.getPassengerRideHistory(filter, page, size).enqueue(
+                new Callback<PaginatedResponse<PassengerRideHistoryResponse>>() {
+                    @Override
+                    public void onResponse(@NonNull Call<PaginatedResponse<PassengerRideHistoryResponse>> call,
+                                         @NonNull Response<PaginatedResponse<PassengerRideHistoryResponse>> response) {
+                        if (response.isSuccessful() && response.body() != null) {
+                            callback.onSuccess(response.body());
+                        } else {
+                            String message = "Failed to load ride history";
+                            if (response.code() == 401) {
+                                message = "Unauthorized. Please login again.";
+                            } else if (response.code() == 403) {
+                                message = "Access denied. Passenger role required.";
+                            } else if (response.code() == 404) {
+                                message = "No rides found";
+                            }
+                            callback.onError(message);
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(@NonNull Call<PaginatedResponse<PassengerRideHistoryResponse>> call,
+                                        @NonNull Throwable t) {
+                        callback.onError("Network error. Please check your internet connection.");
+                    }
+                });
+    }
+
+    public void getPassengerRideDetail(Long rideId, RepoCallback<PassengerRideDetailResponse> callback) {
+        api.getPassengerRideDetail(rideId).enqueue(
+                new Callback<PassengerRideDetailResponse>() {
+                    @Override
+                    public void onResponse(@NonNull Call<PassengerRideDetailResponse> call,
+                                         @NonNull Response<PassengerRideDetailResponse> response) {
+                        if (response.isSuccessful() && response.body() != null) {
+                            callback.onSuccess(response.body());
+                        } else {
+                            String message = "Failed to load ride details";
+                            if (response.code() == 401) {
+                                message = "Unauthorized. Please login again.";
+                            } else if (response.code() == 403) {
+                                message = "Access denied.";
+                            } else if (response.code() == 404) {
+                                message = "Ride not found";
+                            }
+                            callback.onError(message);
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(@NonNull Call<PassengerRideDetailResponse> call,
                                         @NonNull Throwable t) {
                         callback.onError("Network error. Please check your internet connection.");
                     }
