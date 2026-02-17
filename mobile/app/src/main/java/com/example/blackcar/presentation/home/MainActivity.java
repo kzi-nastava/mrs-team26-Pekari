@@ -7,6 +7,7 @@ import androidx.navigation.NavController;
 import androidx.navigation.fragment.NavHostFragment;
 
 import com.example.blackcar.R;
+import com.example.blackcar.data.session.SessionManager;
 import com.example.blackcar.databinding.ActivityMainBinding;
 
 
@@ -40,7 +41,7 @@ public class MainActivity extends AppCompatActivity {
             int id = item.getItemId();
 
             if (id == R.id.nav_history) {
-                navController.navigate(R.id.driverHistoryFragment);
+                navigateToHistory();
             } else if (id == R.id.nav_dashboard) {
                 navController.navigate(R.id.homeFragment);
             } else if (id == R.id.nav_profile) {
@@ -79,6 +80,15 @@ public class MainActivity extends AppCompatActivity {
     private int dpToPx(int dp) {
         float density = getResources().getDisplayMetrics().density;
         return Math.round(dp * density);
+    }
+
+    private void navigateToHistory() {
+        String role = SessionManager.getRole();
+        if (role != null && role.equalsIgnoreCase("driver")) {
+            navController.navigate(R.id.driverHistoryFragment);
+        } else {
+            navController.navigate(R.id.passengerHistoryFragment);
+        }
     }
 
     @Override

@@ -47,6 +47,14 @@
         tools:layout="@layout/fragment_home">
 
         <action
+            android:id="@+id/action_home_to_passenger_history"
+            app:destination="@id/passengerHistoryFragment"
+            app:enterAnim="@android:anim/slide_in_left"
+            app:exitAnim="@android:anim/slide_out_right"
+            app:popEnterAnim="@android:anim/slide_in_left"
+            app:popExitAnim="@android:anim/slide_out_right" />
+
+        <action
             android:id="@+id/action_home_to_driver_history"
             app:destination="@id/driverHistoryFragment"
             app:enterAnim="@android:anim/slide_in_left"
@@ -61,6 +69,13 @@
         android:name="com.example.blackcar.presentation.history.views.DriverHistoryFragment"
         android:label="@string/title_driver_history"
         tools:layout="@layout/fragment_driver_history" />
+
+    <!-- Passenger History Fragment -->
+    <fragment
+        android:id="@+id/passengerHistoryFragment"
+        android:name="com.example.blackcar.presentation.history.views.PassengerHistoryFragment"
+        android:label="@string/title_passenger_history"
+        tools:layout="@layout/fragment_passenger_history" />
 
     <!-- Profile Fragment -->
     <fragment

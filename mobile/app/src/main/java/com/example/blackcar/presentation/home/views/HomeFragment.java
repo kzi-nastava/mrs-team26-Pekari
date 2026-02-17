@@ -22,7 +22,7 @@ public class HomeFragment extends Fragment {
         binding = FragmentHomeBinding.inflate(inflater, container, false);
 
         binding.btnViewHistory.setOnClickListener(v ->
-                Navigation.findNavController(v).navigate(R.id.action_home_to_driver_history)
+                Navigation.findNavController(v).navigate(R.id.action_home_to_passenger_history)
         );
 
         return binding.getRoot();
