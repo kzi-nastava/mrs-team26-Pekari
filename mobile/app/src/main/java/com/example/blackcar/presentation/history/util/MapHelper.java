@@ -158,10 +158,15 @@ public class MapHelper {
     }
 
     /**
-     * Clear all overlays from map
+     * Clear all overlays from map (markers, polylines).
+     * Preserves and re-adds the map tap overlay so tap-to-select-location keeps working.
      */
     public void clearMap() {
+        MapEventsOverlay tapOverlay = this.mapEventsOverlay;
         mapView.getOverlayManager().clear();
+        if (tapOverlay != null) {
+            mapView.getOverlays().add(0, tapOverlay);
+        }
     }
 
     /**

@@ -97,35 +97,35 @@ public class PassengerHomeFragment extends Fragment {
 
         mapHelper = new MapHelper(requireContext(), mapView);
         mapHelper.setOnMapClickListener((lat, lon) -> {
-            if (focusedField != FocusedField.NONE) {
-                viewModel.reverseGeocode(lat, lon, new com.example.blackcar.data.repository.GeocodingRepository.ReverseGeocodeCallback() {
-                    @Override
-                    public void onSuccess(GeocodeResult result) {
-                        LocationPoint lp = new LocationPoint(result.getDisplayName(), result.getLatitude(), result.getLongitude());
-                        if (focusedField == FocusedField.PICKUP) {
-                            viewModel.setPickup(lp);
-                            setPickupAddress(result.getDisplayName());
-                        } else if (focusedField == FocusedField.DROPOFF) {
-                            viewModel.setDropoff(lp);
-                            setDropoffAddress(result.getDisplayName());
-                        }
-                        updateMapMarkers();
+            // Allow map tap to set location: use focused field if any, otherwise default to pickup (starting location)
+            FocusedField target = focusedField != FocusedField.NONE ? focusedField : FocusedField.PICKUP;
+            viewModel.reverseGeocode(lat, lon, new com.example.blackcar.data.repository.GeocodingRepository.ReverseGeocodeCallback() {
+                @Override
+                public void onSuccess(GeocodeResult result) {
+                    LocationPoint lp = new LocationPoint(result.getDisplayName(), result.getLatitude(), result.getLongitude());
+                    if (target == FocusedField.PICKUP) {
+                        viewModel.setPickup(lp);
+                        setPickupAddress(result.getDisplayName());
+                    } else if (target == FocusedField.DROPOFF) {
+                        viewModel.setDropoff(lp);
+                        setDropoffAddress(result.getDisplayName());
                     }
+                    updateMapMarkers();
+                }
 
-                    @Override
-                    public void onError(String message) {
-                        LocationPoint lp = new LocationPoint(lat + ", " + lon, lat, lon);
-                        if (focusedField == FocusedField.PICKUP) {
-                            viewModel.setPickup(lp);
-                            setPickupAddress(lp.getAddress());
-                        } else if (focusedField == FocusedField.DROPOFF) {
-                            viewModel.setDropoff(lp);
-                            setDropoffAddress(lp.getAddress());
-                        }
-                        updateMapMarkers();
+                @Override
+                public void onError(String message) {
+                    LocationPoint lp = new LocationPoint(lat + ", " + lon, lat, lon);
+                    if (target == FocusedField.PICKUP) {
+                        viewModel.setPickup(lp);
+                        setPickupAddress(lp.getAddress());
+                    } else if (target == FocusedField.DROPOFF) {
+                        viewModel.setDropoff(lp);
+                        setDropoffAddress(lp.getAddress());
                     }
-                });
-            }
+                    updateMapMarkers();
+                }
+            });
         });
         mapHelper.setupMapTapOverlay();
     }
@@ -148,7 +148,9 @@ public class PassengerHomeFragment extends Fragment {
         AddressAutocompleteAdapter adapter = new AddressAutocompleteAdapter();
         adapter.setOnAddressSelectedListener(result -> {
             listener.onSelected(result.getDisplayName(), result.getLatitude(), result.getLongitude());
+            edit.clearFocus();
             recycler.setVisibility(View.GONE);
+            adapter.submitList(new ArrayList<>());
             edit.setText(result.getDisplayName());
         });
         recycler.setAdapter(adapter);
@@ -164,7 +166,7 @@ public class PassengerHomeFragment extends Fragment {
                     @Override
                     public void onSuccess(List<GeocodeResult> results) {
                         adapter.submitList(results);
-                        recycler.setVisibility(results.isEmpty() ? View.GONE : View.VISIBLE);
+                        recycler.setVisibility((results.isEmpty() || !edit.hasFocus()) ? View.GONE : View.VISIBLE);
                     }
                     @Override
                     public void onError(String message) {}
@@ -178,6 +180,7 @@ public class PassengerHomeFragment extends Fragment {
 
         edit.setOnFocusChangeListener((v, hasFocus) -> {
             if (hasFocus) onFocus.run();
+            else recycler.setVisibility(View.GONE);
         });
     }
 
@@ -310,8 +313,10 @@ public class PassengerHomeFragment extends Fragment {
             while (stops.size() <= index) stops.add(null);
             stops.set(index, lp);
             viewModel.setStops(stops);
-            edit.setText(result.getDisplayName());
+            edit.clearFocus();
             recycler.setVisibility(View.GONE);
+            adapter.submitList(new ArrayList<>());
+            edit.setText(result.getDisplayName());
             updateMapMarkers();
         });
         recycler.setAdapter(adapter);
@@ -325,7 +330,7 @@ public class PassengerHomeFragment extends Fragment {
                     @Override
                     public void onSuccess(List<GeocodeResult> results) {
                         adapter.submitList(results);
-                        recycler.setVisibility(results.isEmpty() ? View.GONE : View.VISIBLE);
+                        recycler.setVisibility((results.isEmpty() || !edit.hasFocus()) ? View.GONE : View.VISIBLE);
                     }
                     @Override
                     public void onError(String message) {}
@@ -334,6 +339,9 @@ public class PassengerHomeFragment extends Fragment {
             }
             @Override
             public void afterTextChanged(Editable s) {}
+        });
+        edit.setOnFocusChangeListener((v, hasFocus) -> {
+            if (!hasFocus) recycler.setVisibility(View.GONE);
         });
     }
 
