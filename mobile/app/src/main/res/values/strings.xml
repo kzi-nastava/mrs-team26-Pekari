@@ -114,6 +114,10 @@
     <string name="ride_cancel">Cancel Ride</string>
     <string name="ride_request_another">Request Another Ride</string>
 
+    <!-- Passenger Home -->
+    <string name="passenger_btn_request_stop">Request Stop</string>
+    <string name="passenger_stop_requested_message">Stop requested. Driver will stop at the nearest safe location.</string>
+
     <!-- Driver Home -->
     <string name="driver_home_title">Driver Dashboard</string>
     <string name="driver_no_active_ride">No Active Ride</string>
@@ -124,8 +128,14 @@
     <string name="driver_ride_details">Ride Details</string>
     <string name="driver_passengers">Passengers (%d)</string>
     <string name="driver_btn_start">Start Ride</string>
+    <string name="driver_btn_complete">Complete Ride</string>
+    <string name="driver_btn_stop_early">Stop Ride Early</string>
+    <string name="driver_btn_panic">PANIC</string>
+    <string name="driver_panic_activated">PANIC ACTIVATED</string>
     <string name="driver_btn_cancel">Cancel Ride</string>
     <string name="driver_btn_retry">Retry</string>
+    <string name="driver_stop_requested_title">Stop Requested</string>
+    <string name="driver_stop_requested_message">Passenger has requested to stop the ride early. Please stop at the nearest safe location and click \"Stop Ride Early\" button.</string>
     <string name="driver_pickup">Pickup</string>
     <string name="driver_dropoff">Dropoff</string>
     <string name="driver_stop">Stop %d</string>
