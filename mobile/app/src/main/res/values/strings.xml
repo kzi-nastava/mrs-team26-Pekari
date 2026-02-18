@@ -134,7 +134,7 @@
     <string name="driver_panic_activated">PANIC ACTIVATED</string>
     <string name="driver_btn_cancel">Cancel Ride</string>
     <string name="driver_btn_retry">Retry</string>
-    <string name="driver_stop_requested_title">Stop Requested</string>
+    <string name="driver_stop_requested_title">⚠️ Stop Requested</string>
     <string name="driver_stop_requested_message">Passenger has requested to stop the ride early. Please stop at the nearest safe location and click \"Stop Ride Early\" button.</string>
     <string name="driver_pickup">Pickup</string>
     <string name="driver_dropoff">Dropoff</string>
