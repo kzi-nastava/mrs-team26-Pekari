@@ -216,6 +216,36 @@ public class PassengerHomeViewModel extends ViewModel {
         });
     }
 
+    public void requestStopRide(Long rideId) {
+        PassengerHomeViewState current = state.getValue();
+        if (current == null || current.activeRide == null) return;
+
+        state.setValue(PassengerHomeViewState.loading());
+
+        rideRepository.requestStopRide(rideId, new RideRepository.RepoCallback<com.example.blackcar.data.api.model.MessageResponse>() {
+            @Override
+            public void onSuccess(com.example.blackcar.data.api.model.MessageResponse data) {
+                // Update state to show stop requested
+                PassengerHomeViewState s = PassengerHomeViewState.withActiveRide(current.activeRide);
+                s.stopRequested = true;
+                if (s.orderResult != null) {
+                    s.orderResult.setStatus("STOP_REQUESTED");
+                    s.orderResult.setMessage("Stop requested. Driver will stop at the nearest safe location.");
+                }
+                state.postValue(s);
+            }
+
+            @Override
+            public void onError(String message) {
+                state.postValue(PassengerHomeViewState.error(message));
+            }
+        });
+    }
+
+    public static boolean canRequestStop(String status) {
+        return "IN_PROGRESS".equals(status);
+    }
+
     public void searchAddress(String query, GeocodingRepository.GeocodeCallback callback) {
         geocodingRepository.searchAddress(query, callback);
     }

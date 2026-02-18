@@ -23,6 +23,9 @@ import retrofit2.http.POST;
 import retrofit2.http.Path;
 import retrofit2.http.Query;
 
+import com.example.blackcar.data.api.model.StopRideEarlyRequest;
+import com.example.blackcar.data.api.model.RideLocationUpdateRequest;
+
 public interface RideApiService {
 
     @POST("rides/estimate")
@@ -72,4 +75,24 @@ public interface RideApiService {
     Call<AdminRideDetailResponse> getAdminRideDetail(
             @Path("id") Long rideId
     );
+
+    // Driver ride management endpoints
+    @POST("rides/{rideId}/start")
+    Call<MessageResponse> startRide(@Path("rideId") Long rideId);
+
+    @POST("rides/{rideId}/stop")
+    Call<MessageResponse> completeRide(@Path("rideId") Long rideId);
+
+    @POST("rides/{rideId}/stop")
+    Call<MessageResponse> stopRideEarly(@Path("rideId") Long rideId, @Body StopRideEarlyRequest request);
+
+    @POST("rides/{rideId}/panic")
+    Call<MessageResponse> activatePanic(@Path("rideId") Long rideId);
+
+    @POST("rides/{rideId}/location")
+    Call<MessageResponse> updateRideLocation(@Path("rideId") Long rideId, @Body RideLocationUpdateRequest request);
+
+    // Passenger ride management endpoints
+    @POST("rides/{rideId}/request-stop")
+    Call<MessageResponse> requestStopRide(@Path("rideId") Long rideId);
 }

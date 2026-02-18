@@ -476,6 +476,18 @@
                                     android:layout_marginTop="2dp"
                                     tools:text="Driver: driver@example.com" />
 
+                                <!-- Request Stop Button -->
+                                <Button
+                                    android:id="@+id/btnRequestStop"
+                                    style="@style/Widget.Material3.Button"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:text="@string/passenger_btn_request_stop"
+                                    android:backgroundTint="@color/btn_stop_early"
+                                    android:textColor="@color/white"
+                                    android:layout_marginTop="16dp"
+                                    android:visibility="gone" />
+
                                 <!-- Cancel Ride Button -->
                                 <Button
                                     android:id="@+id/btnCancelRide"

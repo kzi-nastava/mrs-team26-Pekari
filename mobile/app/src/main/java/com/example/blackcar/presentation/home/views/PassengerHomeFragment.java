@@ -367,6 +367,12 @@ public class PassengerHomeFragment extends Fragment {
             viewModel.setPassengerEmails(emails);
             viewModel.orderRide();
         });
+        binding.btnRequestStop.setOnClickListener(v -> {
+            if (viewModel.getState().getValue() != null && viewModel.getState().getValue().orderResult != null) {
+                Long rideId = viewModel.getState().getValue().orderResult.getRideId();
+                if (rideId != null) viewModel.requestStopRide(rideId);
+            }
+        });
         binding.btnCancelRide.setOnClickListener(v -> {
             if (viewModel.getState().getValue() != null && viewModel.getState().getValue().orderResult != null) {
                 Long rideId = viewModel.getState().getValue().orderResult.getRideId();
@@ -525,8 +531,13 @@ public class PassengerHomeFragment extends Fragment {
                         ? "Driver: " + state.orderResult.getAssignedDriverEmail() : "");
                 binding.txtOrderDriver.setVisibility(state.orderResult.getAssignedDriverEmail() != null ? View.VISIBLE : View.GONE);
 
-                // Show cancel button only for active rides that can be cancelled
-                boolean canCancel = "ACCEPTED".equals(status) || "SCHEDULED".equals(status) || "PENDING".equals(status);
+                // Show request stop button only during IN_PROGRESS and not already requested
+                boolean canRequestStop = PassengerHomeViewModel.canRequestStop(status) && !state.stopRequested;
+                binding.btnRequestStop.setVisibility(canRequestStop ? View.VISIBLE : View.GONE);
+
+                // Show cancel button only for active rides that can be cancelled (but not during IN_PROGRESS or STOP_REQUESTED)
+                boolean canCancel = ("ACCEPTED".equals(status) || "SCHEDULED".equals(status) || "PENDING".equals(status))
+                        && !"IN_PROGRESS".equals(status) && !"STOP_REQUESTED".equals(status);
                 binding.btnCancelRide.setVisibility(canCancel ? View.VISIBLE : View.GONE);
 
                 // Show "Request Another" button when ride is finished/cancelled

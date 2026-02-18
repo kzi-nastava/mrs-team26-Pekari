@@ -61,7 +61,7 @@ public class PassengerHistoryAdapter extends ListAdapter<RideUIModel, PassengerH
 
     static class Holder extends RecyclerView.ViewHolder {
 
-        TextView txtRoute, txtTime, txtPrice, txtCanceled, txtPanic, txtPassengers;
+        TextView txtRoute, txtTime, txtPrice, txtCanceled, txtPassengers;
         TextView txtDistance, txtVehicleType, txtStatus;
         private RideUIModel currentRide;
 
@@ -72,7 +72,6 @@ public class PassengerHistoryAdapter extends ListAdapter<RideUIModel, PassengerH
             txtTime = itemView.findViewById(R.id.txtTime);
             txtPrice = itemView.findViewById(R.id.txtPrice);
             txtCanceled = itemView.findViewById(R.id.txtCanceled);
-            txtPanic = itemView.findViewById(R.id.txtPanic);
             txtPassengers = itemView.findViewById(R.id.txtPassengers);
             txtDistance = itemView.findViewById(R.id.txtDistance);
             txtVehicleType = itemView.findViewById(R.id.txtVehicleType);
@@ -115,9 +114,6 @@ public class PassengerHistoryAdapter extends ListAdapter<RideUIModel, PassengerH
             } else {
                 txtCanceled.setVisibility(View.GONE);
             }
-
-            // Panic indicator
-            txtPanic.setVisibility(ride.panic ? View.VISIBLE : View.GONE);
 
             // Distance
             if (ride.distanceKm != null && ride.distanceKm > 0) {

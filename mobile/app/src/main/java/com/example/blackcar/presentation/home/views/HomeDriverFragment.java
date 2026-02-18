@@ -45,6 +45,14 @@ public class HomeDriverFragment extends Fragment {
         observeState();
 
         viewModel.loadActiveRide();
+        viewModel.startPolling();
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        viewModel.stopPolling();
+        binding = null;
     }
 
     private void setupButtons() {
@@ -54,8 +62,19 @@ public class HomeDriverFragment extends Fragment {
         });
 
         binding.btnStartRide.setOnClickListener(v -> {
-            Toast.makeText(requireContext(), "Start Ride - Not implemented yet", Toast.LENGTH_SHORT).show();
-            // viewModel.startRide(); // Will be implemented later
+            viewModel.startRide();
+        });
+
+        binding.btnCompleteRide.setOnClickListener(v -> {
+            viewModel.completeRide();
+        });
+
+        binding.btnStopEarly.setOnClickListener(v -> {
+            viewModel.stopRideEarly();
+        });
+
+        binding.btnPanic.setOnClickListener(v -> {
+            viewModel.activatePanic();
         });
 
         binding.btnCancelRide.setOnClickListener(v -> {
@@ -80,18 +99,22 @@ public class HomeDriverFragment extends Fragment {
                 binding.layoutNoRide.setVisibility(View.VISIBLE);
             } else {
                 binding.scrollActiveRide.setVisibility(View.VISIBLE);
-                populateRideDetails(state.activeRide, state.actionInProgress);
+                populateRideDetails(state.activeRide, state.actionInProgress, state.panicActivated);
             }
         });
     }
 
-    private void populateRideDetails(ActiveRideResponse ride, boolean actionInProgress) {
+    private void populateRideDetails(ActiveRideResponse ride, boolean actionInProgress, boolean panicActivated) {
         // Ride Header
         binding.txtRideTitle.setText(getString(R.string.driver_active_ride, ride.getRideId()));
 
         String status = ride.getStatus();
         binding.txtStatus.setText(DriverHomeViewModel.getStatusLabel(status));
         applyStatusBadgeStyle(status);
+
+        // Stop Request Notification
+        boolean stopRequested = DriverHomeViewModel.isStopRequested(status);
+        binding.layoutStopRequestNotification.setVisibility(stopRequested ? View.VISIBLE : View.GONE);
 
         // Route Information
         binding.txtPickupAddress.setText(ride.getPickup().getAddress());
@@ -132,10 +155,28 @@ public class HomeDriverFragment extends Fragment {
 
         // Action Buttons
         boolean canStart = DriverHomeViewModel.canStartRide(status);
+        boolean canComplete = DriverHomeViewModel.canCompleteRide(status);
+        boolean canPanic = DriverHomeViewModel.canActivatePanic(status);
         boolean canCancel = DriverHomeViewModel.canCancelRide(status);
 
         binding.btnStartRide.setVisibility(canStart ? View.VISIBLE : View.GONE);
         binding.btnStartRide.setEnabled(!actionInProgress);
+
+        binding.btnCompleteRide.setVisibility(canComplete && !stopRequested ? View.VISIBLE : View.GONE);
+        binding.btnCompleteRide.setEnabled(!actionInProgress);
+
+        binding.btnStopEarly.setVisibility(canComplete ? View.VISIBLE : View.GONE);
+        binding.btnStopEarly.setEnabled(!actionInProgress);
+
+        binding.btnPanic.setVisibility(canPanic ? View.VISIBLE : View.GONE);
+        binding.btnPanic.setEnabled(!actionInProgress && !panicActivated);
+        if (panicActivated) {
+            binding.btnPanic.setText(R.string.driver_panic_activated);
+            binding.btnPanic.setBackgroundTintList(ContextCompat.getColorStateList(requireContext(), R.color.btn_panic_disabled));
+        } else {
+            binding.btnPanic.setText(R.string.driver_btn_panic);
+            binding.btnPanic.setBackgroundTintList(ContextCompat.getColorStateList(requireContext(), R.color.btn_panic));
+        }
 
         binding.btnCancelRide.setVisibility(canCancel ? View.VISIBLE : View.GONE);
         binding.btnCancelRide.setEnabled(!actionInProgress);
@@ -157,6 +198,10 @@ public class HomeDriverFragment extends Fragment {
             case "IN_PROGRESS":
                 backgroundRes = R.drawable.bg_status_in_progress;
                 textColorRes = R.color.status_in_progress;
+                break;
+            case "STOP_REQUESTED":
+                backgroundRes = R.drawable.bg_status_stop_requested;
+                textColorRes = R.color.status_stop_requested;
                 break;
             case "CANCELLED":
             case "REJECTED":
@@ -309,11 +354,5 @@ public class HomeDriverFragment extends Fragment {
     private int dpToPx(int dp) {
         float density = getResources().getDisplayMetrics().density;
         return Math.round(dp * density);
-    }
-
-    @Override
-    public void onDestroyView() {
-        super.onDestroyView();
-        binding = null;
     }
 }

@@ -38,4 +38,18 @@
     <color name="status_in_progress_bg">#1a22c55e</color>
     <color name="status_cancelled">#ef4444</color>
     <color name="status_cancelled_bg">#1aef4444</color>
+    <color name="status_stop_requested">#f59e0b</color>
+    <color name="status_stop_requested_bg">#1af59e0b</color>
+
+    <!-- Button Colors -->
+    <color name="btn_panic">#dc2626</color>
+    <color name="btn_panic_disabled">#6b7280</color>
+    <color name="btn_stop_early">#f59e0b</color>
+    <color name="btn_stop_early_dark">#d97706</color>
+
+    <!-- Notification Colors -->
+    <color name="stop_request_notification_bg">#1afbbf24</color>
+    <color name="stop_request_notification_border">#f59e0b</color>
+    <color name="stop_request_notification_title">#d97706</color>
+    <color name="stop_request_notification_text">#92400e</color>
 </resources>

@@ -129,21 +129,6 @@
                 android:drawableStart="@android:drawable/ic_delete"
                 android:drawablePadding="6dp"
                 android:text="Canceled by passenger" />
-
-            <!-- Panic Indicator -->
-            <TextView
-                android:id="@+id/txtPanic"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="3dp"
-                android:visibility="gone"
-                android:textColor="@color/accent_danger"
-                android:textStyle="bold"
-                android:textSize="13sp"
-                android:gravity="center_vertical"
-                android:drawableStart="@android:drawable/ic_dialog_alert"
-                android:drawablePadding="6dp"
-                android:text="⚠ PANIC triggered" />
         </LinearLayout>
 
     </LinearLayout>

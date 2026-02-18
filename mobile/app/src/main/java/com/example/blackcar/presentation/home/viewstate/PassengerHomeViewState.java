@@ -16,6 +16,8 @@ public class PassengerHomeViewState {
     public OrderRideResponse orderResult;
     public ActiveRideResponse activeRide;
     public boolean formDisabled;
+    public boolean stopRequested;
+    public boolean panicActivated;
 
     public static PassengerHomeViewState idle() {
         PassengerHomeViewState s = new PassengerHomeViewState();
@@ -26,6 +28,8 @@ public class PassengerHomeViewState {
         s.orderResult = null;
         s.activeRide = null;
         s.formDisabled = false;
+        s.stopRequested = false;
+        s.panicActivated = false;
         return s;
     }
 
@@ -60,6 +64,7 @@ public class PassengerHomeViewState {
         s.activeRide = activeRide;
         s.formDisabled = true;
         s.orderResult = mapActiveRideToOrderResult(activeRide);
+        s.stopRequested = "STOP_REQUESTED".equals(activeRide != null ? activeRide.getStatus() : null);
         return s;
     }
 
