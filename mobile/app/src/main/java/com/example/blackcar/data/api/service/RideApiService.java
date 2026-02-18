@@ -34,6 +34,9 @@ public interface RideApiService {
     @GET("rides/active/passenger")
     Call<ActiveRideResponse> getActiveRideForPassenger();
 
+    @GET("rides/active/driver")
+    Call<ActiveRideResponse> getActiveRideForDriver();
+
     @POST("rides/{rideId}/cancel")
     Call<MessageResponse> cancelRide(@Path("rideId") Long rideId, @Body CancelRideRequest request);
 

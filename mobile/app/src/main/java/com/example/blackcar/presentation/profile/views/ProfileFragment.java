@@ -14,6 +14,11 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
+
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
@@ -58,7 +63,12 @@ public class ProfileFragment extends Fragment {
                 new ActivityResultContracts.GetContent(),
                 uri -> {
                     if (uri != null) {
-                        viewModel.updateLocalProfilePicture(uri.toString());
+                        String localPath = copyImageToInternalStorage(uri);
+                        if (localPath != null) {
+                            viewModel.updateLocalProfilePicture(localPath);
+                        } else {
+                            Toast.makeText(requireContext(), "Failed to save image", Toast.LENGTH_SHORT).show();
+                        }
                     }
                 }
         );
@@ -374,8 +384,33 @@ public class ProfileFragment extends Fragment {
         }
 
         String trimmed = picture.trim();
-        if (trimmed.startsWith("content://") || trimmed.startsWith("file://") || trimmed.startsWith("android.resource://")) {
+
+        // Handle local file paths (from our internal storage)
+        if (trimmed.startsWith("/")) {
+            File file = new File(trimmed);
+            if (file.exists()) {
+                binding.imgProfile.setImageURI(Uri.fromFile(file));
+                return;
+            } else {
+                binding.imgProfile.setImageResource(R.drawable.baseline_person_24);
+                return;
+            }
+        }
+
+        // Handle file:// URIs
+        if (trimmed.startsWith("file://")) {
             binding.imgProfile.setImageURI(Uri.parse(trimmed));
+            return;
+        }
+
+        // Handle content:// URIs with try-catch for security exceptions
+        if (trimmed.startsWith("content://") || trimmed.startsWith("android.resource://")) {
+            try {
+                binding.imgProfile.setImageURI(Uri.parse(trimmed));
+            } catch (SecurityException e) {
+                // Permission expired for picker URI, show default
+                binding.imgProfile.setImageResource(R.drawable.baseline_person_24);
+            }
             return;
         }
 
@@ -399,6 +434,38 @@ public class ProfileFragment extends Fragment {
             byte[] decoded = android.util.Base64.decode(data, android.util.Base64.DEFAULT);
             return BitmapFactory.decodeByteArray(decoded, 0, decoded.length);
         } catch (IllegalArgumentException ex) {
+            return null;
+        }
+    }
+
+    private String copyImageToInternalStorage(Uri uri) {
+        try {
+            InputStream inputStream = requireContext().getContentResolver().openInputStream(uri);
+            if (inputStream == null) {
+                return null;
+            }
+
+            File imagesDir = new File(requireContext().getFilesDir(), "profile_images");
+            if (!imagesDir.exists()) {
+                imagesDir.mkdirs();
+            }
+
+            String fileName = "profile_" + System.currentTimeMillis() + ".jpg";
+            File outputFile = new File(imagesDir, fileName);
+
+            OutputStream outputStream = new FileOutputStream(outputFile);
+            byte[] buffer = new byte[4096];
+            int bytesRead;
+            while ((bytesRead = inputStream.read(buffer)) != -1) {
+                outputStream.write(buffer, 0, bytesRead);
+            }
+
+            inputStream.close();
+            outputStream.close();
+
+            return outputFile.getAbsolutePath();
+        } catch (Exception e) {
+            e.printStackTrace();
             return null;
         }
     }

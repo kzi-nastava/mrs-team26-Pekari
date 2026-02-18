@@ -257,6 +257,31 @@ public class RideRepository {
                 });
     }
 
+    public void getActiveRideForDriver(RepoCallback<ActiveRideResponse> callback) {
+        api.getActiveRideForDriver().enqueue(
+                new Callback<ActiveRideResponse>() {
+                    @Override
+                    public void onResponse(@NonNull Call<ActiveRideResponse> call,
+                                         @NonNull Response<ActiveRideResponse> response) {
+                        if (response.isSuccessful()) {
+                            callback.onSuccess(response.body());
+                        } else {
+                            if (response.code() == 404 || response.code() == 204) {
+                                callback.onSuccess(null);
+                            } else {
+                                callback.onError(parseErrorMessage(response, "Failed to load active ride"));
+                            }
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(@NonNull Call<ActiveRideResponse> call,
+                                        @NonNull Throwable t) {
+                        callback.onError("Network error. Please check your internet connection.");
+                    }
+                });
+    }
+
     public void cancelRide(Long rideId, String reason, RepoCallback<MessageResponse> callback) {
         api.cancelRide(rideId, new CancelRideRequest(reason)).enqueue(
                 new Callback<MessageResponse>() {
