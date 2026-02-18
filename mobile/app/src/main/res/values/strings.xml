@@ -83,6 +83,24 @@
     <string name="admin_history_panic_label">PANIC</string>
     <string name="admin_ride_detail_title">Ride Details #%d</string>
 
+    <!-- Ride Ordering -->
+    <string name="address_autocomplete_hint">Address</string>
+    <string name="ride_order_pickup">Pickup location</string>
+    <string name="ride_order_dropoff">Final destination</string>
+    <string name="ride_order_stop">Stop %d</string>
+    <string name="ride_order_add_stop">Add Stop</string>
+    <string name="ride_order_linked_passengers">Linked passengers (emails)</string>
+    <string name="ride_order_linked_passengers_hint">Enter emails separated by comma</string>
+    <string name="ride_order_vehicle_type">Vehicle type</string>
+    <string name="ride_order_schedule">Schedule for later</string>
+    <string name="ride_order_baby">Baby Seat</string>
+    <string name="ride_order_pet">Pet Friendly</string>
+    <string name="ride_order_estimate">Estimate price</string>
+    <string name="ride_order_request">Request Now</string>
+    <string name="ride_order_vehicle_standard">Standard</string>
+    <string name="ride_order_vehicle_van">Van</string>
+    <string name="ride_order_vehicle_lux">Lux</string>
+
     <string name="lorem_ipsum">
         Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam in scelerisque sem. Mauris
         volutpat, dolor id interdum ullamcorper, risus dolor egestas lectus, sit amet mattis purus
