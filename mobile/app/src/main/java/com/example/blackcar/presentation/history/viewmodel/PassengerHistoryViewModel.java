@@ -111,6 +111,14 @@ public class PassengerHistoryViewModel extends ViewModel {
         this.currentSortAscending = ascending;
 
         if (currentRides == null || currentRides.isEmpty()) {
+            state.setValue(new PassengerHistoryViewState(
+                    false,
+                    false,
+                    null,
+                    new ArrayList<>(),
+                    currentSortField,
+                    currentSortAscending
+            ));
             return;
         }
 

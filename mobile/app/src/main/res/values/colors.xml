@@ -28,4 +28,14 @@
     <color name="bg_modal">#1a1a1a</color>
     <!-- Error Background -->
     <color name="bg_error">#1a0f0f</color>
+
+    <!-- Status Badge Colors -->
+    <color name="status_accepted">#f59e0b</color>
+    <color name="status_accepted_bg">#1af59e0b</color>
+    <color name="status_scheduled">#3b82f6</color>
+    <color name="status_scheduled_bg">#1a3b82f6</color>
+    <color name="status_in_progress">#22c55e</color>
+    <color name="status_in_progress_bg">#1a22c55e</color>
+    <color name="status_cancelled">#ef4444</color>
+    <color name="status_cancelled_bg">#1aef4444</color>
 </resources>

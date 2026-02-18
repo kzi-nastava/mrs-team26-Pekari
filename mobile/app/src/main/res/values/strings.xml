@@ -114,6 +114,30 @@
     <string name="ride_cancel">Cancel Ride</string>
     <string name="ride_request_another">Request Another Ride</string>
 
+    <!-- Driver Home -->
+    <string name="driver_home_title">Driver Dashboard</string>
+    <string name="driver_no_active_ride">No Active Ride</string>
+    <string name="driver_no_active_ride_subtitle">New ride requests will appear here</string>
+    <string name="driver_loading_ride">Loading active ride…</string>
+    <string name="driver_active_ride">Active Ride #%d</string>
+    <string name="driver_route_info">Route Information</string>
+    <string name="driver_ride_details">Ride Details</string>
+    <string name="driver_passengers">Passengers (%d)</string>
+    <string name="driver_btn_start">Start Ride</string>
+    <string name="driver_btn_cancel">Cancel Ride</string>
+    <string name="driver_btn_retry">Retry</string>
+    <string name="driver_pickup">Pickup</string>
+    <string name="driver_dropoff">Dropoff</string>
+    <string name="driver_stop">Stop %d</string>
+    <string name="driver_vehicle_type">Vehicle Type</string>
+    <string name="driver_distance">Distance</string>
+    <string name="driver_duration">Est. Duration</string>
+    <string name="driver_price">Est. Price</string>
+    <string name="driver_baby_transport">Baby Transport</string>
+    <string name="driver_pet_transport">Pet Transport</string>
+    <string name="driver_scheduled_at">Scheduled For</string>
+    <string name="driver_started_at">Started At</string>
+
     <string name="lorem_ipsum">
         Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam in scelerisque sem. Mauris
         volutpat, dolor id interdum ullamcorper, risus dolor egestas lectus, sit amet mattis purus
