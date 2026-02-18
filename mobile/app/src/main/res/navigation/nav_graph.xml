@@ -69,7 +69,22 @@
             app:exitAnim="@android:anim/slide_out_right"
             app:popEnterAnim="@android:anim/slide_in_left"
             app:popExitAnim="@android:anim/slide_out_right" />
+
+        <action
+            android:id="@+id/action_home_to_add_driver"
+            app:destination="@id/addDriverFragment"
+            app:enterAnim="@android:anim/slide_in_left"
+            app:exitAnim="@android:anim/slide_out_right"
+            app:popEnterAnim="@android:anim/slide_in_left"
+            app:popExitAnim="@android:anim/slide_out_right" />
     </fragment>
+
+    <!-- Add Driver Fragment (Admin only) -->
+    <fragment
+        android:id="@+id/addDriverFragment"
+        android:name="com.example.blackcar.presentation.admin.views.AddDriverFragment"
+        android:label="@string/title_add_driver"
+        tools:layout="@layout/fragment_add_driver" />
 
     <!-- Driver History Fragment -->
     <fragment
