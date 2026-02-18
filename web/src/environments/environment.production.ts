@@ -4,5 +4,13 @@ export const environment = {
   apiUrl: 'https://api.blackcar.com/api',
   appName: 'BlackCar',
   logLevel: 'error' as const,
-  enableDevTools: false
+  enableDevTools: false,
+  firebase: {
+    apiKey: '',
+    authDomain: '',
+    projectId: '',
+    messagingSenderId: '',
+    appId: '',
+    vapidKey: ''
+  }
 } as const;

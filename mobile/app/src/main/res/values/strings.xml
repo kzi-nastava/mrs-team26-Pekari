@@ -85,6 +85,7 @@
 
     <!-- Ride Ordering -->
     <string name="address_autocomplete_hint">Address</string>
+    <string name="ride_order_title">Request Ride</string>
     <string name="ride_order_pickup">Pickup location</string>
     <string name="ride_order_dropoff">Final destination</string>
     <string name="ride_order_stop">Stop %d</string>
@@ -100,6 +101,18 @@
     <string name="ride_order_vehicle_standard">Standard</string>
     <string name="ride_order_vehicle_van">Van</string>
     <string name="ride_order_vehicle_lux">Lux</string>
+
+    <!-- Ride Estimate -->
+    <string name="ride_estimate_title">Price Estimate</string>
+    <string name="ride_estimate_price">Estimated price</string>
+    <string name="ride_estimate_distance">Distance</string>
+    <string name="ride_estimate_duration">Duration</string>
+
+    <!-- Ride Details -->
+    <string name="ride_details_title">Ride Details</string>
+    <string name="ride_details_status">Status</string>
+    <string name="ride_cancel">Cancel Ride</string>
+    <string name="ride_request_another">Request Another Ride</string>
 
     <string name="lorem_ipsum">
         Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam in scelerisque sem. Mauris

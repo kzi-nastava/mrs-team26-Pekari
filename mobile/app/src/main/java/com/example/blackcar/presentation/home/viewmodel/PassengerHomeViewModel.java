@@ -179,8 +179,11 @@ public class PassengerHomeViewModel extends ViewModel {
         rideRepository.orderRide(req, new RideRepository.RepoCallback<OrderRideResponse>() {
             @Override
             public void onSuccess(OrderRideResponse data) {
-                boolean formDisabled = "ACCEPTED".equals(data.getStatus()) || "SCHEDULED".equals(data.getStatus());
-                state.postValue(PassengerHomeViewState.withOrderResult(data, formDisabled));
+                boolean formDisabled = "ACCEPTED".equals(data.getStatus()) || "SCHEDULED".equals(data.getStatus()) || "PENDING".equals(data.getStatus());
+                // Clear estimate when order is placed (matches web behavior)
+                PassengerHomeViewState newState = PassengerHomeViewState.withOrderResult(data, formDisabled);
+                newState.estimate = null;
+                state.postValue(newState);
             }
 
             @Override

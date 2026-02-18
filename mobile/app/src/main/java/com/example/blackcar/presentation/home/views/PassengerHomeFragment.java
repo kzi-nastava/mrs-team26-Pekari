@@ -57,6 +57,7 @@ public class PassengerHomeFragment extends Fragment {
 
     private final List<View> stopViews = new ArrayList<>();
     private FocusedField focusedField = FocusedField.NONE;
+    private int focusedStopIndex = -1; // Track which stop is focused for map click
 
     private enum FocusedField { NONE, PICKUP, DROPOFF, STOP }
 
@@ -97,37 +98,69 @@ public class PassengerHomeFragment extends Fragment {
 
         mapHelper = new MapHelper(requireContext(), mapView);
         mapHelper.setOnMapClickListener((lat, lon) -> {
-            // Allow map tap to set location: use focused field if any, otherwise default to pickup (starting location)
-            FocusedField target = focusedField != FocusedField.NONE ? focusedField : FocusedField.PICKUP;
+            // Determine target field - use focused field if any, otherwise auto-detect like web frontend
+            FocusedField target = focusedField;
+            final int targetStopIndex = focusedStopIndex;
+
+            if (target == FocusedField.NONE) {
+                // Auto-detect: if pickup is empty, set pickup; else if dropoff is empty, set dropoff
+                if (viewModel.getPickup() == null || viewModel.getPickup().getLatitude() == null) {
+                    target = FocusedField.PICKUP;
+                } else if (viewModel.getDropoff() == null || viewModel.getDropoff().getLatitude() == null) {
+                    target = FocusedField.DROPOFF;
+                } else {
+                    target = FocusedField.DROPOFF; // Default to dropoff if both filled
+                }
+            }
+
+            final FocusedField finalTarget = target;
             viewModel.reverseGeocode(lat, lon, new com.example.blackcar.data.repository.GeocodingRepository.ReverseGeocodeCallback() {
                 @Override
                 public void onSuccess(GeocodeResult result) {
                     LocationPoint lp = new LocationPoint(result.getDisplayName(), result.getLatitude(), result.getLongitude());
-                    if (target == FocusedField.PICKUP) {
-                        viewModel.setPickup(lp);
-                        setPickupAddress(result.getDisplayName());
-                    } else if (target == FocusedField.DROPOFF) {
-                        viewModel.setDropoff(lp);
-                        setDropoffAddress(result.getDisplayName());
-                    }
-                    updateMapMarkers();
+                    applyLocationToField(finalTarget, targetStopIndex, lp, result.getDisplayName());
                 }
 
                 @Override
                 public void onError(String message) {
-                    LocationPoint lp = new LocationPoint(lat + ", " + lon, lat, lon);
-                    if (target == FocusedField.PICKUP) {
-                        viewModel.setPickup(lp);
-                        setPickupAddress(lp.getAddress());
-                    } else if (target == FocusedField.DROPOFF) {
-                        viewModel.setDropoff(lp);
-                        setDropoffAddress(lp.getAddress());
-                    }
-                    updateMapMarkers();
+                    String fallbackAddress = lat + ", " + lon;
+                    LocationPoint lp = new LocationPoint(fallbackAddress, lat, lon);
+                    applyLocationToField(finalTarget, targetStopIndex, lp, fallbackAddress);
                 }
             });
         });
         mapHelper.setupMapTapOverlay();
+    }
+
+    private void applyLocationToField(FocusedField target, int stopIndex, LocationPoint lp, String address) {
+        if (target == FocusedField.PICKUP) {
+            viewModel.setPickup(lp);
+            setPickupAddress(address);
+        } else if (target == FocusedField.DROPOFF) {
+            viewModel.setDropoff(lp);
+            setDropoffAddress(address);
+        } else if (target == FocusedField.STOP && stopIndex >= 0) {
+            // Update the stop in ViewModel
+            List<LocationPoint> stops = new ArrayList<>(viewModel.getStops());
+            while (stops.size() <= stopIndex) stops.add(null);
+            stops.set(stopIndex, lp);
+            viewModel.setStops(stops);
+            // Update the stop's EditText
+            setStopAddress(stopIndex, address);
+        }
+        updateMapMarkers();
+    }
+
+    private void setStopAddress(int index, String address) {
+        if (index >= 0 && index < stopViews.size()) {
+            View stopRow = stopViews.get(index);
+            // stopRow is the LinearLayout containing the address_autocomplete and remove button
+            View autocompleteView = ((ViewGroup) stopRow).getChildAt(0);
+            TextInputEditText edit = autocompleteView.findViewById(R.id.editAddress);
+            if (edit != null) {
+                edit.setText(address);
+            }
+        }
     }
 
     private void setupAddressInputs() {
@@ -268,8 +301,6 @@ public class PassengerHomeFragment extends Fragment {
             }
         });
         binding.btnRequestAnother.setOnClickListener(v -> viewModel.resetForm());
-        binding.btnViewHistory.setOnClickListener(v ->
-                Navigation.findNavController(v).navigate(R.id.passengerHistoryFragment));
     }
 
     private void addStop() {
@@ -341,7 +372,13 @@ public class PassengerHomeFragment extends Fragment {
             public void afterTextChanged(Editable s) {}
         });
         edit.setOnFocusChangeListener((v, hasFocus) -> {
-            if (!hasFocus) recycler.setVisibility(View.GONE);
+            if (hasFocus) {
+                // Set focused field to STOP with the correct index for map click support
+                focusedField = FocusedField.STOP;
+                focusedStopIndex = index;
+            } else {
+                recycler.setVisibility(View.GONE);
+            }
         });
     }
 
@@ -373,26 +410,53 @@ public class PassengerHomeFragment extends Fragment {
 
     private void observeState() {
         viewModel.getState().observe(getViewLifecycleOwner(), state -> {
-            binding.txtError.setVisibility(state.error ? View.VISIBLE : View.GONE);
+            boolean hasOrderResult = state.orderResult != null;
+
+            // Show error only when no order result
+            binding.txtError.setVisibility(state.error && !hasOrderResult ? View.VISIBLE : View.GONE);
             if (state.error) binding.txtError.setText(state.errorMessage);
 
-            binding.layoutEstimate.setVisibility(state.estimate != null ? View.VISIBLE : View.GONE);
+            // Hide form container when order result exists (matches web behavior)
+            binding.layoutFormContainer.setVisibility(hasOrderResult ? View.GONE : View.VISIBLE);
+
+            // Show estimate only when there's no order result (matches web behavior)
+            binding.layoutEstimate.setVisibility(state.estimate != null && !hasOrderResult ? View.VISIBLE : View.GONE);
             if (state.estimate != null) {
                 binding.txtEstimatePrice.setText(PassengerHomeViewModel.formatPrice(state.estimate.getEstimatedPrice()));
                 binding.txtEstimateDistance.setText(PassengerHomeViewModel.formatDistance(state.estimate.getDistanceKm()));
                 binding.txtEstimateDuration.setText(PassengerHomeViewModel.formatDuration(state.estimate.getEstimatedDurationMinutes()));
             }
 
-            binding.layoutOrderResult.setVisibility(state.orderResult != null ? View.VISIBLE : View.GONE);
-            if (state.orderResult != null) {
-                binding.txtOrderStatus.setText(state.orderResult.getStatus());
+            // Show order result modal
+            binding.layoutOrderResult.setVisibility(hasOrderResult ? View.VISIBLE : View.GONE);
+            if (hasOrderResult) {
+                String status = state.orderResult.getStatus();
+                binding.txtOrderStatus.setText(status);
+
+                // Set status color based on status
+                int statusColor;
+                if ("CANCELLED".equals(status) || "REJECTED".equals(status)) {
+                    statusColor = getResources().getColor(R.color.accent_danger, null);
+                } else if ("ACCEPTED".equals(status) || "PENDING".equals(status) || "SCHEDULED".equals(status)) {
+                    statusColor = getResources().getColor(R.color.accent_success, null);
+                } else {
+                    statusColor = getResources().getColor(R.color.text_primary, null);
+                }
+                binding.txtOrderStatus.setTextColor(statusColor);
+
                 binding.txtOrderMessage.setText(state.orderResult.getMessage());
                 binding.txtOrderRideId.setText("Ride ID: " + state.orderResult.getRideId());
                 binding.txtOrderDriver.setText(state.orderResult.getAssignedDriverEmail() != null
                         ? "Driver: " + state.orderResult.getAssignedDriverEmail() : "");
-                boolean canCancel = "ACCEPTED".equals(state.orderResult.getStatus()) || "SCHEDULED".equals(state.orderResult.getStatus());
+                binding.txtOrderDriver.setVisibility(state.orderResult.getAssignedDriverEmail() != null ? View.VISIBLE : View.GONE);
+
+                // Show cancel button only for active rides that can be cancelled
+                boolean canCancel = "ACCEPTED".equals(status) || "SCHEDULED".equals(status) || "PENDING".equals(status);
                 binding.btnCancelRide.setVisibility(canCancel ? View.VISIBLE : View.GONE);
-                binding.btnRequestAnother.setVisibility("CANCELLED".equals(state.orderResult.getStatus()) || "REJECTED".equals(state.orderResult.getStatus()) ? View.VISIBLE : View.GONE);
+
+                // Show "Request Another" button when ride is finished/cancelled
+                boolean rideEnded = "CANCELLED".equals(status) || "REJECTED".equals(status) || "COMPLETED".equals(status);
+                binding.btnRequestAnother.setVisibility(rideEnded ? View.VISIBLE : View.GONE);
             }
 
             setFormEnabled(!state.formDisabled);
