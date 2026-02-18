@@ -1,4 +1,4 @@
-package com.pekara.tracking;
+package com.pekara.model;
 
 import com.pekara.constant.RideStatus;
 import lombok.AllArgsConstructor;

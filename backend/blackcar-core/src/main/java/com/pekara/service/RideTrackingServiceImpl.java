@@ -12,7 +12,7 @@ import com.pekara.model.User;
 import com.pekara.model.UserRole;
 import com.pekara.repository.RideRepository;
 import com.pekara.repository.UserRepository;
-import com.pekara.tracking.RideLocationCacheEntry;
+import com.pekara.model.RideLocationCacheEntry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
