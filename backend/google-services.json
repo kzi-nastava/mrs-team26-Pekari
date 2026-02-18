@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "181429850748",
+    "project_id": "blackcar-5b038",
+    "storage_bucket": "blackcar-5b038.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:181429850748:android:f9684719748cca102d6ff9",
+        "android_client_info": {
+          "package_name": "com.blackcar"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBr-TRiFIIMD5TklMAEjNl8H1Cds4Ds4nU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

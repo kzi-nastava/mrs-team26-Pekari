@@ -2,6 +2,7 @@ import { Injectable, inject, signal, effect } from '@angular/core';
 import { WebSocketService } from './websocket.service';
 import { AuthService } from './auth.service';
 import { Router } from '@angular/router';
+import { FcmService } from './fcm.service';
 
 export interface UserNotification {
   rideId: number;
@@ -16,6 +17,7 @@ export class NotificationService {
   private ws = inject(WebSocketService);
   private auth = inject(AuthService);
   private router = inject(Router);
+  private fcm = inject(FcmService);
 
   notifications = signal<UserNotification[]>([]);
   unreadCount = signal(0);
@@ -25,6 +27,8 @@ export class NotificationService {
       const user = this.auth.currentUser();
       if (user) {
         this.subscribeToNotifications(user.email);
+        // Best-effort: initialize FCM (if configured) and register browser token
+        this.fcm.tryInitAndRegister();
       } else {
         this.notifications.set([]);
         this.unreadCount.set(0);
@@ -38,7 +42,14 @@ export class NotificationService {
       this.notifications.update(list => [newNotif, ...list]);
       this.unreadCount.update(c => c + 1);
 
-      // Optional: Auto-hide toast if we were using one, but for now we just keep them in list
+      // Also surface via native browser notification as a fallback (when permission granted)
+      try {
+        if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+          new Notification('BlackCar', { body: newNotif.message });
+        }
+      } catch {
+        // ignore
+      }
     });
   }
 

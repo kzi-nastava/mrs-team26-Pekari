@@ -4,5 +4,13 @@ export const environment = {
   apiUrl: 'https://staging-api.blackcar.com/api',
   appName: 'BlackCar (Staging)',
   logLevel: 'info' as const,
-  enableDevTools: false
+  enableDevTools: false,
+  firebase: {
+    apiKey: '',
+    authDomain: '',
+    projectId: '',
+    messagingSenderId: '',
+    appId: '',
+    vapidKey: ''
+  }
 } as const;
