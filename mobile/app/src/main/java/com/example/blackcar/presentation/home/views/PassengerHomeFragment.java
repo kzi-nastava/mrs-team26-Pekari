@@ -31,6 +31,8 @@ import com.example.blackcar.databinding.FragmentPassengerHomeBinding;
 import com.example.blackcar.presentation.ViewModelFactory;
 import com.example.blackcar.presentation.home.viewmodel.PassengerHomeViewModel;
 import com.example.blackcar.presentation.history.util.MapHelper;
+import com.example.blackcar.data.repository.DriversRepository;
+import com.example.blackcar.data.api.model.OnlineDriverWithVehicleResponse;
 import com.google.android.material.button.MaterialButtonToggleGroup;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
@@ -46,14 +48,24 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
+import android.util.Log;
+
 public class PassengerHomeFragment extends Fragment {
 
+    private static final String TAG = "PassengerHomeFragment";
     private FragmentPassengerHomeBinding binding;
     private PassengerHomeViewModel viewModel;
     private MapHelper mapHelper;
     private final Handler debounceHandler = new Handler(Looper.getMainLooper());
     private Runnable debounceRunnable;
     private static final int DEBOUNCE_MS = 300;
+
+    // --- Real-time vehicles ---
+    private final DriversRepository driversRepository = new DriversRepository();
+    private final Handler vehiclesHandler = new Handler(Looper.getMainLooper());
+    private Runnable vehiclesRunnable;
+    private static final int VEHICLES_POLL_MS = 5000;
+    private List<OnlineDriverWithVehicleResponse> lastVehicles = new ArrayList<>();
 
     private final List<View> stopViews = new ArrayList<>();
     private FocusedField focusedField = FocusedField.NONE;
@@ -85,6 +97,9 @@ public class PassengerHomeFragment extends Fragment {
         setupSwitches();
         setupButtons();
         observeState();
+
+        // Start polling vehicles on map
+        startVehiclesPolling();
 
         viewModel.loadActiveRide();
     }
@@ -130,6 +145,64 @@ public class PassengerHomeFragment extends Fragment {
             });
         });
         mapHelper.setupMapTapOverlay();
+    }
+
+    private void startVehiclesPolling() {
+        Log.d(TAG, "Starting vehicles polling");
+        stopVehiclesPolling();
+        vehiclesRunnable = new Runnable() {
+            @Override
+            public void run() {
+                Log.v(TAG, "Polling vehicles...");
+                driversRepository.fetchOnlineWithVehicles(0, 100, new DriversRepository.ResultCallback() {
+                    @Override
+                    public void onSuccess(List<OnlineDriverWithVehicleResponse> data) {
+                        Log.v(TAG, "Received " + (data != null ? data.size() : 0) + " vehicles");
+                        lastVehicles = data != null ? data : new ArrayList<>();
+                        renderVehicles();
+                    }
+                    @Override
+                    public void onError(String message) {
+                        Log.w(TAG, "Vehicles polling error: " + message);
+                        // Ignore transient errors; try again next tick
+                    }
+                });
+                vehiclesHandler.postDelayed(this, VEHICLES_POLL_MS);
+            }
+        };
+        vehiclesHandler.post(vehiclesRunnable);
+    }
+
+    private void stopVehiclesPolling() {
+        Log.d(TAG, "Stopping vehicles polling");
+        if (vehiclesRunnable != null) {
+            vehiclesHandler.removeCallbacks(vehiclesRunnable);
+            vehiclesRunnable = null;
+        }
+        if (mapHelper != null) {
+            mapHelper.clearVehicleMarkers();
+        }
+    }
+
+    private void renderVehicles() {
+        if (mapHelper == null) {
+            Log.w(TAG, "mapHelper is null, cannot render vehicles");
+            return;
+        }
+        mapHelper.clearVehicleMarkers();
+        if (lastVehicles == null) return;
+        Log.v(TAG, "Rendering " + lastVehicles.size() + " vehicles on map");
+        for (OnlineDriverWithVehicleResponse v : lastVehicles) {
+            if (v == null || v.driverState == null) continue;
+            Double lat = v.driverState.latitude;
+            Double lon = v.driverState.longitude;
+            Boolean busy = v.driverState.busy;
+            if (lat == null || lon == null) continue;
+            String title = (v.vehicleRegistration != null && !v.vehicleRegistration.isEmpty())
+                    ? v.vehicleRegistration
+                    : (v.vehicleType != null ? v.vehicleType : "Vehicle");
+            mapHelper.addVehicleMarker(lat, lon, title, Boolean.TRUE.equals(busy));
+        }
     }
 
     private void applyLocationToField(FocusedField target, int stopIndex, LocationPoint lp, String address) {
@@ -406,6 +479,8 @@ public class PassengerHomeFragment extends Fragment {
         if (points.size() >= 2) {
             mapHelper.fitBounds(points);
         }
+        // Re-render vehicles after map overlays were cleared
+        renderVehicles();
     }
 
     private void observeState() {
@@ -488,6 +563,7 @@ public class PassengerHomeFragment extends Fragment {
         if (mapHelper != null) {
             mapHelper.removeMapTapOverlay();
         }
+        stopVehiclesPolling();
         binding = null;
     }
 }

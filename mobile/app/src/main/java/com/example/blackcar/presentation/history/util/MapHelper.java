@@ -28,6 +28,7 @@ public class MapHelper {
 
     private final Context context;
     private final MapView mapView;
+    private final List<Marker> vehicleMarkers = new ArrayList<>();
 
     public interface OnMapClickListener {
         void onMapClick(double latitude, double longitude);
@@ -185,6 +186,14 @@ public class MapHelper {
             case STOP:
                 drawableId = R.drawable.marker_stop;
                 break;
+            case VEHICLE_AVAILABLE:
+                // Reuse pickup (green) icon for available vehicles
+                drawableId = R.drawable.marker_pickup;
+                break;
+            case VEHICLE_BUSY:
+                // Reuse dropoff (red) icon for occupied vehicles
+                drawableId = R.drawable.marker_dropoff;
+                break;
             default:
                 drawableId = R.drawable.marker_pickup;
         }
@@ -238,6 +247,30 @@ public class MapHelper {
     public enum MarkerType {
         PICKUP,
         DROPOFF,
-        STOP
+        STOP,
+        VEHICLE_AVAILABLE,
+        VEHICLE_BUSY
+    }
+
+    // ---- Vehicle markers helpers ----
+    public void clearVehicleMarkers() {
+        for (Marker m : vehicleMarkers) {
+            mapView.getOverlayManager().remove(m);
+        }
+        vehicleMarkers.clear();
+        mapView.invalidate();
+    }
+
+    public Marker addVehicleMarker(double latitude, double longitude, String title, boolean busy) {
+        MarkerType type = busy ? MarkerType.VEHICLE_BUSY : MarkerType.VEHICLE_AVAILABLE;
+        Marker marker = new Marker(mapView);
+        marker.setPosition(new GeoPoint(latitude, longitude));
+        marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
+        marker.setTitle(title);
+        Drawable icon = getMarkerIcon(type);
+        if (icon != null) marker.setIcon(icon);
+        mapView.getOverlayManager().add(marker);
+        vehicleMarkers.add(marker);
+        return marker;
     }
 }
