@@ -7,9 +7,9 @@ import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
-import androidx.navigation.Navigation;
 
 import com.example.blackcar.R;
+import com.example.blackcar.data.session.SessionManager;
 import com.example.blackcar.databinding.FragmentHomeBinding;
 
 public class HomeFragment extends Fragment {
@@ -20,12 +20,21 @@ public class HomeFragment extends Fragment {
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         binding = FragmentHomeBinding.inflate(inflater, container, false);
-
-        binding.btnViewHistory.setOnClickListener(v ->
-                Navigation.findNavController(v).navigate(R.id.action_home_to_passenger_history)
-        );
-
         return binding.getRoot();
+    }
+
+    @Override
+    public void onViewCreated(@NonNull View view, Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+
+        String role = SessionManager.getRole();
+        Fragment child = (role != null && "passenger".equalsIgnoreCase(role))
+                ? new PassengerHomeFragment()
+                : new HomeDriverFragment();
+
+        getChildFragmentManager().beginTransaction()
+                .replace(R.id.contentContainer, child)
+                .commit();
     }
 
     @Override
