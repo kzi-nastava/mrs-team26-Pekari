@@ -13,6 +13,8 @@ import com.example.blackcar.databinding.ActivityMainBinding;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
+import android.view.MenuItem;
+
 public class MainActivity extends AppCompatActivity {
 
     private ActivityMainBinding binding;
@@ -111,8 +113,11 @@ public class MainActivity extends AppCompatActivity {
         } else {
             return;
         }
-        if (bottomNav.getMenu().findItem(itemId) != null) {
-            bottomNav.setSelectedItemId(itemId);
+        MenuItem item = bottomNav.getMenu().findItem(itemId);
+        if (item != null && !item.isChecked()) {
+            // Use setChecked to avoid triggering OnItemSelectedListener (which would cause
+            // a navigation loop when syncing after destination change)
+            item.setChecked(true);
         }
     }
 
