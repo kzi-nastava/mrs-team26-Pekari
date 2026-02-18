@@ -1,5 +1,6 @@
 package com.example.blackcar.presentation;
 
+import android.app.Application;
 import android.content.Context;
 
 import androidx.annotation.NonNull;
@@ -12,6 +13,7 @@ import com.example.blackcar.presentation.auth.viewmodel.RegisterViewModel;
 import com.example.blackcar.presentation.home.viewmodel.DriverHomeViewModel;
 import com.example.blackcar.presentation.home.viewmodel.PassengerHomeViewModel;
 import com.example.blackcar.presentation.history.viewmodel.PassengerHistoryViewModel;
+import com.example.blackcar.presentation.chat.ChatViewModel;
 import com.example.blackcar.presentation.profile.viewmodel.ProfileViewModel;
 
 public class ViewModelFactory implements ViewModelProvider.Factory {
@@ -39,6 +41,8 @@ public class ViewModelFactory implements ViewModelProvider.Factory {
             return (T) new DriverHomeViewModel();
         } else if (modelClass.isAssignableFrom(AddDriverViewModel.class)) {
             return (T) new AddDriverViewModel(context);
+        } else if (modelClass.isAssignableFrom(ChatViewModel.class)) {
+            return (T) new ChatViewModel((Application) context.getApplicationContext());
         }
         throw new IllegalArgumentException("Unknown ViewModel class: " + modelClass.getName());
     }
