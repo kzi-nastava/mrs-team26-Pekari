@@ -194,7 +194,7 @@ public class PassengerRatingRideDriverTest {
     // =====================
     // Happy Path
     // =====================
-    @Test(description = "Passenger can rate a completed ride )
+    @Test(description = "Passenger can rate a completed ride" )
     public void testRateRideHappyPath() {
         navigateToHistoryPage();
 

@@ -117,6 +117,61 @@
     <string name="admin_history_panic_label">PANIC</string>
     <string name="admin_ride_detail_title">Ride Details #%d</string>
 
+    <!-- Ride Ordering -->
+    <string name="address_autocomplete_hint">Address</string>
+    <string name="ride_order_title">Request Ride</string>
+    <string name="ride_order_pickup">Pickup location</string>
+    <string name="ride_order_dropoff">Final destination</string>
+    <string name="ride_order_stop">Stop %d</string>
+    <string name="ride_order_add_stop">Add Stop</string>
+    <string name="ride_order_linked_passengers">Linked passengers (emails)</string>
+    <string name="ride_order_linked_passengers_hint">Enter emails separated by comma</string>
+    <string name="ride_order_vehicle_type">Vehicle type</string>
+    <string name="ride_order_schedule">Schedule for later</string>
+    <string name="ride_order_baby">Baby Seat</string>
+    <string name="ride_order_pet">Pet Friendly</string>
+    <string name="ride_order_estimate">Estimate price</string>
+    <string name="ride_order_request">Request Now</string>
+    <string name="ride_order_vehicle_standard">Standard</string>
+    <string name="ride_order_vehicle_van">Van</string>
+    <string name="ride_order_vehicle_lux">Lux</string>
+
+    <!-- Ride Estimate -->
+    <string name="ride_estimate_title">Price Estimate</string>
+    <string name="ride_estimate_price">Estimated price</string>
+    <string name="ride_estimate_distance">Distance</string>
+    <string name="ride_estimate_duration">Duration</string>
+
+    <!-- Ride Details -->
+    <string name="ride_details_title">Ride Details</string>
+    <string name="ride_details_status">Status</string>
+    <string name="ride_cancel">Cancel Ride</string>
+    <string name="ride_request_another">Request Another Ride</string>
+
+    <!-- Driver Home -->
+    <string name="driver_home_title">Driver Dashboard</string>
+    <string name="driver_no_active_ride">No Active Ride</string>
+    <string name="driver_no_active_ride_subtitle">New ride requests will appear here</string>
+    <string name="driver_loading_ride">Loading active ride…</string>
+    <string name="driver_active_ride">Active Ride #%d</string>
+    <string name="driver_route_info">Route Information</string>
+    <string name="driver_ride_details">Ride Details</string>
+    <string name="driver_passengers">Passengers (%d)</string>
+    <string name="driver_btn_start">Start Ride</string>
+    <string name="driver_btn_cancel">Cancel Ride</string>
+    <string name="driver_btn_retry">Retry</string>
+    <string name="driver_pickup">Pickup</string>
+    <string name="driver_dropoff">Dropoff</string>
+    <string name="driver_stop">Stop %d</string>
+    <string name="driver_vehicle_type">Vehicle Type</string>
+    <string name="driver_distance">Distance</string>
+    <string name="driver_duration">Est. Duration</string>
+    <string name="driver_price">Est. Price</string>
+    <string name="driver_baby_transport">Baby Transport</string>
+    <string name="driver_pet_transport">Pet Transport</string>
+    <string name="driver_scheduled_at">Scheduled For</string>
+    <string name="driver_started_at">Started At</string>
+
     <string name="lorem_ipsum">
         Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam in scelerisque sem. Mauris
         volutpat, dolor id interdum ullamcorper, risus dolor egestas lectus, sit amet mattis purus

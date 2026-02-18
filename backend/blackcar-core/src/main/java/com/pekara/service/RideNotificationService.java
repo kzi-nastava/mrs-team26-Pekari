@@ -12,4 +12,10 @@ public interface RideNotificationService {
 
     void sendCancellationNotifications(String driverEmail, String creatorEmail, boolean isDriver, boolean isCreator, String reason);
     void sendRideCompletionNotifications(Long rideId, List<String> passengerEmails, BigDecimal finalPrice);
+
+    /**
+     * Register a client FCM token for the given user email and subscribe it to that user's topic.
+     * No-ops gracefully if Firebase isn't configured.
+     */
+    void registerClientToken(String email, String fcmToken);
 }

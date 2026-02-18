@@ -9,6 +9,8 @@ import androidx.lifecycle.ViewModelProvider;
 import com.example.blackcar.presentation.admin.viewmodel.AddDriverViewModel;
 import com.example.blackcar.presentation.auth.viewmodel.LoginViewModel;
 import com.example.blackcar.presentation.auth.viewmodel.RegisterViewModel;
+import com.example.blackcar.presentation.home.viewmodel.DriverHomeViewModel;
+import com.example.blackcar.presentation.home.viewmodel.PassengerHomeViewModel;
 import com.example.blackcar.presentation.history.viewmodel.PassengerHistoryViewModel;
 import com.example.blackcar.presentation.profile.viewmodel.ProfileViewModel;
 
@@ -31,6 +33,10 @@ public class ViewModelFactory implements ViewModelProvider.Factory {
             return (T) new ProfileViewModel(context);
         } else if (modelClass.isAssignableFrom(PassengerHistoryViewModel.class)) {
             return (T) new PassengerHistoryViewModel();
+        } else if (modelClass.isAssignableFrom(PassengerHomeViewModel.class)) {
+            return (T) new PassengerHomeViewModel();
+        } else if (modelClass.isAssignableFrom(DriverHomeViewModel.class)) {
+            return (T) new DriverHomeViewModel();
         } else if (modelClass.isAssignableFrom(AddDriverViewModel.class)) {
             return (T) new AddDriverViewModel(context);
         }
