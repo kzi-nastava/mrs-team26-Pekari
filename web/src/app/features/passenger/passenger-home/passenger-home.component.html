@@ -161,7 +161,7 @@
           </ng-container>
 
           <!-- Single info modal: show either error, estimate, or order result -->
-          <p class="error" *ngIf="error && !estimate && !orderResult">{{ error }}</p>
+          <p #errorMessage class="error" *ngIf="error && !estimate && !orderResult">{{ error }}</p>
 
           <div class="info-modal" *ngIf="estimate && !orderResult">
             <div class="modal-title">Price Estimate</div>

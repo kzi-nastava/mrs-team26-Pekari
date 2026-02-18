@@ -1,5 +1,6 @@
 package com.pekari.e2e.pages;
 
+import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
@@ -16,6 +17,9 @@ public class PassengerHistoryPage {
 
     private WebDriver driver;
     private WebDriverWait wait;
+
+    @FindBy(css = "a[href='/passenger-home']")
+    private WebElement homeLink;
 
     @FindBy(css = ".page-title")
     private WebElement pageTitle;
@@ -122,5 +126,59 @@ public class PassengerHistoryPage {
         return ridePrices.stream()
                 .map(WebElement::getText)
                 .toList();
+    }
+
+    public void clickHomeLink() {
+        wait.until(ExpectedConditions.elementToBeClickable(homeLink));
+        homeLink.click();
+    }
+
+    public List<WebElement> getRideCards() {
+        return rideCards;
+    }
+
+    public WebElement getFavoriteButtonForRide(int rideIndex) {
+        if (rideIndex < 0 || rideIndex >= rideCards.size()) {
+            throw new IndexOutOfBoundsException("Ride index: " + rideIndex + ", count: " + rideCards.size());
+        }
+        WebElement card = rideCards.get(rideIndex);
+        return card.findElement(By.cssSelector(".favorite-btn"));
+    }
+
+    public void clickFavoriteOnRide(int rideIndex) {
+        WebElement btn = getFavoriteButtonForRide(rideIndex);
+        wait.until(ExpectedConditions.elementToBeClickable(btn));
+        btn.click();
+    }
+
+    public boolean isFavoriteButtonFavorited(int rideIndex) {
+        WebElement btn = getFavoriteButtonForRide(rideIndex);
+        return btn.getAttribute("class") != null && btn.getAttribute("class").contains("favorited");
+    }
+
+    public boolean isFavoriteButtonEnabled(int rideIndex) {
+        WebElement btn = getFavoriteButtonForRide(rideIndex);
+        return btn.isEnabled();
+    }
+
+    /**
+     * Returns the index of the first ride whose favorite button is enabled (ride has coordinates).
+     * Returns -1 if none.
+     */
+    public int getFirstRideIndexWithEnabledFavoriteButton() {
+        for (int i = 0; i < rideCards.size(); i++) {
+            if (isFavoriteButtonEnabled(i)) return i;
+        }
+        return -1;
+    }
+
+    /**
+     * Returns the index of the first ride that is currently favorited, or -1 if none.
+     */
+    public int getFirstFavoritedRideIndex() {
+        for (int i = 0; i < rideCards.size(); i++) {
+            if (isFavoriteButtonFavorited(i)) return i;
+        }
+        return -1;
     }
 }

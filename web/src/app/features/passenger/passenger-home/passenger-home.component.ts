@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnDestroy, OnInit, inject, ChangeDetectorRef, ViewChild, ViewChildren, QueryList } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject, ChangeDetectorRef, ViewChild, ViewChildren, QueryList, ElementRef } from '@angular/core';
 import { FormArray, FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Subscription } from 'rxjs';
 import { filter, take } from 'rxjs/operators';
@@ -21,6 +21,7 @@ type FocusedInput = 'pickup' | 'dropoff' | { type: 'stop', index: number } | nul
 export class PassengerHomeComponent implements OnInit, OnDestroy {
   @ViewChild('pickupAutocomplete') pickupAutocomplete?: AddressAutocompleteComponent;
   @ViewChild('dropoffAutocomplete') dropoffAutocomplete?: AddressAutocompleteComponent;
+  @ViewChild('errorMessage', { read: ElementRef }) errorMessageEl?: ElementRef<HTMLElement>;
   @ViewChildren('stopAutocomplete') stopAutocompletes?: QueryList<AddressAutocompleteComponent>;
 
   private fb = inject(FormBuilder);
@@ -369,6 +370,10 @@ export class PassengerHomeComponent implements OnInit, OnDestroy {
   chooseFavoriteRoute() {
     if (this.favoriteRoutes.length === 0) {
       this.error = 'You don\'t have any favorite routes yet. Complete a ride and add it to favorites from your ride history.';
+      this.cdr.detectChanges();
+      setTimeout(() => {
+        this.errorMessageEl?.nativeElement?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 0);
       return;
     }
     this.showFavoriteRoutesModal = true;
