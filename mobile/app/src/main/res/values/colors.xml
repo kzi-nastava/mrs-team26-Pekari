@@ -24,4 +24,8 @@
     <color name="divider">#333333</color>
     <!-- Subtle Text -->
     <color name="text_subtle">#888888</color>
+    <!-- Modal Background -->
+    <color name="bg_modal">#1a1a1a</color>
+    <!-- Error Background -->
+    <color name="bg_error">#1a0f0f</color>
 </resources>
