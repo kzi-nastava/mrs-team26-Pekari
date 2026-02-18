@@ -29,8 +29,8 @@ public class PassengerRatingRideDriverTest {
     private PassengerHistoryPage passengerHistoryPage;
 
     private static final String BASE_URL = "http://localhost:4200";
-    private static final String TEST_EMAIL = "zoran.repic@jetbrains.com";
-    private static final String TEST_PASSWORD = "Zoranrepic10";
+    private static final String TEST_EMAIL = "igorami44@gmail.com";
+    private static final String TEST_PASSWORD = "Password123";
 
     // Enable to slow steps for visual debugging if needed
     private static final boolean DEBUG_MODE = false;
