@@ -2,6 +2,7 @@ package com.example.blackcar.data.api.service;
 
 import com.example.blackcar.data.api.model.LoginRequest;
 import com.example.blackcar.data.api.model.LoginResponse;
+import com.example.blackcar.data.api.model.RegisterDriverResponse;
 import com.example.blackcar.data.api.model.RegisterResponse;
 
 import okhttp3.RequestBody;
@@ -26,6 +27,22 @@ public interface AuthApiService {
             @Part("lastName") RequestBody lastName,
             @Part("address") RequestBody address,
             @Part("phoneNumber") RequestBody phoneNumber
+    );
+
+    @Multipart
+    @POST("auth/register/driver")
+    Call<RegisterDriverResponse> registerDriver(
+            @Part("email") RequestBody email,
+            @Part("firstName") RequestBody firstName,
+            @Part("lastName") RequestBody lastName,
+            @Part("address") RequestBody address,
+            @Part("phoneNumber") RequestBody phoneNumber,
+            @Part("vehicle.model") RequestBody vehicleModel,
+            @Part("vehicle.type") RequestBody vehicleType,
+            @Part("vehicle.licensePlate") RequestBody licensePlate,
+            @Part("vehicle.numberOfSeats") RequestBody numberOfSeats,
+            @Part("vehicle.babyFriendly") RequestBody babyFriendly,
+            @Part("vehicle.petFriendly") RequestBody petFriendly
     );
 
     @POST("auth/logout")

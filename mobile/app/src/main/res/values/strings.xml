@@ -9,6 +9,40 @@
     <string name="title_login">Login</string>
     <string name="title_forgot_password">Forgot Password</string>
     <string name="title_register">Register</string>
+    <string name="title_add_driver">Add Driver</string>
+
+    <!-- Add Driver (Admin) -->
+    <string name="add_driver_title">Add Driver</string>
+    <string name="add_driver_subtitle">Register a new driver. An activation link will be sent to their email.</string>
+    <string name="add_driver_section_driver">Driver information</string>
+    <string name="add_driver_section_vehicle">Vehicle</string>
+    <string name="add_driver_first_name">First name</string>
+    <string name="add_driver_first_name_hint">John</string>
+    <string name="add_driver_last_name">Last name</string>
+    <string name="add_driver_last_name_hint">Doe</string>
+    <string name="add_driver_email">Email</string>
+    <string name="add_driver_email_hint">driver@email.com</string>
+    <string name="add_driver_address">Address</string>
+    <string name="add_driver_address_hint">Street, City</string>
+    <string name="add_driver_phone">Phone number</string>
+    <string name="add_driver_phone_hint">+381 6x xxx xxxx</string>
+    <string name="add_driver_vehicle_model">Vehicle model</string>
+    <string name="add_driver_vehicle_model_hint">e.g. Toyota Corolla</string>
+    <string name="add_driver_vehicle_type">Vehicle type</string>
+    <string name="add_driver_license_plate">License plate</string>
+    <string name="add_driver_license_plate_hint">AB-123-CD</string>
+    <string name="add_driver_seats">Number of seats</string>
+    <string name="add_driver_seats_hint">1–8</string>
+    <string name="add_driver_baby_friendly">Baby transport</string>
+    <string name="add_driver_pet_friendly">Pet transport</string>
+    <string name="add_driver_submit">Register driver</string>
+    <string name="add_driver_vehicle_type_standard">Standard</string>
+    <string name="add_driver_vehicle_type_van">Van</string>
+    <string name="add_driver_vehicle_type_lux">Luxury</string>
+    <string name="add_driver_validation_required">Please fill all required fields</string>
+    <string name="add_driver_validation_email">Enter a valid email</string>
+    <string name="add_driver_validation_phone">Phone must be 10–15 digits</string>
+    <string name="add_driver_validation_seats">Seats must be between 1 and 8</string>
 
     <!-- Profile Feature -->
     <string name="profile_title">Profile Information</string>

@@ -7,6 +7,7 @@ import androidx.annotation.NonNull;
 import com.example.blackcar.data.api.ApiClient;
 import com.example.blackcar.data.api.model.LoginRequest;
 import com.example.blackcar.data.api.model.LoginResponse;
+import com.example.blackcar.data.api.model.RegisterDriverResponse;
 import com.example.blackcar.data.api.model.RegisterResponse;
 import com.example.blackcar.data.api.service.AuthApiService;
 import com.example.blackcar.data.session.SessionManager;
@@ -106,6 +107,66 @@ public class AuthRepository {
 
                     @Override
                     public void onFailure(@NonNull Call<RegisterResponse> call, @NonNull Throwable t) {
+                        callback.onError("Network error. Please check your internet connection.");
+                    }
+                });
+    }
+
+    public void registerDriver(String email, String firstName, String lastName, String address, String phoneNumber,
+                               String vehicleModel, String vehicleType, String licensePlate, int numberOfSeats,
+                               boolean babyFriendly, boolean petFriendly,
+                               RepoCallback<RegisterDriverResponse> callback) {
+        String cleanPhone = phoneNumber != null ? phoneNumber.replaceAll("[^0-9+]", "") : "";
+        MediaType text = MediaType.parse("text/plain");
+
+        RequestBody emailBody = RequestBody.create(text, email != null ? email : "");
+        RequestBody firstNameBody = RequestBody.create(text, firstName != null ? firstName : "");
+        RequestBody lastNameBody = RequestBody.create(text, lastName != null ? lastName : "");
+        RequestBody addressBody = RequestBody.create(text, address != null ? address : "");
+        RequestBody phoneBody = RequestBody.create(text, cleanPhone);
+        RequestBody vehicleModelBody = RequestBody.create(text, vehicleModel != null ? vehicleModel : "");
+        RequestBody vehicleTypeBody = RequestBody.create(text, vehicleType != null ? vehicleType : "STANDARD");
+        RequestBody licensePlateBody = RequestBody.create(text, licensePlate != null ? licensePlate : "");
+        RequestBody numberOfSeatsBody = RequestBody.create(text, String.valueOf(numberOfSeats));
+        RequestBody babyFriendlyBody = RequestBody.create(text, babyFriendly ? "true" : "false");
+        RequestBody petFriendlyBody = RequestBody.create(text, petFriendly ? "true" : "false");
+
+        api.registerDriver(emailBody, firstNameBody, lastNameBody, addressBody, phoneBody,
+                vehicleModelBody, vehicleTypeBody, licensePlateBody, numberOfSeatsBody,
+                babyFriendlyBody, petFriendlyBody)
+                .enqueue(new Callback<RegisterDriverResponse>() {
+                    @Override
+                    public void onResponse(@NonNull Call<RegisterDriverResponse> call, @NonNull Response<RegisterDriverResponse> response) {
+                        if (response.isSuccessful() && response.body() != null) {
+                            callback.onSuccess(response.body());
+                        } else {
+                            String message = "Failed to register driver";
+                            if (response.code() == 409) {
+                                try {
+                                    if (response.errorBody() != null) {
+                                        String err = response.errorBody().string();
+                                        if (err != null && (err.toLowerCase().contains("license") || err.contains("plate"))) {
+                                            message = "Vehicle with this license plate already registered";
+                                        } else {
+                                            message = "Email already exists";
+                                        }
+                                    } else {
+                                        message = "Email or license plate already registered";
+                                    }
+                                } catch (Exception e) {
+                                    message = "Email or license plate already registered";
+                                }
+                            } else if (response.code() == 400) {
+                                message = "Invalid data. Check all fields.";
+                            } else if (response.code() == 403) {
+                                message = "Access denied. Admin only.";
+                            }
+                            callback.onError(message);
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(@NonNull Call<RegisterDriverResponse> call, @NonNull Throwable t) {
                         callback.onError("Network error. Please check your internet connection.");
                     }
                 });
