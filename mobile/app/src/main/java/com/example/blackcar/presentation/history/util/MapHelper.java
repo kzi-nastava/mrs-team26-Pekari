@@ -9,8 +9,10 @@ import androidx.core.content.ContextCompat;
 import com.example.blackcar.R;
 import com.example.blackcar.data.api.model.LocationPoint;
 
+import org.osmdroid.events.MapEventsReceiver;
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
+import org.osmdroid.views.overlay.MapEventsOverlay;
 import org.osmdroid.views.overlay.Marker;
 import org.osmdroid.views.overlay.Polyline;
 
@@ -19,16 +21,32 @@ import java.util.List;
 
 /**
  * Helper class for drawing routes and markers on OpenStreetMap (OSMDroid)
- * Similar to Leaflet map component used in frontend
+ * Similar to Leaflet map component used in frontend.
+ * Uses app colors: pickup green (#22c55e), dropoff red (#ef4444), stops blue (#3b82f6)
  */
 public class MapHelper {
 
     private final Context context;
     private final MapView mapView;
 
+    public interface OnMapClickListener {
+        void onMapClick(double latitude, double longitude);
+    }
+
+    private OnMapClickListener mapClickListener;
+    private MapEventsOverlay mapEventsOverlay;
+
     public MapHelper(Context context, MapView mapView) {
         this.context = context;
         this.mapView = mapView;
+    }
+
+    /**
+     * Set listener for map taps. When set, map taps will emit coordinates.
+     * Pass null to disable.
+     */
+    public void setOnMapClickListener(OnMapClickListener listener) {
+        this.mapClickListener = listener;
     }
 
     /**
@@ -140,34 +158,80 @@ public class MapHelper {
     }
 
     /**
-     * Clear all overlays from map
+     * Clear all overlays from map (markers, polylines).
+     * Preserves and re-adds the map tap overlay so tap-to-select-location keeps working.
      */
     public void clearMap() {
+        MapEventsOverlay tapOverlay = this.mapEventsOverlay;
         mapView.getOverlayManager().clear();
+        if (tapOverlay != null) {
+            mapView.getOverlays().add(0, tapOverlay);
+        }
     }
 
     /**
      * Get marker icon based on type
+     * Uses app colors: pickup green, dropoff red, stop blue
      */
     private Drawable getMarkerIcon(MarkerType type) {
-        try {
-            int drawableId;
-            switch (type) {
-                case PICKUP:
-                    drawableId = android.R.drawable.ic_menu_mylocation; // Green-ish default
-                    break;
-                case DROPOFF:
-                    drawableId = android.R.drawable.ic_dialog_map; // Red-ish default
-                    break;
-                case STOP:
-                    drawableId = android.R.drawable.ic_menu_compass; // Blue-ish default
-                    break;
-                default:
-                    drawableId = android.R.drawable.ic_menu_mylocation;
+        int drawableId;
+        switch (type) {
+            case PICKUP:
+                drawableId = R.drawable.marker_pickup;
+                break;
+            case DROPOFF:
+                drawableId = R.drawable.marker_dropoff;
+                break;
+            case STOP:
+                drawableId = R.drawable.marker_stop;
+                break;
+            default:
+                drawableId = R.drawable.marker_pickup;
+        }
+        Drawable d = ContextCompat.getDrawable(context, drawableId);
+        if (d != null) {
+            d.setBounds(0, 0, d.getIntrinsicWidth(), d.getIntrinsicHeight());
+        }
+        return d;
+    }
+
+    /**
+     * Draw a polyline route using app accent color (#3b82f6)
+     */
+    public void drawRoute(List<LocationPoint> points) {
+        drawRoute(points, Color.parseColor("#3b82f6"));
+    }
+
+    /**
+     * Enable map click handling for setting location (e.g. pickup/dropoff).
+     * Call from fragment after map is ready. Call setOnMapClickListener first.
+     */
+    public void setupMapTapOverlay() {
+        if (mapEventsOverlay != null) return;
+        mapEventsOverlay = new MapEventsOverlay(new MapEventsReceiver() {
+            @Override
+            public boolean singleTapConfirmedHelper(GeoPoint p) {
+                if (mapClickListener != null) {
+                    mapClickListener.onMapClick(p.getLatitude(), p.getLongitude());
+                }
+                return false;
             }
-            return ContextCompat.getDrawable(context, drawableId);
-        } catch (Exception e) {
-            return null;
+
+            @Override
+            public boolean longPressHelper(GeoPoint p) {
+                return false;
+            }
+        });
+        mapView.getOverlays().add(0, mapEventsOverlay);
+    }
+
+    /**
+     * Remove map tap overlay (e.g. when form is locked)
+     */
+    public void removeMapTapOverlay() {
+        if (mapEventsOverlay != null) {
+            mapView.getOverlays().remove(mapEventsOverlay);
+            mapEventsOverlay = null;
         }
     }
 
