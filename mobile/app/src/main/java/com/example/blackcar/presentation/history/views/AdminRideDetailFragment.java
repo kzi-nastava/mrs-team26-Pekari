@@ -489,6 +489,7 @@ public class AdminRideDetailFragment extends DialogFragment {
         super.onDestroyView();
         if (mapView != null) {
             mapView.onDetach();
+            mapView = null;
         }
         binding = null;
     }

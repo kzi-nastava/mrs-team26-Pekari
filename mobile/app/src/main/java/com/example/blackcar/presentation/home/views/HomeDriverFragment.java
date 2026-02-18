@@ -12,6 +12,7 @@ import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.navigation.Navigation;
 
 import com.example.blackcar.R;
 import com.example.blackcar.data.api.model.ActiveRideResponse;
@@ -43,6 +44,8 @@ public class HomeDriverFragment extends Fragment {
 
         setupButtons();
         observeState();
+
+        binding.fabChat.setOnClickListener(v -> Navigation.findNavController(v).navigate(R.id.action_home_to_chat));
 
         viewModel.loadActiveRide();
         viewModel.startPolling();

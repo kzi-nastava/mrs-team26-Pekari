@@ -386,6 +386,7 @@ public class PassengerHomeFragment extends Fragment {
             }
         });
         binding.btnRequestAnother.setOnClickListener(v -> viewModel.resetForm());
+        binding.fabChat.setOnClickListener(v -> Navigation.findNavController(v).navigate(R.id.action_home_to_chat));
     }
 
     private void addStop() {
@@ -587,12 +588,43 @@ public class PassengerHomeFragment extends Fragment {
     }
 
     @Override
+    public void onResume() {
+        super.onResume();
+        if (binding != null && binding.includeMap != null) {
+            MapView mapView = (MapView) binding.includeMap.getRoot();
+            if (mapView != null) {
+                mapView.onResume();
+            }
+        }
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        if (binding != null && binding.includeMap != null) {
+            MapView mapView = (MapView) binding.includeMap.getRoot();
+            if (mapView != null) {
+                mapView.onPause();
+            }
+        }
+    }
+
+    @Override
     public void onDestroyView() {
         super.onDestroyView();
         if (mapHelper != null) {
             mapHelper.removeMapTapOverlay();
         }
         stopVehiclesPolling();
+        
+        // Safety null check for mapView which is accessed via includeMap binding
+        if (binding != null && binding.includeMap != null) {
+            MapView mapView = (MapView) binding.includeMap.getRoot();
+            if (mapView != null) {
+                mapView.onDetach();
+            }
+        }
+        
         binding = null;
     }
 }

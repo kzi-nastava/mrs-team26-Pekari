@@ -147,6 +147,7 @@
     <string name="ride_details_status">Status</string>
     <string name="ride_cancel">Cancel Ride</string>
     <string name="ride_request_another">Request Another Ride</string>
+    <string name="title_chat">Support Chat</string>
 
     <!-- Passenger Home -->
     <string name="passenger_btn_request_stop">Request Stop</string>
