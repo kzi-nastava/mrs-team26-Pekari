@@ -488,6 +488,18 @@
                                     android:layout_marginTop="16dp"
                                     android:visibility="gone" />
 
+                                <!-- Panic Button -->
+                                <Button
+                                    android:id="@+id/btnPanic"
+                                    style="@style/Widget.Material3.Button"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:text="@string/passenger_btn_panic"
+                                    android:backgroundTint="@color/btn_panic"
+                                    android:textColor="@color/white"
+                                    android:layout_marginTop="12dp"
+                                    android:visibility="gone" />
+
                                 <!-- Cancel Ride Button -->
                                 <Button
                                     android:id="@+id/btnCancelRide"

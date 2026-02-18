@@ -300,6 +300,12 @@ public class PassengerHomeFragment extends Fragment {
                 if (rideId != null) viewModel.requestStopRide(rideId);
             }
         });
+        binding.btnPanic.setOnClickListener(v -> {
+            if (viewModel.getState().getValue() != null && viewModel.getState().getValue().orderResult != null) {
+                Long rideId = viewModel.getState().getValue().orderResult.getRideId();
+                if (rideId != null) viewModel.activatePanic(rideId);
+            }
+        });
         binding.btnCancelRide.setOnClickListener(v -> {
             if (viewModel.getState().getValue() != null && viewModel.getState().getValue().orderResult != null) {
                 Long rideId = viewModel.getState().getValue().orderResult.getRideId();
@@ -459,6 +465,18 @@ public class PassengerHomeFragment extends Fragment {
                 // Show request stop button only during IN_PROGRESS and not already requested
                 boolean canRequestStop = PassengerHomeViewModel.canRequestStop(status) && !state.stopRequested;
                 binding.btnRequestStop.setVisibility(canRequestStop ? View.VISIBLE : View.GONE);
+
+                // Show panic button during IN_PROGRESS or STOP_REQUESTED
+                boolean canPanic = PassengerHomeViewModel.canActivatePanic(status);
+                binding.btnPanic.setVisibility(canPanic ? View.VISIBLE : View.GONE);
+                binding.btnPanic.setEnabled(!state.panicActivated);
+                if (state.panicActivated) {
+                    binding.btnPanic.setText(R.string.passenger_panic_activated);
+                    binding.btnPanic.setBackgroundTintList(getResources().getColorStateList(R.color.btn_panic_disabled, null));
+                } else {
+                    binding.btnPanic.setText(R.string.passenger_btn_panic);
+                    binding.btnPanic.setBackgroundTintList(getResources().getColorStateList(R.color.btn_panic, null));
+                }
 
                 // Show cancel button only for active rides that can be cancelled (but not during IN_PROGRESS or STOP_REQUESTED)
                 boolean canCancel = ("ACCEPTED".equals(status) || "SCHEDULED".equals(status) || "PENDING".equals(status))

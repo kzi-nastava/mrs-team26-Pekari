@@ -242,8 +242,39 @@ public class PassengerHomeViewModel extends ViewModel {
         });
     }
 
+    public void activatePanic(Long rideId) {
+        PassengerHomeViewState current = state.getValue();
+        if (current == null || current.activeRide == null) return;
+
+        state.setValue(PassengerHomeViewState.loading());
+
+        rideRepository.activatePanic(rideId, new RideRepository.RepoCallback<com.example.blackcar.data.api.model.MessageResponse>() {
+            @Override
+            public void onSuccess(com.example.blackcar.data.api.model.MessageResponse data) {
+                // Update state to show panic activated
+                PassengerHomeViewState s = PassengerHomeViewState.withActiveRide(current.activeRide);
+                s.panicActivated = true;
+                s.stopRequested = current.stopRequested;
+                if (s.orderResult != null) {
+                    s.orderResult.setStatus(current.orderResult.getStatus());
+                    s.orderResult.setMessage(current.orderResult.getMessage());
+                }
+                state.postValue(s);
+            }
+
+            @Override
+            public void onError(String message) {
+                state.postValue(PassengerHomeViewState.error(message));
+            }
+        });
+    }
+
     public static boolean canRequestStop(String status) {
         return "IN_PROGRESS".equals(status);
+    }
+
+    public static boolean canActivatePanic(String status) {
+        return "IN_PROGRESS".equals(status) || "STOP_REQUESTED".equals(status);
     }
 
     public void searchAddress(String query, GeocodingRepository.GeocodeCallback callback) {

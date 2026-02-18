@@ -117,6 +117,8 @@
     <!-- Passenger Home -->
     <string name="passenger_btn_request_stop">Request Stop</string>
     <string name="passenger_stop_requested_message">Stop requested. Driver will stop at the nearest safe location.</string>
+    <string name="passenger_btn_panic">🚨 PANIC</string>
+    <string name="passenger_panic_activated">🚨 PANIC ACTIVATED</string>
 
     <!-- Driver Home -->
     <string name="driver_home_title">Driver Dashboard</string>
