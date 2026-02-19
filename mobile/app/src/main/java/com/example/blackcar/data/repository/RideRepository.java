@@ -186,6 +186,27 @@ public class RideRepository {
                 });
     }
 
+    public void getAllActiveRides(RepoCallback<java.util.List<AdminRideHistoryResponse>> callback) {
+        api.getAllActiveRides().enqueue(
+                new Callback<java.util.List<AdminRideHistoryResponse>>() {
+                    @Override
+                    public void onResponse(@NonNull Call<java.util.List<AdminRideHistoryResponse>> call,
+                                         @NonNull Response<java.util.List<AdminRideHistoryResponse>> response) {
+                        if (response.isSuccessful() && response.body() != null) {
+                            callback.onSuccess(response.body());
+                        } else {
+                            callback.onError(parseErrorMessage(response, "Failed to load active rides"));
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(@NonNull Call<java.util.List<AdminRideHistoryResponse>> call,
+                                        @NonNull Throwable t) {
+                        callback.onError("Network error. Please check your internet connection.");
+                    }
+                });
+    }
+
     public void estimateRide(EstimateRideRequest request, RepoCallback<RideEstimateResponse> callback) {
         api.estimateRide(request).enqueue(
                 new Callback<RideEstimateResponse>() {

@@ -97,6 +97,14 @@
         <action
             android:id="@+id/action_home_to_rideTracking"
             app:destination="@id/rideTrackingFragment" />
+
+        <action
+            android:id="@+id/action_home_to_pricing_management"
+            app:destination="@id/pricingManagementFragment"
+            app:enterAnim="@android:anim/slide_in_left"
+            app:exitAnim="@android:anim/slide_out_right"
+            app:popEnterAnim="@android:anim/slide_in_left"
+            app:popExitAnim="@android:anim/slide_out_right" />
     </fragment>
 
     <!-- Ride Tracking Fragment -->
@@ -158,7 +166,21 @@
             app:popUpToInclusive="true" />
         <action
             android:id="@+id/action_profile_to_user_management"
-            app:destination="@id/userManagementFragment"
+            app:enterAnim="@android:anim/slide_in_left"
+            app:exitAnim="@android:anim/slide_out_right"
+            app:popEnterAnim="@android:anim/slide_in_left"
+            app:popExitAnim="@android:anim/slide_out_right"
+            app:destination="@id/userManagementFragment" />
+        <action
+            android:id="@+id/action_profile_to_add_driver"
+            app:destination="@id/addDriverFragment"
+            app:enterAnim="@android:anim/slide_in_left"
+            app:exitAnim="@android:anim/slide_out_right"
+            app:popEnterAnim="@android:anim/slide_in_left"
+            app:popExitAnim="@android:anim/slide_out_right" />
+        <action
+            android:id="@+id/action_profile_to_pricing_management"
+            app:destination="@id/pricingManagementFragment"
             app:enterAnim="@android:anim/slide_in_left"
             app:exitAnim="@android:anim/slide_out_right"
             app:popEnterAnim="@android:anim/slide_in_left"
@@ -178,5 +200,12 @@
         android:name="com.example.blackcar.presentation.admin.views.PanicPanelFragment"
         android:label="@string/title_panic_panel"
         tools:layout="@layout/fragment_panic_panel" />
+
+    <!-- Pricing Management Fragment (Admin only) -->
+    <fragment
+        android:id="@+id/pricingManagementFragment"
+        android:name="com.example.blackcar.presentation.admin.views.PricingManagementFragment"
+        android:label="Ride Pricing"
+        tools:layout="@layout/fragment_pricing_management" />
 
 </navigation>

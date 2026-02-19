@@ -119,6 +119,16 @@ public class ProfileFragment extends Fragment {
             NavController nav = Navigation.findNavController(binding.getRoot());
             nav.navigate(R.id.action_profile_to_user_management);
         });
+
+        binding.btnAddDriver.setOnClickListener(v -> {
+            NavController nav = Navigation.findNavController(binding.getRoot());
+            nav.navigate(R.id.action_profile_to_add_driver);
+        });
+
+        binding.btnPricingManagement.setOnClickListener(v -> {
+            NavController nav = Navigation.findNavController(binding.getRoot());
+            nav.navigate(R.id.action_profile_to_pricing_management);
+        });
     }
 
     private void observeState() {
@@ -229,11 +239,11 @@ public class ProfileFragment extends Fragment {
     private void renderApprovals(ProfileUIModel profile, List<ApprovalRequestUIModel> requests) {
         if (profile == null || !"admin".equalsIgnoreCase(profile.role)) {
             binding.cardApprovals.setVisibility(View.GONE);
-            binding.cardUserManagement.setVisibility(View.GONE);
+            binding.cardAdminManagement.setVisibility(View.GONE);
             return;
         }
 
-        binding.cardUserManagement.setVisibility(View.VISIBLE);
+        binding.cardAdminManagement.setVisibility(View.VISIBLE);
         binding.cardApprovals.setVisibility(View.VISIBLE);
 
         List<ApprovalRequestUIModel> pending = viewModel.getPendingApprovalRequestsOnly();

@@ -18,6 +18,7 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.example.blackcar.R;
 import com.example.blackcar.databinding.FragmentAdminHistoryBinding;
+import com.example.blackcar.presentation.ViewModelFactory;
 import com.example.blackcar.presentation.history.sensor.ShakeDetector;
 import com.example.blackcar.presentation.history.viewmodel.AdminHistoryViewModel;
 import com.example.blackcar.presentation.history.viewstate.AdminRideUIModel;
@@ -48,7 +49,8 @@ public class AdminHistoryFragment extends Fragment implements AdminHistoryAdapte
 
         binding = FragmentAdminHistoryBinding.inflate(inflater, container, false);
 
-        viewModel = new ViewModelProvider(this).get(AdminHistoryViewModel.class);
+        ViewModelFactory factory = new ViewModelFactory(requireContext());
+        viewModel = new ViewModelProvider(this, factory).get(AdminHistoryViewModel.class);
 
         setupRecycler();
         setupFilter();

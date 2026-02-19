@@ -123,6 +123,8 @@
     <string name="user_management_block_dialog_confirm">Block user</string>
     <string name="user_management_block_dialog_cancel">Cancel</string>
     <string name="user_management_manage_users">Manage Users</string>
+    <string name="admin_management_title">Admin Management</string>
+    <string name="admin_management_pricing">Ride Pricing</string>
 
     <!-- Admin History Feature -->
     <string name="title_admin_history">All Rides</string>

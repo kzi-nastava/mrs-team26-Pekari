@@ -79,6 +79,9 @@ public interface RideApiService {
             @Path("id") Long rideId
     );
 
+    @GET("rides/active/all")
+    Call<java.util.List<AdminRideHistoryResponse>> getAllActiveRides();
+
     // Driver ride management endpoints
     @POST("rides/{rideId}/start")
     Call<MessageResponse> startRide(@Path("rideId") Long rideId);

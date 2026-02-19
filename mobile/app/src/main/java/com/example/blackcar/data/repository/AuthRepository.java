@@ -57,7 +57,7 @@ public class AuthRepository {
 
                     String email = body.getEmail();
                     String userId = body.getId() != null ? body.getId() : (body.getUserId() != null ? body.getUserId() : body.getEmail());
-                    SessionManager.setSession(body.getToken(), email, body.getRole(), userId);
+                    SessionManager.setSession(body.getToken(), email, body.getRole(), userId, false);
                     if (userId != null) {
                         tokenManager.saveUserId(userId);
                     }

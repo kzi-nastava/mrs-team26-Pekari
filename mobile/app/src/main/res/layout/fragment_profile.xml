@@ -397,9 +397,9 @@
 
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Admin user management card -->
+            <!-- Admin management card -->
             <com.google.android.material.card.MaterialCardView
-                android:id="@+id/cardUserManagement"
+                android:id="@+id/cardAdminManagement"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
@@ -417,20 +417,10 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="@string/user_management_manage_users"
+                        android:text="@string/admin_management_title"
                         android:textColor="@color/text_primary"
                         android:textSize="14sp"
                         android:textStyle="bold" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="6dp"
-                        android:text="@string/user_management_subtitle"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="12sp"
-                        android:maxLines="2"
-                        android:ellipsize="end" />
 
                     <Button
                         android:id="@+id/btnUserManagement"
@@ -439,6 +429,24 @@
                         android:layout_height="48dp"
                         android:layout_marginTop="12dp"
                         android:text="@string/user_management_title"
+                        android:textAllCaps="false" />
+
+                    <Button
+                        android:id="@+id/btnAddDriver"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:layout_marginTop="8dp"
+                        android:text="@string/title_add_driver"
+                        android:textAllCaps="false" />
+
+                    <Button
+                        android:id="@+id/btnPricingManagement"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:layout_marginTop="8dp"
+                        android:text="@string/admin_management_pricing"
                         android:textAllCaps="false" />
 
                 </LinearLayout>

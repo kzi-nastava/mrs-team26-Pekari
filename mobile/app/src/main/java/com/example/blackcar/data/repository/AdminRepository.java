@@ -7,6 +7,7 @@ import com.example.blackcar.data.api.model.BlockUserRequest;
 import com.example.blackcar.data.api.model.DriverBasicInfo;
 import com.example.blackcar.data.api.model.MessageResponse;
 import com.example.blackcar.data.api.model.PassengerBasicInfo;
+import com.example.blackcar.data.api.model.PricingResponse;
 import com.example.blackcar.data.api.model.UserListItemResponse;
 import com.example.blackcar.data.api.service.AdminApiService;
 
@@ -123,6 +124,42 @@ public class AdminRepository {
 
             @Override
             public void onFailure(@NonNull Call<MessageResponse> call, @NonNull Throwable t) {
+                callback.onError("Network error. Please check your internet connection.");
+            }
+        });
+    }
+
+    public void getPricing(RepoCallback<List<PricingResponse>> callback) {
+        api.getPricing().enqueue(new Callback<List<PricingResponse>>() {
+            @Override
+            public void onResponse(@NonNull Call<List<PricingResponse>> call, @NonNull Response<List<PricingResponse>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    callback.onSuccess(response.body());
+                } else {
+                    callback.onError(parseErrorMessage(response, mapError(response.code())));
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<List<PricingResponse>> call, @NonNull Throwable t) {
+                callback.onError("Network error. Please check your internet connection.");
+            }
+        });
+    }
+
+    public void updatePricing(PricingResponse pricing, RepoCallback<PricingResponse> callback) {
+        api.updatePricing(pricing).enqueue(new Callback<PricingResponse>() {
+            @Override
+            public void onResponse(@NonNull Call<PricingResponse> call, @NonNull Response<PricingResponse> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    callback.onSuccess(response.body());
+                } else {
+                    callback.onError(parseErrorMessage(response, mapError(response.code())));
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<PricingResponse> call, @NonNull Throwable t) {
                 callback.onError("Network error. Please check your internet connection.");
             }
         });
