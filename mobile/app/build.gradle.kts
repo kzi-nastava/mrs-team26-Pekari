@@ -1,5 +1,6 @@
 plugins {
     alias(libs.plugins.android.application)
+    id("com.google.gms.google-services")
 }
 
 android {
@@ -9,7 +10,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.blackcar"
+        applicationId = "com.blackcar"
         minSdk = 24
         targetSdk = 36
         versionCode = 1
@@ -61,6 +62,10 @@ dependencies {
 
     // OSMDroid (OpenStreetMap / Leaflet equivalent for Android)
     implementation("org.osmdroid:osmdroid-android:6.1.18")
+
+    // Firebase
+    implementation(platform("com.google.firebase:firebase-bom:32.7.0"))
+    implementation("com.google.firebase:firebase-messaging")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)

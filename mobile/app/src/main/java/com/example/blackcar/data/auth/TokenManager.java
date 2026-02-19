@@ -9,6 +9,7 @@ public class TokenManager {
     private static final String KEY_TOKEN = "auth_token";
     private static final String KEY_USER_ID = "user_id";
     private static final String KEY_ROLE = "user_role";
+    private static final String KEY_FCM_TOKEN = "fcm_token";
 
     private static TokenManager instance;
     private final SharedPreferences prefs;
@@ -58,5 +59,27 @@ public class TokenManager {
 
     public boolean hasToken() {
         return getToken() != null;
+    }
+
+    /**
+     * Save FCM token for push notifications.
+     */
+    public void saveFcmToken(String fcmToken) {
+        prefs.edit().putString(KEY_FCM_TOKEN, fcmToken).apply();
+    }
+
+    /**
+     * Get stored FCM token.
+     */
+    public String getFcmToken() {
+        return prefs.getString(KEY_FCM_TOKEN, null);
+    }
+
+    /**
+     * Check if user is an admin.
+     */
+    public boolean isAdmin() {
+        String role = getRole();
+        return role != null && role.equalsIgnoreCase("ADMIN");
     }
 }
