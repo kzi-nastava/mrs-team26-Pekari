@@ -100,6 +100,16 @@ public class MapHelper {
     }
 
     /**
+     * Add a marker for a vehicle (green if available, red if busy)
+     */
+    public Marker addVehicleMarker(double latitude, double longitude, String title, boolean isBusy) {
+        MarkerType type = isBusy ? MarkerType.VEHICLE_BUSY : MarkerType.VEHICLE_AVAILABLE;
+        Marker marker = addMarker(latitude, longitude, title, type);
+        vehicleMarkers.add(marker);
+        return marker;
+    }
+
+    /**
      * Add a generic marker with custom type
      */
     private Marker addMarker(double latitude, double longitude, String title, MarkerType type) {
@@ -194,6 +204,9 @@ public class MapHelper {
                 // Reuse dropoff (red) icon for occupied vehicles
                 drawableId = R.drawable.marker_dropoff;
                 break;
+            case CAR:
+                drawableId = R.drawable.ic_car;
+                break;
             default:
                 drawableId = R.drawable.marker_pickup;
         }
@@ -249,7 +262,8 @@ public class MapHelper {
         DROPOFF,
         STOP,
         VEHICLE_AVAILABLE,
-        VEHICLE_BUSY
+        VEHICLE_BUSY,
+        CAR
     }
 
     // ---- Vehicle markers helpers ----
@@ -261,16 +275,7 @@ public class MapHelper {
         mapView.invalidate();
     }
 
-    public Marker addVehicleMarker(double latitude, double longitude, String title, boolean busy) {
-        MarkerType type = busy ? MarkerType.VEHICLE_BUSY : MarkerType.VEHICLE_AVAILABLE;
-        Marker marker = new Marker(mapView);
-        marker.setPosition(new GeoPoint(latitude, longitude));
-        marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
-        marker.setTitle(title);
-        Drawable icon = getMarkerIcon(type);
-        if (icon != null) marker.setIcon(icon);
-        mapView.getOverlayManager().add(marker);
-        vehicleMarkers.add(marker);
-        return marker;
+    public Marker addCarMarker(double latitude, double longitude, String title) {
+        return addMarker(latitude, longitude, title, MarkerType.CAR);
     }
 }

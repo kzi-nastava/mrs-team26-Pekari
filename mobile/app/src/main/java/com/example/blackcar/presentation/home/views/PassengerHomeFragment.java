@@ -397,6 +397,7 @@ public class PassengerHomeFragment extends Fragment {
             }
         });
         binding.btnRequestAnother.setOnClickListener(v -> viewModel.resetForm());
+        binding.fabChat.setOnClickListener(v -> Navigation.findNavController(v).navigate(R.id.action_home_to_chat));
         binding.btnChooseFavorite.setOnClickListener(v -> onChooseFavoriteRoute());
     }
 
@@ -657,6 +658,13 @@ public class PassengerHomeFragment extends Fragment {
                 // Show "Request Another" button when ride is finished/cancelled
                 boolean rideEnded = "CANCELLED".equals(status) || "REJECTED".equals(status) || "COMPLETED".equals(status);
                 binding.btnRequestAnother.setVisibility(rideEnded ? View.VISIBLE : View.GONE);
+
+                // Real-time tracking navigation
+                if ("IN_PROGRESS".equals(status) || "STOP_REQUESTED".equals(status)) {
+                    Bundle args = new Bundle();
+                    args.putLong("rideId", state.orderResult.getRideId());
+                    Navigation.findNavController(requireView()).navigate(R.id.action_home_to_rideTracking, args);
+                }
             }
 
             setFormEnabled(!state.formDisabled);
@@ -683,12 +691,43 @@ public class PassengerHomeFragment extends Fragment {
     }
 
     @Override
+    public void onResume() {
+        super.onResume();
+        if (binding != null && binding.includeMap != null) {
+            MapView mapView = (MapView) binding.includeMap.getRoot();
+            if (mapView != null) {
+                mapView.onResume();
+            }
+        }
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        if (binding != null && binding.includeMap != null) {
+            MapView mapView = (MapView) binding.includeMap.getRoot();
+            if (mapView != null) {
+                mapView.onPause();
+            }
+        }
+    }
+
+    @Override
     public void onDestroyView() {
         super.onDestroyView();
         if (mapHelper != null) {
             mapHelper.removeMapTapOverlay();
         }
         stopVehiclesPolling();
+        
+        // Safety null check for mapView which is accessed via includeMap binding
+        if (binding != null && binding.includeMap != null) {
+            MapView mapView = (MapView) binding.includeMap.getRoot();
+            if (mapView != null) {
+                mapView.onDetach();
+            }
+        }
+        
         binding = null;
     }
 }

@@ -1,5 +1,6 @@
 package com.example.blackcar.presentation;
 
+import android.app.Application;
 import android.content.Context;
 
 import androidx.annotation.NonNull;
@@ -12,6 +13,8 @@ import com.example.blackcar.presentation.auth.viewmodel.RegisterViewModel;
 import com.example.blackcar.presentation.home.viewmodel.DriverHomeViewModel;
 import com.example.blackcar.presentation.home.viewmodel.PassengerHomeViewModel;
 import com.example.blackcar.presentation.history.viewmodel.PassengerHistoryViewModel;
+import com.example.blackcar.presentation.chat.ChatViewModel;
+import com.example.blackcar.presentation.home.viewmodel.RideTrackingViewModel;
 import com.example.blackcar.presentation.profile.viewmodel.ProfileViewModel;
 
 public class ViewModelFactory implements ViewModelProvider.Factory {
@@ -34,11 +37,15 @@ public class ViewModelFactory implements ViewModelProvider.Factory {
         } else if (modelClass.isAssignableFrom(PassengerHistoryViewModel.class)) {
             return (T) new PassengerHistoryViewModel();
         } else if (modelClass.isAssignableFrom(PassengerHomeViewModel.class)) {
-            return (T) new PassengerHomeViewModel();
+            return (T) new PassengerHomeViewModel((Application) context.getApplicationContext());
         } else if (modelClass.isAssignableFrom(DriverHomeViewModel.class)) {
             return (T) new DriverHomeViewModel();
         } else if (modelClass.isAssignableFrom(AddDriverViewModel.class)) {
             return (T) new AddDriverViewModel(context);
+        } else if (modelClass.isAssignableFrom(ChatViewModel.class)) {
+            return (T) new ChatViewModel((Application) context.getApplicationContext());
+        } else if (modelClass.isAssignableFrom(RideTrackingViewModel.class)) {
+            return (T) new RideTrackingViewModel((Application) context.getApplicationContext());
         }
         throw new IllegalArgumentException("Unknown ViewModel class: " + modelClass.getName());
     }

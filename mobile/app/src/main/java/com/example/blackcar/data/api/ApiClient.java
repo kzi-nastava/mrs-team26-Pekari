@@ -7,6 +7,7 @@ import com.example.blackcar.data.api.service.AuthApiService;
 import com.example.blackcar.data.api.service.ProfileApiService;
 import com.example.blackcar.data.api.service.RideApiService;
 import com.example.blackcar.data.api.service.DriversApiService;
+import com.example.blackcar.data.api.service.ChatApiService;
 
 import okhttp3.OkHttpClient;
 import okhttp3.logging.HttpLoggingInterceptor;
@@ -20,6 +21,7 @@ public class ApiClient {
     private static ProfileApiService profileApiService;
     private static RideApiService rideApiService;
     private static DriversApiService driversApiService;
+    private static ChatApiService chatApiService;
     private static Context appContext;
     private static SimpleCookieJar cookieJar;
 
@@ -39,6 +41,7 @@ public class ApiClient {
         profileApiService = null;
         rideApiService = null;
         driversApiService = null;
+        chatApiService = null;
     }
 
     private static Retrofit getRetrofit() {
@@ -91,5 +94,12 @@ public class ApiClient {
             driversApiService = getRetrofit().create(DriversApiService.class);
         }
         return driversApiService;
+    }
+
+    public static ChatApiService getChatService() {
+        if (chatApiService == null) {
+            chatApiService = getRetrofit().create(ChatApiService.class);
+        }
+        return chatApiService;
     }
 }

@@ -7,9 +7,11 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
+import com.example.blackcar.data.api.ApiClient;
 import com.example.blackcar.data.api.model.ActiveRideResponse;
 import com.example.blackcar.data.api.model.LocationPoint;
 import com.example.blackcar.data.api.model.MessageResponse;
+import com.example.blackcar.data.api.model.RideLocationUpdateRequest;
 import com.example.blackcar.data.repository.RideRepository;
 import com.example.blackcar.presentation.home.viewstate.DriverHomeViewState;
 
@@ -65,6 +67,13 @@ public class DriverHomeViewModel extends ViewModel {
         rideRepository.startRide(rideId, new RideRepository.RepoCallback<MessageResponse>() {
             @Override
             public void onSuccess(MessageResponse data) {
+                // Immediately send a location update to trigger passenger refresh via WebSocket
+                if (current.currentLocation != null) {
+                    updateCurrentLocation(current.currentLocation);
+                } else if (current.activeRide.getPickup() != null) {
+                    updateCurrentLocation(current.activeRide.getPickup());
+                }
+                
                 // Reload to get updated status
                 loadActiveRide();
             }
@@ -195,6 +204,28 @@ public class DriverHomeViewModel extends ViewModel {
         if (current != null) {
             current.currentLocation = location;
             state.setValue(current);
+
+            // Send to backend if ride is ACCEPTED, IN_PROGRESS or STOP_REQUESTED
+            if (current.activeRide != null) {
+                String status = current.activeRide.getStatus();
+                if ("ACCEPTED".equals(status) || "IN_PROGRESS".equals(status) || "STOP_REQUESTED".equals(status)) {
+                    RideLocationUpdateRequest request = new RideLocationUpdateRequest();
+                    request.setLatitude(location.getLatitude());
+                    request.setLongitude(location.getLongitude());
+
+                    rideRepository.updateRideLocation(current.activeRide.getRideId(), request, new RideRepository.RepoCallback<MessageResponse>() {
+                        @Override
+                        public void onSuccess(MessageResponse data) {
+                            // Silent update
+                        }
+
+                        @Override
+                        public void onError(String message) {
+                            // Silent failure
+                        }
+                    });
+                }
+            }
         }
     }
 
@@ -208,8 +239,10 @@ public class DriverHomeViewModel extends ViewModel {
                 DriverHomeViewState current = state.getValue();
                 if (current != null && current.activeRide != null) {
                     String status = current.activeRide.getStatus();
-                    if ("IN_PROGRESS".equals(status) || "STOP_REQUESTED".equals(status)) {
+                    // Also simulate location updates
+                    if ("ACCEPTED".equals(status) || "IN_PROGRESS".equals(status) || "STOP_REQUESTED".equals(status)) {
                         pollForUpdates();
+                        simulateLocationUpdate();
                     }
                 }
                 if (isPolling) {
@@ -218,6 +251,18 @@ public class DriverHomeViewModel extends ViewModel {
             }
         };
         pollHandler.postDelayed(pollRunnable, POLL_INTERVAL_MS);
+    }
+
+    private double lastSimLat = 45.2671;
+    private double lastSimLon = 19.8335;
+
+    private void simulateLocationUpdate() {
+        // Jitter movement to simulate driving
+        lastSimLat += (Math.random() - 0.5) * 0.0005;
+        lastSimLon += (Math.random() - 0.5) * 0.0005;
+        
+        LocationPoint lp = new LocationPoint("Current Location", lastSimLat, lastSimLon);
+        updateCurrentLocation(lp);
     }
 
     public void stopPolling() {
