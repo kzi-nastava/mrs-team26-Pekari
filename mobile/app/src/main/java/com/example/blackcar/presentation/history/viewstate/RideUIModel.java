@@ -34,6 +34,31 @@ public class RideUIModel {
 
     public RideUIModel() { }
 
+    /** Creates a shallow copy with the same field values (for DiffUtil to detect changes). */
+    public RideUIModel copy() {
+        RideUIModel c = new RideUIModel();
+        c.id = id;
+        c.startTime = startTime;
+        c.endTime = endTime;
+        c.origin = origin;
+        c.destination = destination;
+        c.canceledBy = canceledBy;
+        c.panic = panic;
+        c.price = price;
+        c.passengers = passengers;
+        c.distanceKm = distanceKm;
+        c.vehicleType = vehicleType;
+        c.status = status;
+        c.driverName = driverName;
+        c.pickup = pickup;
+        c.dropoff = dropoff;
+        c.stops = stops;
+        c.babyTransport = babyTransport;
+        c.petTransport = petTransport;
+        c.favoriteRouteId = favoriteRouteId;
+        return c;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

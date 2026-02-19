@@ -154,9 +154,15 @@ public class PassengerHistoryViewModel extends ViewModel {
 
     private void refreshFavoriteStateOnRides() {
         if (currentRides == null || currentRides.isEmpty()) return;
+        // Create new RideUIModel copies so ListAdapter DiffUtil detects the favoriteRouteId change
+        List<RideUIModel> updated = new ArrayList<>();
         for (RideUIModel ride : currentRides) {
-            ride.favoriteRouteId = findMatchingFavoriteRouteId(ride);
+            RideUIModel copy = ride.copy();
+            copy.favoriteRouteId = findMatchingFavoriteRouteId(ride);
+            updated.add(copy);
         }
+        currentRides.clear();
+        currentRides.addAll(updated);
         sortRides(currentSortField, currentSortAscending);
     }
 
@@ -185,7 +191,7 @@ public class PassengerHistoryViewModel extends ViewModel {
                 public void onSuccess(com.example.blackcar.data.api.model.MessageResponse data) {
                     favoriteRouteIds.remove(matching.getId());
                     favoriteRoutes.remove(matching);
-                    ride.favoriteRouteId = null;
+                    // Don't mutate ride - refreshFavoriteStateOnRides creates new copies so DiffUtil detects the change
                     refreshFavoriteStateOnRides();
                 }
 
@@ -221,7 +227,7 @@ public class PassengerHistoryViewModel extends ViewModel {
                     if (created != null && created.getId() != null) {
                         favoriteRoutes.add(created);
                         favoriteRouteIds.add(created.getId());
-                        ride.favoriteRouteId = created.getId();
+                        // Don't mutate ride - refreshFavoriteStateOnRides creates new copies so DiffUtil detects the change
                         refreshFavoriteStateOnRides();
                     }
                 }

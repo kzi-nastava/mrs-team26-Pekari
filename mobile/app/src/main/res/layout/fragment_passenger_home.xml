@@ -73,14 +73,6 @@
                                 android:textStyle="bold"
                                 android:layout_marginBottom="16dp" />
 
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="@string/ride_order_pickup"
-                                android:textColor="@color/text_secondary"
-                                android:textSize="12sp"
-                                android:layout_marginBottom="4dp" />
-
                             <include
                                 android:id="@+id/includePickup"
                                 layout="@layout/address_autocomplete"
@@ -103,17 +95,9 @@
                                 android:textColor="@color/text_primary"
                                 android:layout_marginTop="4dp" />
 
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="@string/ride_order_dropoff"
-                                android:textColor="@color/text_secondary"
-                                android:textSize="12sp"
-                                android:layout_marginTop="12dp"
-                                android:layout_marginBottom="4dp" />
-
                             <include
                                 android:id="@+id/includeDropoff"
+                                android:layout_marginTop="12dp"
                                 layout="@layout/address_autocomplete"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content" />

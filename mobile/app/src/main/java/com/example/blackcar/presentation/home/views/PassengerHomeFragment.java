@@ -449,7 +449,10 @@ public class PassengerHomeFragment extends Fragment {
     }
 
     private void applyFavoriteRouteToForm(FavoriteRouteResponse route) {
-        if (route == null) return;
+        if (route == null || binding == null) return;
+
+        // Ensure form is visible (user might have had order result showing)
+        binding.layoutFormContainer.setVisibility(View.VISIBLE);
 
         setPickupAddress(route.getPickup() != null ? route.getPickup().getAddress() : "");
         setDropoffAddress(route.getDropoff() != null ? route.getDropoff().getAddress() : "");
