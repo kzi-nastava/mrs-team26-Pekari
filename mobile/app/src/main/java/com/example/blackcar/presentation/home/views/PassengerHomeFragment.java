@@ -562,6 +562,13 @@ public class PassengerHomeFragment extends Fragment {
                 // Show "Request Another" button when ride is finished/cancelled
                 boolean rideEnded = "CANCELLED".equals(status) || "REJECTED".equals(status) || "COMPLETED".equals(status);
                 binding.btnRequestAnother.setVisibility(rideEnded ? View.VISIBLE : View.GONE);
+
+                // Real-time tracking navigation
+                if ("IN_PROGRESS".equals(status) || "STOP_REQUESTED".equals(status)) {
+                    Bundle args = new Bundle();
+                    args.putLong("rideId", state.orderResult.getRideId());
+                    Navigation.findNavController(requireView()).navigate(R.id.action_home_to_rideTracking, args);
+                }
             }
 
             setFormEnabled(!state.formDisabled);

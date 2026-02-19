@@ -103,6 +103,11 @@
     <string name="passenger_history_panic_triggered">⚠ PANIC triggered</string>
     <string name="passenger_history_price_format">%.2f RSD</string>
     <string name="passenger_history_date_picker_title">Filter by date</string>
+    
+    <!-- Ride Tracking -->
+    <string name="ride_tracking_ended_title">Ride Ended</string>
+    <string name="ride_tracking_ended_message">This ride has been completed or cancelled. Thank you for using BlackCar!</string>
+    <string name="ride_tracking_btn_back_home">Back to Home</string>
 
     <!-- Admin History Feature -->
     <string name="title_admin_history">All Rides</string>

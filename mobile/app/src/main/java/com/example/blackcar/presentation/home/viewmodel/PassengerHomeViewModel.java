@@ -10,9 +10,14 @@ import com.example.blackcar.data.api.model.LocationPoint;
 import com.example.blackcar.data.api.model.OrderRideRequest;
 import com.example.blackcar.data.api.model.OrderRideResponse;
 import com.example.blackcar.data.api.model.RideEstimateResponse;
+import com.example.blackcar.presentation.home.viewstate.PassengerHomeViewState;
 import com.example.blackcar.data.repository.GeocodingRepository;
 import com.example.blackcar.data.repository.RideRepository;
-import com.example.blackcar.presentation.home.viewstate.PassengerHomeViewState;
+import android.app.Application;
+import androidx.lifecycle.AndroidViewModel;
+import com.example.blackcar.data.api.ChatRealtimeService;
+import com.example.blackcar.data.api.model.WebRideTrackingResponse;
+import com.example.blackcar.data.session.SessionManager;
 
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
@@ -22,10 +27,11 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
-public class PassengerHomeViewModel extends ViewModel {
+public class PassengerHomeViewModel extends AndroidViewModel {
 
     private final RideRepository rideRepository = new RideRepository();
     private final GeocodingRepository geocodingRepository = new GeocodingRepository();
+    private final ChatRealtimeService chatRealtimeService;
 
     private final MutableLiveData<PassengerHomeViewState> state = new MutableLiveData<>(PassengerHomeViewState.idle());
 
@@ -37,6 +43,35 @@ public class PassengerHomeViewModel extends ViewModel {
     private boolean petTransport;
     private Date scheduledAt;
     private List<String> passengerEmails = new ArrayList<>();
+
+    private Long currentSubscribedRideId = null;
+
+    public PassengerHomeViewModel(Application application) {
+        super(application);
+        chatRealtimeService = new ChatRealtimeService(application);
+        chatRealtimeService.connect();
+    }
+
+    private void subscribeToRideTracking(Long rideId) {
+        if (rideId == null || rideId.equals(currentSubscribedRideId)) return;
+        
+        currentSubscribedRideId = rideId;
+        chatRealtimeService.subscribeToRideTracking(rideId, tracking -> {
+            if (tracking != null) {
+                String status = tracking.getRideStatus() != null ? tracking.getRideStatus() : tracking.getStatus();
+                if ("IN_PROGRESS".equals(status) || "STOP_REQUESTED".equals(status) || "COMPLETED".equals(status) || "CANCELLED".equals(status)) {
+                    // Refresh active ride to trigger navigation or UI update
+                    loadActiveRide();
+                }
+            }
+        });
+    }
+
+    @Override
+    protected void onCleared() {
+        super.onCleared();
+        chatRealtimeService.disconnect();
+    }
 
     public LiveData<PassengerHomeViewState> getState() {
         return state;
@@ -95,8 +130,10 @@ public class PassengerHomeViewModel extends ViewModel {
             public void onSuccess(ActiveRideResponse data) {
                 if (data != null) {
                     state.postValue(PassengerHomeViewState.withActiveRide(data));
+                    subscribeToRideTracking(data.getRideId());
                 } else {
                     state.postValue(PassengerHomeViewState.idle());
+                    currentSubscribedRideId = null;
                 }
             }
 
