@@ -120,6 +120,7 @@
   *ngIf="showModal && selectedRideId"
   [rideId]="selectedRideId"
   (close)="closeModal()"
+  (orderSameRide)="onOrderSameRide($event)"
 ></app-passenger-ride-detail-modal>
 
 <!-- Rating Modal -->
