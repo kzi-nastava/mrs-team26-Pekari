@@ -35,6 +35,10 @@ local.properties
 dist/
 backend/.env
 
+backend/blackcar-5b038-firebase-adminsdk-fbsvc-1a98e6d408.json
+
+backend/google-services.json
+mobile/app/google-services.json
 .aiassistant
 
 TESTIRANJE.md

@@ -385,6 +385,7 @@ public class RideDetailFragment extends DialogFragment {
             mapView.onDetach();
             mapView = null;
         }
+        mapHelper = null;
         binding = null;
     }
 }

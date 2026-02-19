@@ -29,24 +29,32 @@ public class NotificationRepository {
      */
     public void registerToken(String fcmToken, RegistrationCallback callback) {
         if (fcmToken == null || fcmToken.isEmpty()) {
-            Log.w(TAG, "FCM token is null or empty, skipping registration");
+            Log.w(TAG, "[DEBUG_LOG] FCM token is null or empty, skipping registration");
             if (callback != null) {
                 callback.onFailure("FCM token is empty");
             }
             return;
         }
 
+        Log.i(TAG, "[DEBUG_LOG] Preparing to send FCM token to backend: " + fcmToken + " (Auth token present: " + (ApiClient.hasAuthToken() ? "Yes" : "No") + ")");
         RegisterFcmTokenRequest request = new RegisterFcmTokenRequest(fcmToken);
         apiService.registerToken(request).enqueue(new Callback<Void>() {
             @Override
             public void onResponse(Call<Void> call, Response<Void> response) {
                 if (response.isSuccessful()) {
-                    Log.i(TAG, "FCM token registered successfully");
+                    Log.i(TAG, "[DEBUG_LOG] FCM token registered successfully with backend");
                     if (callback != null) {
                         callback.onSuccess();
                     }
                 } else {
-                    Log.e(TAG, "Failed to register FCM token: " + response.code());
+                    Log.e(TAG, "[DEBUG_LOG] Failed to register FCM token. Code: " + response.code() + ", Message: " + response.message());
+                    try {
+                        if (response.errorBody() != null) {
+                            Log.e(TAG, "[DEBUG_LOG] Error body: " + response.errorBody().string());
+                        }
+                    } catch (Exception e) {
+                        Log.e(TAG, "Error reading error body", e);
+                    }
                     if (callback != null) {
                         callback.onFailure("Registration failed: " + response.code());
                     }
@@ -55,7 +63,7 @@ public class NotificationRepository {
 
             @Override
             public void onFailure(Call<Void> call, Throwable t) {
-                Log.e(TAG, "FCM token registration error", t);
+                Log.e(TAG, "[DEBUG_LOG] FCM token registration network error", t);
                 if (callback != null) {
                     callback.onFailure(t.getMessage());
                 }

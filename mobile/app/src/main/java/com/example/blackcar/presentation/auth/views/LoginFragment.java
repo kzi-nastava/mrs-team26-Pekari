@@ -1,6 +1,7 @@
 package com.example.blackcar.presentation.auth.views;
 
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -34,6 +35,9 @@ public class LoginFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+        Log.i("LoginFragment", "--------------------------------------------------");
+        Log.i("LoginFragment", "[DEBUG_LOG] LoginFragment.onViewCreated() starting...");
+        Log.i("LoginFragment", "--------------------------------------------------");
 
         // Initialize ApiClient with context
         ApiClient.init(requireContext());

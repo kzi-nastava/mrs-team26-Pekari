@@ -76,6 +76,11 @@ public class ChatFragment extends Fragment {
                 Log.e("ChatFragment", "RecyclerView inconsistency detected in onLayoutChildren", e);
             }
         }
+
+        @Override
+        public boolean supportsPredictiveItemAnimations() {
+            return false;
+        }
     }
 
     private void setupClickListeners() {
