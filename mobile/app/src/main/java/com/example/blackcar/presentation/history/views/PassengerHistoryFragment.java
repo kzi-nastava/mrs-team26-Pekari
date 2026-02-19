@@ -63,7 +63,11 @@ public class PassengerHistoryFragment extends Fragment implements PassengerHisto
     }
 
     private void setupRecycler() {
-        adapter = new PassengerHistoryAdapter(this);
+        adapter = new PassengerHistoryAdapter(this, ride -> {
+            if (ride != null) {
+                viewModel.toggleFavorite(ride);
+            }
+        });
         binding.recyclerHistory.setAdapter(adapter);
     }
 
@@ -170,6 +174,13 @@ public class PassengerHistoryFragment extends Fragment implements PassengerHisto
     }
 
     private void observeState() {
+        viewModel.getToastMessage().observe(getViewLifecycleOwner(), message -> {
+            if (message != null && !message.isEmpty()) {
+                Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
+                viewModel.clearToastMessage();
+            }
+        });
+
         viewModel.getState().observe(getViewLifecycleOwner(), state -> {
 
             binding.progress.setVisibility(state.loading ? View.VISIBLE : View.GONE);

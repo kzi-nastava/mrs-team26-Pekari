@@ -148,6 +148,19 @@
     <string name="ride_cancel">Cancel Ride</string>
     <string name="ride_request_another">Request Another Ride</string>
 
+    <!-- Favorite Routes -->
+    <string name="favorite_routes_title">Choose Favorite Route</string>
+    <string name="favorite_routes_close">Close</string>
+    <string name="favorite_routes_empty">No favorite routes yet</string>
+    <string name="favorite_routes_empty_hint">Complete a ride and add it to favorites from your ride history</string>
+    <string name="ride_order_choose_favorite">Choose Favorite Route</string>
+    <string name="favorite_routes_no_favorites_error">You don\'t have any favorite routes yet. Complete a ride and add it to favorites from your ride history.</string>
+
+    <!-- Favorite button (history) -->
+    <string name="favorite_add">Add to favorites</string>
+    <string name="favorite_remove">Remove from favorites</string>
+    <string name="favorite_missing_coords">Missing coordinates</string>
+
     <!-- Passenger Home -->
     <string name="passenger_btn_request_stop">Request Stop</string>
     <string name="passenger_stop_requested_message">Stop requested. Driver will stop at the nearest safe location.</string>

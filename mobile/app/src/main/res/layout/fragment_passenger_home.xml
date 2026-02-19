@@ -240,6 +240,15 @@
                                 android:textColor="@color/text_primary" />
 
                             <Button
+                                android:id="@+id/btnChooseFavorite"
+                                style="@style/Widget.Material3.Button.OutlinedButton"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="@string/ride_order_choose_favorite"
+                                android:textColor="@color/text_secondary"
+                                android:layout_marginTop="8dp" />
+
+                            <Button
                                 android:id="@+id/btnEstimate"
                                 style="@style/Widget.Material3.Button.TextButton"
                                 android:layout_width="match_parent"
