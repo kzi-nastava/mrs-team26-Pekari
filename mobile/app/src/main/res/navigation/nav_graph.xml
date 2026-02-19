@@ -85,6 +85,21 @@
             app:exitAnim="@android:anim/slide_out_right"
             app:popEnterAnim="@android:anim/slide_in_left"
             app:popExitAnim="@android:anim/slide_out_right" />
+
+        <action
+            android:id="@+id/action_home_to_rideTracking"
+            app:destination="@id/rideTrackingFragment" />
+    </fragment>
+
+    <!-- Ride Tracking Fragment -->
+    <fragment
+        android:id="@+id/rideTrackingFragment"
+        android:name="com.example.blackcar.presentation.home.views.RideTrackingFragment"
+        android:label="Ride Tracking"
+        tools:layout="@layout/fragment_ride_tracking">
+        <argument
+            android:name="rideId"
+            app:argType="long" />
     </fragment>
 
     <!-- Add Driver Fragment (Admin only) -->

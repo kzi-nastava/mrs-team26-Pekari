@@ -23,6 +23,8 @@ import retrofit2.http.POST;
 import retrofit2.http.Path;
 import retrofit2.http.Query;
 
+import com.example.blackcar.data.api.model.InconsistencyReportRequest;
+import com.example.blackcar.data.api.model.WebRideTrackingResponse;
 import com.example.blackcar.data.api.model.StopRideEarlyRequest;
 import com.example.blackcar.data.api.model.RideLocationUpdateRequest;
 
@@ -91,6 +93,12 @@ public interface RideApiService {
 
     @POST("rides/{rideId}/location")
     Call<MessageResponse> updateRideLocation(@Path("rideId") Long rideId, @Body RideLocationUpdateRequest request);
+
+    @GET("rides/{rideId}/track")
+    Call<WebRideTrackingResponse> trackRide(@Path("rideId") Long rideId);
+
+    @POST("rides/{rideId}/report-inconsistency")
+    Call<MessageResponse> reportInconsistency(@Path("rideId") Long rideId, @Body InconsistencyReportRequest request);
 
     // Passenger ride management endpoints
     @POST("rides/{rideId}/request-stop")

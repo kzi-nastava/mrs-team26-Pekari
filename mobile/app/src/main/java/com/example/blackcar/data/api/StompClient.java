@@ -72,6 +72,7 @@ public class StompClient {
 
             @Override
             public void onMessage(WebSocket webSocket, String text) {
+                Log.v(TAG, "WebSocket Message received: " + text);
                 handleFrame(text);
             }
 
@@ -110,29 +111,44 @@ public class StompClient {
     }
 
     private void handleMessageFrame(String text) {
-        String[] lines = text.split("\n");
+        // Use a more robust way to find the body start, as split("\n") might be tricky with binary/special chars
+        int bodyStartIndex = text.indexOf("\n\n");
+        if (bodyStartIndex == -1) {
+            bodyStartIndex = text.indexOf("\r\n\r\n");
+        }
+
+        String headersPart;
+        String bodyPart;
+        
+        if (bodyStartIndex != -1) {
+            headersPart = text.substring(0, bodyStartIndex);
+            bodyPart = text.substring(bodyStartIndex).trim();
+            if (bodyPart.endsWith("\0")) {
+                bodyPart = bodyPart.substring(0, bodyPart.length() - 1).trim();
+            }
+        } else {
+            headersPart = text;
+            bodyPart = "";
+        }
+
         String destination = null;
-        StringBuilder body = new StringBuilder();
-        boolean inBody = false;
-        for (String line : lines) {
-            if (inBody) {
-                if (line.endsWith("\0")) {
-                    body.append(line, 0, line.length() - 1);
-                } else {
-                    body.append(line).append("\n");
-                }
-            } else if (line.isEmpty()) {
-                inBody = true;
-            } else if (line.startsWith("destination:")) {
+        String[] headerLines = headersPart.split("\n");
+        for (String line : headerLines) {
+            if (line.startsWith("destination:")) {
                 destination = line.substring("destination:".length()).trim();
+                break;
             }
         }
+
         if (destination != null) {
+            Log.d(TAG, "STOMP Message for destination: " + destination);
             List<StompSubscription> subs = subscriptions.get(destination);
             if (subs != null) {
                 for (StompSubscription s : subs) {
-                    s.listener.onMessage(body.toString());
+                    s.listener.onMessage(bodyPart);
                 }
+            } else {
+                Log.w(TAG, "No subscribers for destination: " + destination);
             }
         }
     }

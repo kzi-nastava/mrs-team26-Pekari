@@ -6,6 +6,7 @@ import android.os.Looper;
 import android.util.Log;
 
 import com.example.blackcar.data.api.model.WebChatMessage;
+import com.example.blackcar.data.api.model.WebRideTrackingResponse;
 import com.example.blackcar.data.session.SessionManager;
 import com.google.gson.Gson;
 
@@ -21,7 +22,12 @@ public class ChatRealtimeService {
         void onMessageReceived(WebChatMessage message);
     }
 
+    public interface TrackingListener {
+        void onTrackingUpdate(WebRideTrackingResponse tracking);
+    }
+
     private final ConcurrentHashMap<Long, MessageListener> conversationListeners = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Long, TrackingListener> trackingListeners = new ConcurrentHashMap<>();
     private MessageListener adminListener;
 
     public ChatRealtimeService(Context context) {
@@ -53,6 +59,24 @@ public class ChatRealtimeService {
         });
     }
 
+    public void subscribeToRideTracking(Long rideId, TrackingListener listener) {
+        trackingListeners.put(rideId, listener);
+        String topic = "/topic/rides/" + rideId + "/tracking";
+        Log.d(TAG, "Subscribing to tracking topic: " + topic);
+        stompClient.subscribe(topic, payload -> {
+            Log.d(TAG, "Received tracking payload for ride " + rideId + ": " + payload);
+            try {
+                WebRideTrackingResponse tracking = gson.fromJson(payload, WebRideTrackingResponse.class);
+                mainHandler.post(() -> {
+                    TrackingListener l = trackingListeners.get(rideId);
+                    if (l != null) l.onTrackingUpdate(tracking);
+                });
+            } catch (Exception e) {
+                Log.e(TAG, "Error parsing tracking update for ride " + rideId, e);
+            }
+        });
+    }
+
     public void sendMessage(WebChatMessage message) {
         stompClient.send("/app/chat.send", message);
     }
@@ -60,6 +84,7 @@ public class ChatRealtimeService {
     public void disconnect() {
         stompClient.disconnect();
         conversationListeners.clear();
+        trackingListeners.clear();
         adminListener = null;
     }
 }
