@@ -29,6 +29,7 @@ import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 
 import com.example.blackcar.R;
+import com.example.blackcar.data.session.SessionManager;
 import com.example.blackcar.databinding.FragmentProfileBinding;
 import com.example.blackcar.presentation.ViewModelFactory;
 import com.example.blackcar.presentation.profile.model.ApprovalRequestUIModel;
@@ -36,6 +37,7 @@ import com.example.blackcar.presentation.profile.model.DriverInfoUIModel;
 import com.example.blackcar.presentation.profile.model.ProfileUIModel;
 import com.example.blackcar.presentation.profile.model.VehicleUIModel;
 import com.example.blackcar.presentation.profile.viewmodel.ProfileViewModel;
+import com.example.blackcar.presentation.home.MainActivity;
 
 import java.util.List;
 
@@ -146,10 +148,25 @@ public class ProfileFragment extends Fragment {
             if (state.bannerMessage != null && !state.bannerMessage.trim().isEmpty()) {
                 binding.txtBanner.setVisibility(View.VISIBLE);
                 binding.txtBanner.setText(state.bannerMessage);
-                binding.txtBanner.setTextColor(requireContext().getColor(
-                        state.bannerDanger ? R.color.accent_danger : R.color.accent_success));
+                int textColor = requireContext().getColor(
+                        state.bannerDanger ? R.color.accent_danger : R.color.accent_success);
+                binding.txtBanner.setTextColor(textColor);
+                binding.txtBanner.setBackgroundColor(requireContext().getColor(
+                        state.bannerDanger ? R.color.bg_error : R.color.card_surface));
+                if (state.bannerDanger) {
+                    SessionManager.setBlocked(true);
+                    if (requireActivity() instanceof MainActivity) {
+                        ((MainActivity) requireActivity()).refreshProfileTabDangerState();
+                    }
+                }
             } else {
                 binding.txtBanner.setVisibility(View.GONE);
+                if (state.profile != null && !Boolean.TRUE.equals(state.profile.blocked)) {
+                    SessionManager.setBlocked(false);
+                    if (requireActivity() instanceof MainActivity) {
+                        ((MainActivity) requireActivity()).refreshProfileTabDangerState();
+                    }
+                }
             }
 
             renderProfile(state.profile);

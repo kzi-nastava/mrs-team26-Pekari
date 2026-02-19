@@ -1,7 +1,9 @@
 package com.example.blackcar.data.api.service;
 
 import com.example.blackcar.data.api.model.BlockUserRequest;
+import com.example.blackcar.data.api.model.DriverBasicInfo;
 import com.example.blackcar.data.api.model.MessageResponse;
+import com.example.blackcar.data.api.model.PassengerBasicInfo;
 import com.example.blackcar.data.api.model.UserListItemResponse;
 
 import java.util.List;
@@ -19,6 +21,12 @@ public interface AdminApiService {
 
     @GET("admin/passengers")
     Call<List<UserListItemResponse>> getPassengers();
+
+    @GET("admin/drivers/basic")
+    Call<List<DriverBasicInfo>> getDriversBasic();
+
+    @GET("admin/passengers/basic")
+    Call<List<PassengerBasicInfo>> getPassengersBasic();
 
     @PATCH("admin/users/{id}")
     Call<MessageResponse> setUserBlock(

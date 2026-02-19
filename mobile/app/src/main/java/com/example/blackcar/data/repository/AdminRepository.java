@@ -4,7 +4,9 @@ import androidx.annotation.NonNull;
 
 import com.example.blackcar.data.api.ApiClient;
 import com.example.blackcar.data.api.model.BlockUserRequest;
+import com.example.blackcar.data.api.model.DriverBasicInfo;
 import com.example.blackcar.data.api.model.MessageResponse;
+import com.example.blackcar.data.api.model.PassengerBasicInfo;
 import com.example.blackcar.data.api.model.UserListItemResponse;
 import com.example.blackcar.data.api.service.AdminApiService;
 
@@ -56,6 +58,44 @@ public class AdminRepository {
 
             @Override
             public void onFailure(@NonNull Call<List<UserListItemResponse>> call, @NonNull Throwable t) {
+                callback.onError("Network error. Please check your internet connection.");
+            }
+        });
+    }
+
+    public void getDriversBasic(RepoCallback<List<DriverBasicInfo>> callback) {
+        api.getDriversBasic().enqueue(new Callback<List<DriverBasicInfo>>() {
+            @Override
+            public void onResponse(@NonNull Call<List<DriverBasicInfo>> call,
+                                  @NonNull Response<List<DriverBasicInfo>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    callback.onSuccess(response.body());
+                } else {
+                    callback.onError(mapError(response.code()));
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<List<DriverBasicInfo>> call, @NonNull Throwable t) {
+                callback.onError("Network error. Please check your internet connection.");
+            }
+        });
+    }
+
+    public void getPassengersBasic(RepoCallback<List<PassengerBasicInfo>> callback) {
+        api.getPassengersBasic().enqueue(new Callback<List<PassengerBasicInfo>>() {
+            @Override
+            public void onResponse(@NonNull Call<List<PassengerBasicInfo>> call,
+                                  @NonNull Response<List<PassengerBasicInfo>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    callback.onSuccess(response.body());
+                } else {
+                    callback.onError(mapError(response.code()));
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<List<PassengerBasicInfo>> call, @NonNull Throwable t) {
                 callback.onError("Network error. Please check your internet connection.");
             }
         });

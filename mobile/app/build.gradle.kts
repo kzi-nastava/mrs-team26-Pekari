@@ -47,6 +47,7 @@ dependencies {
     implementation(libs.appcompat)
     implementation(libs.material)
     implementation(libs.constraintlayout)
+    implementation("androidx.viewpager2:viewpager2:1.0.0")
     implementation(libs.navigation.fragment)
     implementation(libs.navigation.ui)
 
@@ -63,6 +64,8 @@ dependencies {
     // OSMDroid (OpenStreetMap / Leaflet equivalent for Android)
     implementation("org.osmdroid:osmdroid-android:6.1.18")
 
+    // MPAndroidChart for statistics graphs
+    implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
     // Firebase
     implementation(platform("com.google.firebase:firebase-bom:32.7.0"))
     implementation("com.google.firebase:firebase-messaging")

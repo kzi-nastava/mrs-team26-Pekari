@@ -124,26 +124,26 @@
         android:label="@string/user_management_title"
         tools:layout="@layout/fragment_user_management" />
 
-    <!-- Driver History Fragment -->
+    <!-- Driver History Fragment (with History | Statistics tabs) -->
     <fragment
         android:id="@+id/driverHistoryFragment"
-        android:name="com.example.blackcar.presentation.history.views.DriverHistoryFragment"
+        android:name="com.example.blackcar.presentation.history.views.DriverHistoryHostFragment"
         android:label="@string/title_driver_history"
-        tools:layout="@layout/fragment_driver_history" />
+        tools:layout="@layout/fragment_driver_history_host" />
 
-    <!-- Passenger History Fragment -->
+    <!-- Passenger History Fragment (with History | Statistics tabs) -->
     <fragment
         android:id="@+id/passengerHistoryFragment"
-        android:name="com.example.blackcar.presentation.history.views.PassengerHistoryFragment"
+        android:name="com.example.blackcar.presentation.history.views.PassengerHistoryHostFragment"
         android:label="@string/title_passenger_history"
-        tools:layout="@layout/fragment_passenger_history" />
+        tools:layout="@layout/fragment_passenger_history_host" />
 
-    <!-- Admin History Fragment -->
+    <!-- Admin History Fragment (with History | Statistics tabs) -->
     <fragment
         android:id="@+id/adminHistoryFragment"
-        android:name="com.example.blackcar.presentation.history.views.AdminHistoryFragment"
+        android:name="com.example.blackcar.presentation.history.views.AdminHistoryHostFragment"
         android:label="@string/title_admin_history"
-        tools:layout="@layout/fragment_admin_history" />
+        tools:layout="@layout/fragment_admin_history_host" />
 
     <!-- Profile Fragment -->
     <fragment

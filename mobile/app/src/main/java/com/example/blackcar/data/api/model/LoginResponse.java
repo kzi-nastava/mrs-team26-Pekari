@@ -6,6 +6,7 @@ public class LoginResponse {
     private String userId;
     private String email;
     private String role;
+    private Boolean blocked;
 
     // Getters
     public String getToken() { return token; }
@@ -13,4 +14,5 @@ public class LoginResponse {
     public String getUserId() { return userId; }
     public String getEmail() { return email; }
     public String getRole() { return role; }
+    public Boolean getBlocked() { return blocked; }
 }
