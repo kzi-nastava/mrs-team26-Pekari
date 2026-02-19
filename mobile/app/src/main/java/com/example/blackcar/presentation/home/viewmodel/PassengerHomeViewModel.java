@@ -59,13 +59,26 @@ public class PassengerHomeViewModel extends AndroidViewModel {
 
     private void subscribeToRideTracking(Long rideId) {
         if (rideId == null || rideId.equals(currentSubscribedRideId)) return;
-        
+
         currentSubscribedRideId = rideId;
         chatRealtimeService.subscribeToRideTracking(rideId, tracking -> {
             if (tracking != null) {
+                // Update live tracking data (driver position, ETA, etc.)
+                PassengerHomeViewState currentState = state.getValue();
+                if (currentState != null) {
+                    PassengerHomeViewState newState = PassengerHomeViewState.idle();
+                    newState.orderResult = currentState.orderResult;
+                    newState.activeRide = currentState.activeRide;
+                    newState.formDisabled = currentState.formDisabled;
+                    newState.stopRequested = currentState.stopRequested;
+                    newState.panicActivated = currentState.panicActivated;
+                    newState.liveTracking = tracking;
+                    state.postValue(newState);
+                }
+
                 String status = tracking.getRideStatus() != null ? tracking.getRideStatus() : tracking.getStatus();
-                if ("IN_PROGRESS".equals(status) || "STOP_REQUESTED".equals(status) || "COMPLETED".equals(status) || "CANCELLED".equals(status)) {
-                    // Refresh active ride to trigger navigation or UI update
+                if ("COMPLETED".equals(status) || "CANCELLED".equals(status)) {
+                    // Refresh active ride when ride ends
                     loadActiveRide();
                 }
             }

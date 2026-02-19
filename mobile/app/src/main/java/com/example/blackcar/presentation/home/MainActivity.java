@@ -48,6 +48,8 @@ public class MainActivity extends AppCompatActivity {
                 navController.navigate(R.id.homeFragment);
             } else if (id == R.id.nav_add_driver) {
                 navController.navigate(R.id.addDriverFragment);
+            } else if (id == R.id.nav_panic) {
+                navController.navigate(R.id.panicPanelFragment);
             } else if (id == R.id.nav_profile) {
                 navController.navigate(R.id.profileFragment);
             } else {
@@ -108,6 +110,8 @@ public class MainActivity extends AppCompatActivity {
             itemId = R.id.nav_profile;
         } else if (destinationId == R.id.addDriverFragment) {
             itemId = R.id.nav_add_driver;
+        } else if (destinationId == R.id.panicPanelFragment) {
+            itemId = R.id.nav_panic;
         } else if (destinationId == R.id.adminHistoryFragment || destinationId == R.id.driverHistoryFragment || destinationId == R.id.passengerHistoryFragment) {
             itemId = R.id.nav_history;
         } else {

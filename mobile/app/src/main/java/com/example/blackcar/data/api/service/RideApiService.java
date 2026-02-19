@@ -103,4 +103,8 @@ public interface RideApiService {
     // Passenger ride management endpoints
     @POST("rides/{rideId}/request-stop")
     Call<MessageResponse> requestStopRide(@Path("rideId") Long rideId);
+
+    // Admin panic mode endpoints
+    @GET("rides/panic/active")
+    Call<java.util.List<DriverRideHistoryResponse>> getActivePanicRides();
 }

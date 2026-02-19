@@ -52,4 +52,22 @@
     <color name="stop_request_notification_border">#f59e0b</color>
     <color name="stop_request_notification_title">#d97706</color>
     <color name="stop_request_notification_text">#92400e</color>
+
+    <!-- Panic Panel Colors -->
+    <color name="panic_red">#dc2626</color>
+    <color name="panic_red_light">#b91c1c</color>
+    <color name="panic_header_bg">#1adc2626</color>
+    <color name="panic_badge_bg">#26dc2626</color>
+    <color name="panic_badge_border">#dc2626</color>
+
+    <!-- Additional Status Colors for Panic Panel -->
+    <color name="status_assigned">#f59e0b</color>
+
+
+    <!-- General Colors (aliases) -->
+    <color name="background">@color/bg_primary</color>
+    <color name="primary">@color/text_primary</color>
+    <color name="card_background">@color/card_surface</color>
+    <color name="input_bg">#262626</color>
+    <color name="border">#333333</color>
 </resources>

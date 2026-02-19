@@ -117,14 +117,20 @@
     </com.google.android.material.card.MaterialCardView>
 
     <!-- Active Ride Content -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
     <ScrollView
         android:id="@+id/scrollActiveRide"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
+        android:layout_height="match_parent"
         android:fillViewport="true"
         android:scrollbars="none"
-        android:visibility="gone">
+        android:visibility="gone"
+        android:paddingBottom="88dp"
+        android:clipToPadding="false">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -655,15 +661,18 @@
 
         </LinearLayout>
     </ScrollView>
+
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fabChat"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
         android:layout_marginEnd="16dp"
-        android:layout_marginBottom="72dp"
+        android:layout_marginBottom="16dp"
         app:srcCompat="@android:drawable/stat_notify_chat"
         app:tint="@color/text_primary"
         app:backgroundTint="@color/accent_info" />
+
+    </FrameLayout>
 
 </LinearLayout>

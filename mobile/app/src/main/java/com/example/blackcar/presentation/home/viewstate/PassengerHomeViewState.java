@@ -3,6 +3,7 @@ package com.example.blackcar.presentation.home.viewstate;
 import com.example.blackcar.data.api.model.ActiveRideResponse;
 import com.example.blackcar.data.api.model.OrderRideResponse;
 import com.example.blackcar.data.api.model.RideEstimateResponse;
+import com.example.blackcar.data.api.model.WebRideTrackingResponse;
 
 /**
  * ViewState for passenger home / ride ordering
@@ -18,6 +19,7 @@ public class PassengerHomeViewState {
     public boolean formDisabled;
     public boolean stopRequested;
     public boolean panicActivated;
+    public WebRideTrackingResponse liveTracking;
 
     public static PassengerHomeViewState idle() {
         PassengerHomeViewState s = new PassengerHomeViewState();
@@ -30,6 +32,7 @@ public class PassengerHomeViewState {
         s.formDisabled = false;
         s.stopRequested = false;
         s.panicActivated = false;
+        s.liveTracking = null;
         return s;
     }
 

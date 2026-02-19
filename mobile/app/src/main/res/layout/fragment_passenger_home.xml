@@ -469,6 +469,114 @@
                                     android:layout_marginTop="2dp"
                                     tools:text="Driver: driver@example.com" />
 
+                                <!-- Live Tracking Info (ETA, Driver Name, Vehicle) -->
+                                <LinearLayout
+                                    android:id="@+id/layoutLiveTracking"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:orientation="vertical"
+                                    android:layout_marginTop="12dp"
+                                    android:visibility="gone">
+
+                                    <View
+                                        android:layout_width="match_parent"
+                                        android:layout_height="1dp"
+                                        android:background="@color/divider"
+                                        android:layout_marginBottom="12dp" />
+
+                                    <TextView
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="LIVE TRACKING"
+                                        android:textColor="@color/text_secondary"
+                                        android:textSize="11sp"
+                                        android:textStyle="bold"
+                                        android:textAllCaps="true"
+                                        android:layout_marginBottom="8dp" />
+
+                                    <!-- ETA Row -->
+                                    <LinearLayout
+                                        android:layout_width="match_parent"
+                                        android:layout_height="wrap_content"
+                                        android:orientation="horizontal"
+                                        android:gravity="center_vertical"
+                                        android:paddingVertical="4dp">
+
+                                        <TextView
+                                            android:layout_width="0dp"
+                                            android:layout_height="wrap_content"
+                                            android:layout_weight="1"
+                                            android:text="Estimated Arrival"
+                                            android:textColor="@color/text_secondary"
+                                            android:textSize="13sp" />
+
+                                        <TextView
+                                            android:id="@+id/txtLiveEta"
+                                            android:layout_width="wrap_content"
+                                            android:layout_height="wrap_content"
+                                            android:textColor="@color/accent_info"
+                                            android:textSize="16sp"
+                                            android:textStyle="bold"
+                                            tools:text="12 min" />
+                                    </LinearLayout>
+
+                                    <!-- Driver Name Row -->
+                                    <LinearLayout
+                                        android:id="@+id/layoutDriverName"
+                                        android:layout_width="match_parent"
+                                        android:layout_height="wrap_content"
+                                        android:orientation="horizontal"
+                                        android:gravity="center_vertical"
+                                        android:paddingVertical="4dp"
+                                        android:visibility="gone">
+
+                                        <TextView
+                                            android:layout_width="0dp"
+                                            android:layout_height="wrap_content"
+                                            android:layout_weight="1"
+                                            android:text="Driver"
+                                            android:textColor="@color/text_secondary"
+                                            android:textSize="13sp" />
+
+                                        <TextView
+                                            android:id="@+id/txtLiveDriverName"
+                                            android:layout_width="wrap_content"
+                                            android:layout_height="wrap_content"
+                                            android:textColor="@color/text_primary"
+                                            android:textSize="14sp"
+                                            android:textStyle="bold"
+                                            tools:text="John Doe" />
+                                    </LinearLayout>
+
+                                    <!-- Vehicle Info Row -->
+                                    <LinearLayout
+                                        android:id="@+id/layoutVehicleInfo"
+                                        android:layout_width="match_parent"
+                                        android:layout_height="wrap_content"
+                                        android:orientation="horizontal"
+                                        android:gravity="center_vertical"
+                                        android:paddingVertical="4dp"
+                                        android:visibility="gone">
+
+                                        <TextView
+                                            android:layout_width="0dp"
+                                            android:layout_height="wrap_content"
+                                            android:layout_weight="1"
+                                            android:text="Vehicle"
+                                            android:textColor="@color/text_secondary"
+                                            android:textSize="13sp" />
+
+                                        <TextView
+                                            android:id="@+id/txtLiveVehicleInfo"
+                                            android:layout_width="wrap_content"
+                                            android:layout_height="wrap_content"
+                                            android:textColor="@color/text_primary"
+                                            android:textSize="14sp"
+                                            tools:text="STANDARD (NS-123-AB)" />
+                                    </LinearLayout>
+
+                                </LinearLayout>
+
                                 <!-- Request Stop Button -->
                                 <Button
                                     android:id="@+id/btnRequestStop"

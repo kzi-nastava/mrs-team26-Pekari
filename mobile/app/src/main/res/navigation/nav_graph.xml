@@ -172,4 +172,11 @@
         android:label="@string/title_chat"
         tools:layout="@layout/fragment_chat" />
 
+    <!-- Panic Panel Fragment (Admin only) -->
+    <fragment
+        android:id="@+id/panicPanelFragment"
+        android:name="com.example.blackcar.presentation.admin.views.PanicPanelFragment"
+        android:label="@string/title_panic_panel"
+        tools:layout="@layout/fragment_panic_panel" />
+
 </navigation>

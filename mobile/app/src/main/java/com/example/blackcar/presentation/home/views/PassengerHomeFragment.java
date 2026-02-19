@@ -42,6 +42,7 @@ import org.osmdroid.config.Configuration;
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
+import org.osmdroid.views.overlay.Marker;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -71,6 +72,9 @@ public class PassengerHomeFragment extends Fragment {
     private final List<View> stopViews = new ArrayList<>();
     private FocusedField focusedField = FocusedField.NONE;
     private int focusedStopIndex = -1; // Track which stop is focused for map click
+
+    // --- Live ride tracking ---
+    private Marker driverMarker;
 
     private enum FocusedField { NONE, PICKUP, DROPOFF, STOP }
 
@@ -659,17 +663,94 @@ public class PassengerHomeFragment extends Fragment {
                 boolean rideEnded = "CANCELLED".equals(status) || "REJECTED".equals(status) || "COMPLETED".equals(status);
                 binding.btnRequestAnother.setVisibility(rideEnded ? View.VISIBLE : View.GONE);
 
-                // Real-time tracking navigation
-                if ("IN_PROGRESS".equals(status) || "STOP_REQUESTED".equals(status)) {
-                    Bundle args = new Bundle();
-                    args.putLong("rideId", state.orderResult.getRideId());
-                    Navigation.findNavController(requireView()).navigate(R.id.action_home_to_rideTracking, args);
+                // Handle live tracking display
+                boolean showLiveTracking = ("IN_PROGRESS".equals(status) || "STOP_REQUESTED".equals(status)) && state.liveTracking != null;
+                binding.layoutLiveTracking.setVisibility(showLiveTracking ? View.VISIBLE : View.GONE);
+
+                if (showLiveTracking) {
+                    updateLiveTrackingUI(state.liveTracking, state.activeRide);
                 }
             }
 
             setFormEnabled(!state.formDisabled);
             updateMapMarkers();
+
+            // Update driver marker on map
+            updateDriverMarker(state);
         });
+    }
+
+    private void updateLiveTrackingUI(com.example.blackcar.data.api.model.WebRideTrackingResponse tracking,
+                                      com.example.blackcar.data.api.model.ActiveRideResponse activeRide) {
+        if (tracking == null) return;
+
+        // Update ETA
+        if (tracking.getEstimatedTimeToDestinationMinutes() != null) {
+            binding.txtLiveEta.setText(tracking.getEstimatedTimeToDestinationMinutes() + " min");
+        } else {
+            binding.txtLiveEta.setText("--");
+        }
+
+        // Update driver name if available from activeRide
+        if (activeRide != null && activeRide.getDriver() != null && activeRide.getDriver().getName() != null) {
+            binding.txtLiveDriverName.setText(activeRide.getDriver().getName());
+            binding.layoutDriverName.setVisibility(View.VISIBLE);
+        } else {
+            binding.layoutDriverName.setVisibility(View.GONE);
+        }
+
+        // Update vehicle info - use tracking data first, fallback to activeRide
+        if (tracking.getVehicle() != null) {
+            String vehicleInfo = tracking.getVehicle().getType();
+            if (tracking.getVehicle().getLicensePlate() != null) {
+                vehicleInfo += " (" + tracking.getVehicle().getLicensePlate() + ")";
+            }
+            binding.txtLiveVehicleInfo.setText(vehicleInfo);
+            binding.layoutVehicleInfo.setVisibility(View.VISIBLE);
+        } else if (activeRide != null && activeRide.getDriver() != null) {
+            // Fallback to driver's vehicle info from activeRide
+            String vehicleInfo = activeRide.getDriver().getVehicleType();
+            if (activeRide.getDriver().getLicensePlate() != null) {
+                vehicleInfo += " (" + activeRide.getDriver().getLicensePlate() + ")";
+            }
+            binding.txtLiveVehicleInfo.setText(vehicleInfo);
+            binding.layoutVehicleInfo.setVisibility(View.VISIBLE);
+        } else {
+            binding.layoutVehicleInfo.setVisibility(View.GONE);
+        }
+    }
+
+    private void updateDriverMarker(com.example.blackcar.presentation.home.viewstate.PassengerHomeViewState state) {
+        if (state == null || state.liveTracking == null) {
+            // Remove driver marker if no tracking data
+            if (driverMarker != null) {
+                MapView mapView = (MapView) binding.includeMap.getRoot();
+                mapView.getOverlayManager().remove(driverMarker);
+                driverMarker = null;
+                mapView.invalidate();
+            }
+            return;
+        }
+
+        Double lat = state.liveTracking.getVehicleLatitude();
+        Double lon = state.liveTracking.getVehicleLongitude();
+
+        if (lat == null || lon == null) return;
+
+        GeoPoint pos = new GeoPoint(lat, lon);
+
+        if (driverMarker == null) {
+            // Create new driver marker
+            driverMarker = mapHelper.addCarMarker(lat, lon, "Your Driver");
+            Log.d(TAG, "Created driver marker at: " + lat + ", " + lon);
+        } else {
+            // Update existing marker position
+            driverMarker.setPosition(pos);
+            Log.d(TAG, "Updated driver marker to: " + lat + ", " + lon);
+        }
+
+        MapView mapView = (MapView) binding.includeMap.getRoot();
+        mapView.invalidate();
     }
 
     private void setFormEnabled(boolean enabled) {

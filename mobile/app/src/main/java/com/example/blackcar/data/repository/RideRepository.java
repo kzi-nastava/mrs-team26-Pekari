@@ -437,6 +437,34 @@ public class RideRepository {
                 });
     }
 
+    // Admin panic mode methods
+    public void getActivePanicRides(RepoCallback<java.util.List<DriverRideHistoryResponse>> callback) {
+        api.getActivePanicRides().enqueue(
+                new Callback<java.util.List<DriverRideHistoryResponse>>() {
+                    @Override
+                    public void onResponse(@NonNull Call<java.util.List<DriverRideHistoryResponse>> call,
+                                         @NonNull Response<java.util.List<DriverRideHistoryResponse>> response) {
+                        if (response.isSuccessful() && response.body() != null) {
+                            callback.onSuccess(response.body());
+                        } else {
+                            String message = "Failed to load panic rides";
+                            if (response.code() == 401) {
+                                message = "Unauthorized. Please login again.";
+                            } else if (response.code() == 403) {
+                                message = "Access denied. Admin role required.";
+                            }
+                            callback.onError(message);
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(@NonNull Call<java.util.List<DriverRideHistoryResponse>> call,
+                                        @NonNull Throwable t) {
+                        callback.onError("Network error. Please check your internet connection.");
+                    }
+                });
+    }
+
     private String parseErrorMessage(Response<?> response, String fallback) {
         if (response.errorBody() == null) return fallback;
         try {

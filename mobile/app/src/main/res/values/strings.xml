@@ -188,6 +188,32 @@
     <string name="passenger_btn_panic">🚨 PANIC</string>
     <string name="passenger_panic_activated">🚨 PANIC ACTIVATED</string>
 
+    <!-- Panic Panel (Admin) -->
+    <string name="panic_panel_title">🚨 Panic Alert Dashboard</string>
+    <string name="panic_refresh">Refresh</string>
+    <string name="panic_retry">Retry</string>
+    <string name="panic_error_loading">Failed to load panic rides. Please try again.</string>
+    <string name="panic_empty_icon">✓</string>
+    <string name="panic_all_clear">All Clear</string>
+    <string name="panic_no_active_alerts">No active panic alerts at this time.</string>
+    <string name="panic_alert_single">Active Panic Alert</string>
+    <string name="panic_alert_multiple">Active Panic Alerts</string>
+    <string name="panic_new_alert_single">🚨 1 new panic alert detected!</string>
+    <string name="panic_new_alert_multiple">🚨 %d new panic alerts detected!</string>
+    <string name="panic_icon">🚨</string>
+    <string name="panic_route_info">Route Information</string>
+    <string name="panic_pickup_icon">🟢</string>
+    <string name="panic_dropoff_icon">🔴</string>
+    <string name="panic_pickup">Pickup:</string>
+    <string name="panic_dropoff">Dropoff:</string>
+    <string name="panic_ride_details">Ride Details</string>
+    <string name="panic_start_time">Start Time:</string>
+    <string name="panic_activated_by">🚨 Panic Activated By:</string>
+    <string name="panic_cancelled_by">Cancelled By:</string>
+    <string name="panic_passengers">Passengers</string>
+    <string name="panic_emergency_notice">⚠️ Emergency support required. Contact driver and passengers immediately.</string>
+    <string name="title_panic_panel">Panic Alerts</string>
+
     <!-- Driver Home -->
     <string name="driver_home_title">Driver Dashboard</string>
     <string name="driver_no_active_ride">No Active Ride</string>
