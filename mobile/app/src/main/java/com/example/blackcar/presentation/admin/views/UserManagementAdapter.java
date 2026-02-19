@@ -100,7 +100,7 @@ public class UserManagementAdapter extends ListAdapter<UserListItemResponse, Use
             boolean blocked = Boolean.TRUE.equals(user.getBlocked());
             txtStatus.setText(blocked ? "Blocked" : "Active");
             txtStatus.setTextColor(ContextCompat.getColor(itemView.getContext(),
-                    blocked ? R.color.accent_danger : R.color.accent_success));
+                    blocked ? R.color.accent_danger : R.color.text_primary));
             txtStatus.setBackgroundResource(blocked ? R.drawable.bg_status_blocked : R.drawable.bg_status_badge);
 
             String note = user.getBlockedNote();

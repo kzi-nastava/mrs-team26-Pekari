@@ -1,5 +1,6 @@
 package com.example.blackcar.presentation.home;
 
+import android.content.res.ColorStateList;
 import android.os.Bundle;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -98,6 +99,31 @@ public class MainActivity extends AppCompatActivity {
             bottomNav.inflateMenu(R.menu.bottom_nav_menu_admin);
         } else {
             bottomNav.inflateMenu(R.menu.bottom_nav_menu);
+        }
+        applyProfileTabDangerState();
+    }
+
+    /**
+     * When the user is blocked, style the Profile tab with danger (red) color,
+     * matching the web behavior where the profile nav link turns red.
+     * Call this when blocked status may have changed (e.g. after profile loads).
+     */
+    public void refreshProfileTabDangerState() {
+        applyProfileTabDangerState();
+    }
+
+    private void applyProfileTabDangerState() {
+        BottomNavigationView bottomNav = binding.bottomNavigation;
+        MenuItem profileItem = bottomNav.getMenu().findItem(R.id.nav_profile);
+        if (profileItem != null) {
+            if (SessionManager.isBlocked()) {
+                profileItem.setIcon(R.drawable.baseline_person_24_danger);
+                bottomNav.setItemIconTintList(null);
+            } else {
+                profileItem.setIcon(R.drawable.baseline_person_24);
+                bottomNav.setItemIconTintList(ColorStateList.valueOf(
+                        getResources().getColor(R.color.text_primary, getTheme())));
+            }
         }
     }
 

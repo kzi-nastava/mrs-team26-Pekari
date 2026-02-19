@@ -51,12 +51,12 @@
                     android:ellipsize="end" />
             </LinearLayout>
 
-            <TextView
-                android:id="@+id/txtStatus"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Active"
-                android:textColor="@color/accent_success"
+                <TextView
+                    android:id="@+id/txtStatus"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Active"
+                    android:textColor="@color/text_primary"
                 android:textSize="11sp"
                 android:textStyle="bold"
                 android:background="@drawable/bg_status_badge"
@@ -101,7 +101,7 @@
                 android:layout_marginStart="8dp"
                 android:text="Unblock"
                 android:textSize="12sp"
-                android:textColor="@color/accent_success"
+                android:textColor="@color/text_primary"
                 android:visibility="gone" />
         </LinearLayout>
 
