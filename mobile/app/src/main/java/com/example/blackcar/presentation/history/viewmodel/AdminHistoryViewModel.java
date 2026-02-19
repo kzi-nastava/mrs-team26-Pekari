@@ -38,6 +38,22 @@ public class AdminHistoryViewModel extends ViewModel {
     public void loadHistory(LocalDate from, LocalDate to) {
         state.setValue(new AdminHistoryViewState(true, false, null, new ArrayList<>()));
 
+        // Fetch active rides first
+        rideRepository.getAllActiveRides(new RideRepository.RepoCallback<java.util.List<AdminRideHistoryResponse>>() {
+            @Override
+            public void onSuccess(java.util.List<AdminRideHistoryResponse> activeRides) {
+                fetchHistory(from, to, activeRides);
+            }
+
+            @Override
+            public void onError(String message) {
+                // If active rides fail, still try to fetch history
+                fetchHistory(from, to, new ArrayList<>());
+            }
+        });
+    }
+
+    private void fetchHistory(LocalDate from, LocalDate to, List<AdminRideHistoryResponse> activeRides) {
         // Backend expects LocalDateTime format (yyyy-MM-dd'T'HH:mm:ss)
         String startDate = (from != null) ? from.format(DATE_FORMATTER) + "T00:00:00" : null;
         String endDate = (to != null) ? to.format(DATE_FORMATTER) + "T23:59:59" : null;
@@ -48,8 +64,25 @@ public class AdminHistoryViewModel extends ViewModel {
                 new RideRepository.RepoCallback<PaginatedResponse<AdminRideHistoryResponse>>() {
                     @Override
                     public void onSuccess(PaginatedResponse<AdminRideHistoryResponse> data) {
-                        List<AdminRideUIModel> uiModels = mapToUIModels(data.getContent());
-                        currentRides = uiModels;
+                        List<AdminRideUIModel> historyModels = mapToUIModels(data.getContent());
+                        List<AdminRideUIModel> activeModels = mapToUIModels(activeRides);
+                        
+                        // Merge them, avoiding duplicates if any active ride is also in history
+                        List<AdminRideUIModel> allRides = new ArrayList<>(activeModels);
+                        for (AdminRideUIModel historyRide : historyModels) {
+                            boolean exists = false;
+                            for (AdminRideUIModel activeRide : activeModels) {
+                                if (activeRide.id.equals(historyRide.id)) {
+                                    exists = true;
+                                    break;
+                                }
+                            }
+                            if (!exists) {
+                                allRides.add(historyRide);
+                            }
+                        }
+                        
+                        currentRides = allRides;
                         sortRides(currentSortField, currentSortAscending);
                     }
 

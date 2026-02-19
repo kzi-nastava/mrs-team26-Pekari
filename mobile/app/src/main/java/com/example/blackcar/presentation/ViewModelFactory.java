@@ -12,6 +12,8 @@ import com.example.blackcar.presentation.auth.viewmodel.LoginViewModel;
 import com.example.blackcar.presentation.auth.viewmodel.RegisterViewModel;
 import com.example.blackcar.presentation.home.viewmodel.DriverHomeViewModel;
 import com.example.blackcar.presentation.home.viewmodel.PassengerHomeViewModel;
+import com.example.blackcar.presentation.history.viewmodel.AdminHistoryViewModel;
+import com.example.blackcar.presentation.history.viewmodel.AdminRideDetailViewModel;
 import com.example.blackcar.presentation.history.viewmodel.PassengerHistoryViewModel;
 import com.example.blackcar.presentation.chat.ChatViewModel;
 import com.example.blackcar.presentation.home.viewmodel.RideTrackingViewModel;
@@ -46,6 +48,10 @@ public class ViewModelFactory implements ViewModelProvider.Factory {
             return (T) new ChatViewModel((Application) context.getApplicationContext());
         } else if (modelClass.isAssignableFrom(RideTrackingViewModel.class)) {
             return (T) new RideTrackingViewModel((Application) context.getApplicationContext());
+        } else if (modelClass.isAssignableFrom(AdminRideDetailViewModel.class)) {
+            return (T) new AdminRideDetailViewModel((Application) context.getApplicationContext());
+        } else if (modelClass.isAssignableFrom(AdminHistoryViewModel.class)) {
+            return (T) new AdminHistoryViewModel();
         }
         throw new IllegalArgumentException("Unknown ViewModel class: " + modelClass.getName());
     }
