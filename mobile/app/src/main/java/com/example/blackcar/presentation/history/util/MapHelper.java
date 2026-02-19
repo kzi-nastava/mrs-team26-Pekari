@@ -105,7 +105,9 @@ public class MapHelper {
     public Marker addVehicleMarker(double latitude, double longitude, String title, boolean isBusy) {
         MarkerType type = isBusy ? MarkerType.VEHICLE_BUSY : MarkerType.VEHICLE_AVAILABLE;
         Marker marker = addMarker(latitude, longitude, title, type);
-        vehicleMarkers.add(marker);
+        if (marker != null) {
+            vehicleMarkers.add(marker);
+        }
         return marker;
     }
 
@@ -113,19 +115,28 @@ public class MapHelper {
      * Add a generic marker with custom type
      */
     private Marker addMarker(double latitude, double longitude, String title, MarkerType type) {
-        Marker marker = new Marker(mapView);
-        marker.setPosition(new GeoPoint(latitude, longitude));
-        marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
-        marker.setTitle(title);
-
-        // Set marker icon based on type
-        Drawable icon = getMarkerIcon(type);
-        if (icon != null) {
-            marker.setIcon(icon);
+        if (mapView == null || mapView.getRepository() == null) {
+            return null;
         }
 
-        mapView.getOverlayManager().add(marker);
-        return marker;
+        try {
+            Marker marker = new Marker(mapView);
+            marker.setPosition(new GeoPoint(latitude, longitude));
+            marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
+            marker.setTitle(title);
+
+            // Set marker icon based on type
+            Drawable icon = getMarkerIcon(type);
+            if (icon != null) {
+                marker.setIcon(icon);
+            }
+
+            mapView.getOverlayManager().add(marker);
+            return marker;
+        } catch (Exception e) {
+            android.util.Log.e("MapHelper", "Error creating marker: " + e.getMessage());
+            return null;
+        }
     }
 
     /**
@@ -277,5 +288,14 @@ public class MapHelper {
 
     public Marker addCarMarker(double latitude, double longitude, String title) {
         return addMarker(latitude, longitude, title, MarkerType.CAR);
+    }
+
+    /**
+     * Ensure a marker is on the map. Re-adds it if it was removed (e.g. by clearMap).
+     */
+    public void ensureMarkerOnMap(Marker marker) {
+        if (marker != null && mapView != null && !mapView.getOverlayManager().contains(marker)) {
+            mapView.getOverlayManager().add(marker);
+        }
     }
 }

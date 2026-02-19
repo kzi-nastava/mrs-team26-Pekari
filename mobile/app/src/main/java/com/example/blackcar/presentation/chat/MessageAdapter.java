@@ -55,7 +55,9 @@ public class MessageAdapter extends ListAdapter<WebChatMessage, MessageAdapter.H
 
     @Override
     public void onBindViewHolder(@NonNull Holder holder, int position) {
-        holder.bind(getItem(position));
+        if (position >= 0 && position < getItemCount()) {
+            holder.bind(getItem(position));
+        }
     }
 
     static class Holder extends RecyclerView.ViewHolder {

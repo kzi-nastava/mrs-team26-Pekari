@@ -149,6 +149,7 @@ public class RideTrackingFragment extends Fragment {
     }
 
     private void drawRoute(PassengerRideDetailResponse details) {
+        if (mapHelper == null) return;
         if (details.getPickup() != null) {
             if (pickupMarker != null) pickupMarker.remove(((MapView)binding.includeMap.getRoot()));
             pickupMarker = mapHelper.addPickupMarker(details.getPickup().getLatitude(), details.getPickup().getLongitude(), "Pickup");
@@ -191,6 +192,7 @@ public class RideTrackingFragment extends Fragment {
     }
 
     private void updateMap(WebRideTrackingResponse tracking) {
+        if (mapHelper == null) return;
         if (tracking.getVehicleLatitude() == null || tracking.getVehicleLongitude() == null) {
             Log.d("RideTracking", "No location in tracking update");
             return;
@@ -206,6 +208,7 @@ public class RideTrackingFragment extends Fragment {
             driverMarker = mapHelper.addCarMarker(lat, lon, "Your Driver");
         } else {
             driverMarker.setPosition(vehiclePos);
+            mapHelper.ensureMarkerOnMap(driverMarker);
         }
         
         if (!initialZoomDone) {
@@ -232,7 +235,10 @@ public class RideTrackingFragment extends Fragment {
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-        ((MapView)binding.includeMap.getRoot()).onDetach();
+        if (binding != null && binding.includeMap != null) {
+            ((MapView)binding.includeMap.getRoot()).onDetach();
+        }
+        mapHelper = null;
         binding = null;
     }
 }

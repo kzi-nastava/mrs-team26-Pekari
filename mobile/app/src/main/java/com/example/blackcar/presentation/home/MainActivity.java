@@ -20,6 +20,11 @@ import com.example.blackcar.databinding.ActivityMainBinding;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
+import com.example.blackcar.data.auth.TokenManager;
+import com.example.blackcar.data.repository.NotificationRepository;
+import com.google.firebase.messaging.FirebaseMessaging;
+import android.util.Log;
+
 import android.view.MenuItem;
 
 public class MainActivity extends AppCompatActivity {
@@ -29,15 +34,34 @@ public class MainActivity extends AppCompatActivity {
     private ActivityMainBinding binding;
     private NavController navController;
 
+    private final androidx.activity.result.ActivityResultLauncher<String> requestPermissionLauncher =
+            registerForActivityResult(new androidx.activity.result.contract.ActivityResultContracts.RequestPermission(), isGranted -> {
+                if (isGranted) {
+                    Log.d("MainActivity", "[DEBUG_LOG] Notification permission granted");
+                } else {
+                    Log.w("MainActivity", "[DEBUG_LOG] Notification permission denied. App will not show notifications.");
+                    // Optional: Inform user that the app will not show notifications.
+                }
+            });
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Log.i("MainActivity", "--------------------------------------------------");
+        Log.i("MainActivity", "[DEBUG_LOG] MainActivity.onCreate() starting...");
+        Log.i("MainActivity", "--------------------------------------------------");
 
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
+        // Initialize ApiClient (safety net; Application also does this)
+        com.example.blackcar.data.api.ApiClient.init(getApplicationContext());
+
+        // Check Firebase initialization
+        checkFirebaseStatus();
+
         // Request notification permission for Android 13+
-        requestNotificationPermission();
+        askNotificationPermission();
 
         setSupportActionBar(binding.toolbar);
         if (getSupportActionBar() != null) {
@@ -100,28 +124,111 @@ public class MainActivity extends AppCompatActivity {
 
     /**
      * Handle intent from FCM notification tap.
-     * Navigates to PanicPanel if notification was a panic alert.
+     * Navigates to appropriate screen based on intent extras.
      */
     private void handleNotificationIntent(Intent intent) {
+        // Sync FCM token on every activity start if logged in
+        syncFcmToken();
+
         if (intent == null) return;
 
         String navigateTo = intent.getStringExtra("navigate_to");
-        if ("panic_panel".equals(navigateTo)) {
-            // Navigate to Panic Panel after a short delay to ensure NavController is ready
-            binding.getRoot().postDelayed(() -> {
-                if (navController != null && SessionManager.getRole() != null
-                        && SessionManager.getRole().equalsIgnoreCase("admin")) {
-                    try {
+        if (navigateTo == null) return;
+
+        String rideIdStr = intent.getStringExtra("ride_id");
+
+        binding.getRoot().postDelayed(() -> {
+            if (navController == null || SessionManager.getRole() == null) return;
+
+            try {
+                if ("panic_panel".equals(navigateTo)) {
+                    if (SessionManager.getRole().equalsIgnoreCase("admin")) {
                         navController.navigate(R.id.panicPanelFragment);
-                    } catch (Exception e) {
-                        // Navigation may fail if not logged in or destination not available
+                    }
+                } else if ("ride_details".equals(navigateTo)) {
+                    if (rideIdStr != null) {
+                        try {
+                            long rideId = Long.parseLong(rideIdStr);
+                            Bundle args = new Bundle();
+                            args.putLong("rideId", rideId);
+                            navController.navigate(R.id.rideTrackingFragment, args);
+                        } catch (NumberFormatException e) {
+                            // Fallback to home if ID is invalid
+                            navController.navigate(R.id.homeFragment);
+                        }
+                    } else {
+                        navController.navigate(R.id.homeFragment);
                     }
                 }
-            }, 300);
+            } catch (Exception e) {
+                // Navigation may fail if not logged in or destination not available
+            }
+        }, 300);
 
-            // Clear the intent extra to prevent re-navigation
-            intent.removeExtra("navigate_to");
+        // Clear the intent extra to prevent re-navigation
+        intent.removeExtra("navigate_to");
+        intent.removeExtra("ride_id");
+    }
+
+    private void checkFirebaseStatus() {
+        try {
+            com.google.firebase.FirebaseApp app = com.google.firebase.FirebaseApp.getInstance();
+            Log.v("MainActivity", "[DEBUG_LOG] Firebase initialized: " + app.getName());
+        } catch (Exception e) {
+            Log.v("MainActivity", "[DEBUG_LOG] Firebase initialization check failed", e);
         }
+    }
+
+    private void syncFcmToken() {
+        TokenManager tm = TokenManager.getInstance(this);
+        String jwt = tm.getToken();
+        boolean hasToken = tm.hasToken();
+        
+        Log.i("MainActivity", "[DEBUG_LOG] syncFcmToken started. JWT present: " + (jwt != null) + ", hasToken(): " + hasToken);
+
+        if (!hasToken) {
+            Log.i("MainActivity", "[DEBUG_LOG] Skipping FCM sync: No auth token in TokenManager");
+            return;
+        }
+
+        Log.i("MainActivity", "[DEBUG_LOG] Requesting FCM token from Firebase...");
+        FirebaseMessaging.getInstance().getToken()
+            .addOnCompleteListener(task -> {
+                if (!task.isSuccessful()) {
+                    Log.e("MainActivity", "[DEBUG_LOG] Fetching FCM token failed", task.getException());
+                    if (task.getException() != null) {
+                        Log.e("MainActivity", "[DEBUG_LOG] FCM Exception message: " + task.getException().getMessage());
+                    }
+                    return;
+                }
+
+                String token = task.getResult();
+                if (token == null || token.isEmpty()) {
+                    Log.v("MainActivity", "[DEBUG_LOG] FCM token retrieved but it's null or empty");
+                    return;
+                }
+
+                Log.i("MainActivity", "[DEBUG_LOG] FCM token retrieved successfully: " + token.substring(0, Math.min(token.length(), 10)) + "...");
+
+                tm.saveFcmToken(token);
+                new NotificationRepository().registerToken(token, new NotificationRepository.RegistrationCallback() {
+                    @Override
+                    public void onSuccess() {
+                        Log.v("MainActivity", "[DEBUG_LOG] FCM token registered with backend successfully from MainActivity");
+                    }
+
+                    @Override
+                    public void onFailure(String error) {
+                        Log.v("MainActivity", "[DEBUG_LOG] Failed to register FCM token with backend from MainActivity: " + error);
+                    }
+                });
+            })
+            .addOnFailureListener(e -> {
+                Log.e("MainActivity", "[DEBUG_LOG] Firebase getToken() Failure Listener triggered: " + e.getMessage(), e);
+            })
+            .addOnCanceledListener(() -> {
+                Log.w("MainActivity", "[DEBUG_LOG] Firebase getToken() Task was canceled");
+            });
     }
 
     private void setNavHostBottomMargin(int px) {
@@ -217,13 +324,19 @@ public class MainActivity extends AppCompatActivity {
     /**
      * Request notification permission for Android 13+ (API 33+).
      */
-    private void requestNotificationPermission() {
+    private void askNotificationPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
-                    != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(this,
-                        new String[]{Manifest.permission.POST_NOTIFICATIONS},
-                        NOTIFICATION_PERMISSION_REQUEST_CODE);
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) ==
+                    PackageManager.PERMISSION_GRANTED) {
+                Log.v("MainActivity", "[DEBUG_LOG] POST_NOTIFICATIONS permission already granted");
+            } else if (shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS)) {
+                Log.v("MainActivity", "[DEBUG_LOG] Showing rationale for POST_NOTIFICATIONS");
+                // In a real app, we would show an educational UI here.
+                // For now, we directly ask again or log that we should show a dialog.
+                requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS);
+            } else {
+                Log.v("MainActivity", "[DEBUG_LOG] Requesting POST_NOTIFICATIONS permission");
+                requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS);
             }
         }
     }

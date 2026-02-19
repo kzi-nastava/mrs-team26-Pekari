@@ -67,8 +67,8 @@ dependencies {
     // MPAndroidChart for statistics graphs
     implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
     // Firebase
-    implementation(platform("com.google.firebase:firebase-bom:32.7.0"))
-    implementation("com.google.firebase:firebase-messaging")
+    implementation(platform("com.google.firebase:firebase-bom:34.9.0"))
+    implementation(libs.google.firebase.messaging)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)

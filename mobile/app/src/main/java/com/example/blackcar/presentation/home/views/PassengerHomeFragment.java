@@ -746,6 +746,7 @@ public class PassengerHomeFragment extends Fragment {
         } else {
             // Update existing marker position
             driverMarker.setPosition(pos);
+            mapHelper.ensureMarkerOnMap(driverMarker);
             Log.d(TAG, "Updated driver marker to: " + lat + ", " + lon);
         }
 
@@ -809,6 +810,7 @@ public class PassengerHomeFragment extends Fragment {
             }
         }
         
+        mapHelper = null;
         binding = null;
     }
 }

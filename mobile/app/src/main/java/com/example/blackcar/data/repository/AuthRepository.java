@@ -55,9 +55,9 @@ public class AuthRepository {
                         tokenManager.saveRole(body.getRole());
                     }
 
+                    String email = body.getEmail();
                     String userId = body.getId() != null ? body.getId() : (body.getUserId() != null ? body.getUserId() : body.getEmail());
-                    boolean blocked = Boolean.TRUE.equals(body.getBlocked());
-                    SessionManager.setSession(body.getToken(), body.getEmail(), body.getRole(), userId, blocked);
+                    SessionManager.setSession(body.getToken(), email, body.getRole(), userId);
                     if (userId != null) {
                         tokenManager.saveUserId(userId);
                     }
@@ -228,18 +228,24 @@ public class AuthRepository {
      * Backend subscribes to user topic, and admins topic if user is admin.
      */
     private void registerFcmToken() {
+        Log.i(TAG, "[DEBUG_LOG] registerFcmToken() called. Requesting token from Firebase...");
         FirebaseMessaging.getInstance().getToken()
                 .addOnCompleteListener(task -> {
                     if (!task.isSuccessful()) {
-                        Log.w(TAG, "Fetching FCM token failed", task.getException());
+                        Log.e(TAG, "[DEBUG_LOG] Fetching FCM token failed after login", task.getException());
+                        if (task.getException() != null) {
+                            Log.e(TAG, "[DEBUG_LOG] Exception: " + task.getException().getMessage());
+                        }
                         return;
                     }
 
                     String fcmToken = task.getResult();
                     if (fcmToken == null || fcmToken.isEmpty()) {
-                        Log.w(TAG, "FCM token is null or empty");
+                        Log.w(TAG, "[DEBUG_LOG] FCM token is null or empty after login");
                         return;
                     }
+
+                    Log.i(TAG, "[DEBUG_LOG] FCM token retrieved successfully after login: " + fcmToken.substring(0, Math.min(fcmToken.length(), 10)) + "...");
 
                     // Save token locally
                     tokenManager.saveFcmToken(fcmToken);
@@ -248,12 +254,12 @@ public class AuthRepository {
                     notificationRepository.registerToken(fcmToken, new NotificationRepository.RegistrationCallback() {
                         @Override
                         public void onSuccess() {
-                            Log.i(TAG, "FCM token registered successfully");
+                            Log.i(TAG, "[DEBUG_LOG] FCM token registered successfully with backend after login");
                         }
 
                         @Override
                         public void onFailure(String error) {
-                            Log.e(TAG, "Failed to register FCM token: " + error);
+                            Log.e(TAG, "[DEBUG_LOG] Failed to register FCM token with backend after login: " + error);
                         }
                     });
                 });

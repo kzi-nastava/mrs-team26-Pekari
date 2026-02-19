@@ -70,6 +70,9 @@ public class User {
     @Column(name = "average_rating")
     private Double averageRating;
 
+    @Column(name = "device_token")
+    private String deviceToken;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
