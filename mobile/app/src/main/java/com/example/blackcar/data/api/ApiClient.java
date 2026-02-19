@@ -5,6 +5,7 @@ import android.content.Context;
 import com.example.blackcar.BuildConfig;
 import com.example.blackcar.data.api.service.AdminApiService;
 import com.example.blackcar.data.api.service.AuthApiService;
+import com.example.blackcar.data.api.service.NotificationApiService;
 import com.example.blackcar.data.api.service.ProfileApiService;
 import com.example.blackcar.data.api.service.RideApiService;
 import com.example.blackcar.data.api.service.DriversApiService;
@@ -24,6 +25,7 @@ public class ApiClient {
     private static DriversApiService driversApiService;
     private static ChatApiService chatApiService;
     private static AdminApiService adminApiService;
+    private static NotificationApiService notificationApiService;
     private static Context appContext;
     private static SimpleCookieJar cookieJar;
 
@@ -45,6 +47,7 @@ public class ApiClient {
         driversApiService = null;
         chatApiService = null;
         adminApiService = null;
+        notificationApiService = null;
     }
 
     private static Retrofit getRetrofit() {
@@ -111,5 +114,12 @@ public class ApiClient {
             adminApiService = getRetrofit().create(AdminApiService.class);
         }
         return adminApiService;
+    }
+
+    public static NotificationApiService getNotificationService() {
+        if (notificationApiService == null) {
+            notificationApiService = getRetrofit().create(NotificationApiService.class);
+        }
+        return notificationApiService;
     }
 }

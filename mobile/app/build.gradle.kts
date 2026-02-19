@@ -1,5 +1,6 @@
 plugins {
     alias(libs.plugins.android.application)
+    id("com.google.gms.google-services")
 }
 
 android {
@@ -9,7 +10,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.blackcar"
+        applicationId = "com.blackcar"
         minSdk = 24
         targetSdk = 36
         versionCode = 1
@@ -65,6 +66,9 @@ dependencies {
 
     // MPAndroidChart for statistics graphs
     implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
+    // Firebase
+    implementation(platform("com.google.firebase:firebase-bom:32.7.0"))
+    implementation("com.google.firebase:firebase-messaging")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
