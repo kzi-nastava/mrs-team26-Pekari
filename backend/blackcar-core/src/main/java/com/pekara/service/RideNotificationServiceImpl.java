@@ -6,6 +6,9 @@ import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
 import com.google.firebase.messaging.FirebaseMessaging;
 import com.pekara.dto.response.UserNotificationDto;
+import com.pekara.model.User;
+import com.pekara.model.UserRole;
+import com.pekara.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -29,6 +32,7 @@ public class RideNotificationServiceImpl implements RideNotificationService {
 
     private final MailService mailService;
     private final SimpMessagingTemplate messagingTemplate;
+    private final UserRepository userRepository;
 
     @Value("${firebase.projectId:}")
     private String firebaseProjectId;
@@ -40,6 +44,7 @@ public class RideNotificationServiceImpl implements RideNotificationService {
     private static final String FCM_BASE_URL = "https://fcm.googleapis.com";
     // Use HTTP v1 endpoint: /v1/projects/{projectId}/messages:send
     private static final String FCM_SEND_ENDPOINT_TEMPLATE = "/v1/projects/%s/messages:send";
+    private static final String ADMINS_TOPIC = "admins";
 
     private volatile boolean firebaseInitialized = false;
 
@@ -341,11 +346,82 @@ public class RideNotificationServiceImpl implements RideNotificationService {
                 log.debug("Firebase not initialized; skipping token registration");
                 return;
             }
+
+            // Subscribe to user's personal topic
             String topic = toUserTopic(email);
             FirebaseMessaging.getInstance().subscribeToTopic(java.util.List.of(fcmToken), topic);
             log.info("Subscribed client token to topic {} for user {}", topic, email);
+
+            // If user is an admin, also subscribe to admins topic
+            User user = userRepository.findByEmail(email).orElse(null);
+            if (user != null && user.getRole() == UserRole.ADMIN) {
+                FirebaseMessaging.getInstance().subscribeToTopic(java.util.List.of(fcmToken), ADMINS_TOPIC);
+                log.info("Subscribed admin {} to admins topic", email);
+            }
         } catch (Exception e) {
             log.warn("Failed to subscribe token for {}: {}", email, e.getMessage());
+        }
+    }
+
+    @Override
+    public void unsubscribeFromAdminTopic(String fcmToken) {
+        if (fcmToken == null || fcmToken.isBlank()) {
+            return;
+        }
+        try {
+            initFirebaseIfPossible();
+            if (!firebaseInitialized) {
+                log.debug("Firebase not initialized; skipping token unsubscription");
+                return;
+            }
+            FirebaseMessaging.getInstance().unsubscribeFromTopic(java.util.List.of(fcmToken), ADMINS_TOPIC);
+            log.info("Unsubscribed token from admins topic");
+        } catch (Exception e) {
+            log.warn("Failed to unsubscribe token from admins topic: {}", e.getMessage());
+        }
+    }
+
+    @Override
+    public void sendPanicNotificationToAdmins(Long rideId, String panickedBy, String activatorEmail) {
+        try {
+            String endpoint = buildFcmSendEndpoint();
+            if (endpoint == null) {
+                log.debug("FCM endpoint not configured, skipping panic notification");
+                return;
+            }
+
+            HttpURLConnection conn = createFcmConnection(endpoint);
+
+            String title = "🚨 PANIC BUTTON ACTIVATED";
+            String body = String.format("Ride #%d - Panic activated by %s (%s)", rideId, panickedBy, activatorEmail);
+
+            StringBuilder json = new StringBuilder();
+            json.append('{')
+                    .append("\"message\":{")
+                    .append("\"topic\":\"").append(ADMINS_TOPIC).append("\",")
+                    .append("\"notification\":{")
+                    .append("\"title\":\"").append(escapeJson(title)).append("\",")
+                    .append("\"body\":\"").append(escapeJson(body)).append("\"},")
+                    .append("\"data\":{")
+                    .append("\"rideId\":\"").append(rideId).append("\",")
+                    .append("\"panickedBy\":\"").append(escapeJson(panickedBy)).append("\",")
+                    .append("\"activatorEmail\":\"").append(escapeJson(activatorEmail)).append("\",")
+                    .append("\"type\":\"PANIC\"")
+                    .append("}}}");
+
+            byte[] bytes = json.toString().getBytes(StandardCharsets.UTF_8);
+            conn.setDoOutput(true);
+            conn.getOutputStream().write(bytes);
+
+            int code = conn.getResponseCode();
+            if (code / 100 != 2) {
+                log.error("Failed to send panic notification to admins with HTTP {}", code);
+            } else {
+                log.warn("Panic notification sent to admins for ride {}", rideId);
+            }
+            conn.disconnect();
+        } catch (Exception e) {
+            log.error("Failed to send panic notification to admins: {}", e.getMessage(), e);
         }
     }
 

@@ -13,6 +13,9 @@ import com.example.blackcar.data.api.service.AuthApiService;
 import com.example.blackcar.data.session.SessionManager;
 import com.example.blackcar.data.auth.TokenManager;
 
+import android.util.Log;
+import com.google.firebase.messaging.FirebaseMessaging;
+
 import okhttp3.MediaType;
 import okhttp3.RequestBody;
 import retrofit2.Call;
@@ -21,6 +24,8 @@ import retrofit2.Response;
 
 public class AuthRepository {
 
+    private static final String TAG = "AuthRepository";
+
     public interface RepoCallback<T> {
         void onSuccess(T data);
         void onError(String message);
@@ -28,9 +33,11 @@ public class AuthRepository {
 
     private final AuthApiService api = ApiClient.getAuthService();
     private final TokenManager tokenManager;
+    private final NotificationRepository notificationRepository;
 
     public AuthRepository(Context context) {
         this.tokenManager = TokenManager.getInstance(context);
+        this.notificationRepository = new NotificationRepository();
     }
 
     public void login(String email, String password, RepoCallback<String> callback) {
@@ -54,6 +61,9 @@ public class AuthRepository {
                     if (userId != null) {
                         tokenManager.saveUserId(userId);
                     }
+
+                    // Register FCM token after successful login
+                    registerFcmToken();
 
                     callback.onSuccess(userId);
                 } else {
@@ -174,6 +184,24 @@ public class AuthRepository {
     }
 
     public void logout(RepoCallback<Void> callback) {
+        // If user is admin, unsubscribe from admins topic before logout
+        if (tokenManager.isAdmin()) {
+            String fcmToken = tokenManager.getFcmToken();
+            if (fcmToken != null && !fcmToken.isEmpty()) {
+                notificationRepository.unsubscribeAdmin(fcmToken, new NotificationRepository.RegistrationCallback() {
+                    @Override
+                    public void onSuccess() {
+                        Log.i(TAG, "Unsubscribed from admins topic");
+                    }
+
+                    @Override
+                    public void onFailure(String error) {
+                        Log.w(TAG, "Failed to unsubscribe from admins topic: " + error);
+                    }
+                });
+            }
+        }
+
         api.logout().enqueue(new Callback<Void>() {
             @Override
             public void onResponse(@NonNull Call<Void> call, @NonNull Response<Void> response) {
@@ -193,5 +221,41 @@ public class AuthRepository {
                 callback.onSuccess(null);
             }
         });
+    }
+
+    /**
+     * Register FCM token with backend for push notifications.
+     * Backend subscribes to user topic, and admins topic if user is admin.
+     */
+    private void registerFcmToken() {
+        FirebaseMessaging.getInstance().getToken()
+                .addOnCompleteListener(task -> {
+                    if (!task.isSuccessful()) {
+                        Log.w(TAG, "Fetching FCM token failed", task.getException());
+                        return;
+                    }
+
+                    String fcmToken = task.getResult();
+                    if (fcmToken == null || fcmToken.isEmpty()) {
+                        Log.w(TAG, "FCM token is null or empty");
+                        return;
+                    }
+
+                    // Save token locally
+                    tokenManager.saveFcmToken(fcmToken);
+
+                    // Register with backend
+                    notificationRepository.registerToken(fcmToken, new NotificationRepository.RegistrationCallback() {
+                        @Override
+                        public void onSuccess() {
+                            Log.i(TAG, "FCM token registered successfully");
+                        }
+
+                        @Override
+                        public void onFailure(String error) {
+                            Log.e(TAG, "Failed to register FCM token: " + error);
+                        }
+                    });
+                });
     }
 }

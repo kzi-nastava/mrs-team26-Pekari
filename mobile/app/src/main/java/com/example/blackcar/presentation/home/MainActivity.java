@@ -1,9 +1,15 @@
 package com.example.blackcar.presentation.home;
 
+import android.Manifest;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.content.res.ColorStateList;
 import android.os.Bundle;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.navigation.NavController;
 import androidx.navigation.fragment.NavHostFragment;
 
@@ -18,6 +24,8 @@ import android.view.MenuItem;
 
 public class MainActivity extends AppCompatActivity {
 
+    private static final int NOTIFICATION_PERMISSION_REQUEST_CODE = 1001;
+
     private ActivityMainBinding binding;
     private NavController navController;
 
@@ -27,6 +35,9 @@ public class MainActivity extends AppCompatActivity {
 
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
+
+        // Request notification permission for Android 13+
+        requestNotificationPermission();
 
         setSupportActionBar(binding.toolbar);
         if (getSupportActionBar() != null) {
@@ -75,6 +86,42 @@ public class MainActivity extends AppCompatActivity {
                 setNavHostBottomMargin(bottom);
             }
         });
+
+        // Handle deep-link from notification
+        handleNotificationIntent(getIntent());
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        handleNotificationIntent(intent);
+    }
+
+    /**
+     * Handle intent from FCM notification tap.
+     * Navigates to PanicPanel if notification was a panic alert.
+     */
+    private void handleNotificationIntent(Intent intent) {
+        if (intent == null) return;
+
+        String navigateTo = intent.getStringExtra("navigate_to");
+        if ("panic_panel".equals(navigateTo)) {
+            // Navigate to Panic Panel after a short delay to ensure NavController is ready
+            binding.getRoot().postDelayed(() -> {
+                if (navController != null && SessionManager.getRole() != null
+                        && SessionManager.getRole().equalsIgnoreCase("admin")) {
+                    try {
+                        navController.navigate(R.id.panicPanelFragment);
+                    } catch (Exception e) {
+                        // Navigation may fail if not logged in or destination not available
+                    }
+                }
+            }, 300);
+
+            // Clear the intent extra to prevent re-navigation
+            intent.removeExtra("navigate_to");
+        }
     }
 
     private void setNavHostBottomMargin(int px) {
@@ -165,5 +212,19 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public boolean onSupportNavigateUp() {
         return navController != null && navController.navigateUp() || super.onSupportNavigateUp();
+    }
+
+    /**
+     * Request notification permission for Android 13+ (API 33+).
+     */
+    private void requestNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+                    != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this,
+                        new String[]{Manifest.permission.POST_NOTIFICATIONS},
+                        NOTIFICATION_PERMISSION_REQUEST_CODE);
+            }
+        }
     }
 }
