@@ -1,5 +1,7 @@
 package com.example.blackcar.presentation.history.viewstate;
 
+import com.example.blackcar.data.api.model.LocationPoint;
+
 import java.util.List;
 import java.util.Objects;
 
@@ -19,7 +21,43 @@ public class RideUIModel {
     public String status;
     public String driverName; // For passenger history view
 
+    /** Pickup location with coordinates (for creating favorite route) */
+    public LocationPoint pickup;
+    /** Dropoff location with coordinates (for creating favorite route) */
+    public LocationPoint dropoff;
+    /** Stops with coordinates (for creating favorite route) */
+    public List<LocationPoint> stops;
+    public Boolean babyTransport;
+    public Boolean petTransport;
+    /** ID of matching favorite route, if any */
+    public Long favoriteRouteId;
+
     public RideUIModel() { }
+
+    /** Creates a shallow copy with the same field values (for DiffUtil to detect changes). */
+    public RideUIModel copy() {
+        RideUIModel c = new RideUIModel();
+        c.id = id;
+        c.startTime = startTime;
+        c.endTime = endTime;
+        c.origin = origin;
+        c.destination = destination;
+        c.canceledBy = canceledBy;
+        c.panic = panic;
+        c.price = price;
+        c.passengers = passengers;
+        c.distanceKm = distanceKm;
+        c.vehicleType = vehicleType;
+        c.status = status;
+        c.driverName = driverName;
+        c.pickup = pickup;
+        c.dropoff = dropoff;
+        c.stops = stops;
+        c.babyTransport = babyTransport;
+        c.petTransport = petTransport;
+        c.favoriteRouteId = favoriteRouteId;
+        return c;
+    }
 
     @Override
     public boolean equals(Object o) {
@@ -38,12 +76,13 @@ public class RideUIModel {
                Objects.equals(distanceKm, that.distanceKm) &&
                Objects.equals(vehicleType, that.vehicleType) &&
                Objects.equals(status, that.status) &&
-               Objects.equals(driverName, that.driverName);
+               Objects.equals(driverName, that.driverName) &&
+               Objects.equals(favoriteRouteId, that.favoriteRouteId);
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(id, startTime, endTime, origin, destination,
-                          canceledBy, panic, price, passengers, distanceKm, vehicleType, status, driverName);
+                          canceledBy, panic, price, passengers, distanceKm, vehicleType, status, driverName, favoriteRouteId);
     }
 }

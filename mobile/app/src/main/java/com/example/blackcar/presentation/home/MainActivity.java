@@ -104,7 +104,7 @@ public class MainActivity extends AppCompatActivity {
         int itemId;
         if (destinationId == R.id.homeFragment) {
             itemId = R.id.nav_dashboard;
-        } else if (destinationId == R.id.profileFragment) {
+        } else if (destinationId == R.id.profileFragment || destinationId == R.id.userManagementFragment) {
             itemId = R.id.nav_profile;
         } else if (destinationId == R.id.addDriverFragment) {
             itemId = R.id.nav_add_driver;

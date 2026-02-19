@@ -6,11 +6,13 @@ import androidx.lifecycle.ViewModel;
 
 import com.example.blackcar.data.api.model.ActiveRideResponse;
 import com.example.blackcar.data.api.model.EstimateRideRequest;
+import com.example.blackcar.data.api.model.FavoriteRouteResponse;
 import com.example.blackcar.data.api.model.LocationPoint;
 import com.example.blackcar.data.api.model.OrderRideRequest;
 import com.example.blackcar.data.api.model.OrderRideResponse;
 import com.example.blackcar.data.api.model.RideEstimateResponse;
 import com.example.blackcar.presentation.home.viewstate.PassengerHomeViewState;
+import com.example.blackcar.data.repository.FavoriteRoutesRepository;
 import com.example.blackcar.data.repository.GeocodingRepository;
 import com.example.blackcar.data.repository.RideRepository;
 import android.app.Application;
@@ -30,6 +32,9 @@ import java.util.Locale;
 public class PassengerHomeViewModel extends AndroidViewModel {
 
     private final RideRepository rideRepository = new RideRepository();
+    private final FavoriteRoutesRepository favoriteRoutesRepository = new FavoriteRoutesRepository();
+
+    private final List<FavoriteRouteResponse> favoriteRoutes = new ArrayList<>();
     private final GeocodingRepository geocodingRepository = new GeocodingRepository();
     private final ChatRealtimeService chatRealtimeService;
 
@@ -318,6 +323,52 @@ public class PassengerHomeViewModel extends AndroidViewModel {
         geocodingRepository.searchAddress(query, callback);
     }
 
+    public void loadFavoriteRoutes(FavoriteRoutesRepository.RepoCallback<List<FavoriteRouteResponse>> callback) {
+        favoriteRoutesRepository.getFavoriteRoutes(new FavoriteRoutesRepository.RepoCallback<List<FavoriteRouteResponse>>() {
+            @Override
+            public void onSuccess(List<FavoriteRouteResponse> data) {
+                favoriteRoutes.clear();
+                if (data != null) favoriteRoutes.addAll(data);
+                callback.onSuccess(data);
+            }
+
+            @Override
+            public void onError(String message) {
+                callback.onError(message);
+            }
+        });
+    }
+
+    public List<FavoriteRouteResponse> getFavoriteRoutes() {
+        return new ArrayList<>(favoriteRoutes);
+    }
+
+    public void selectFavoriteRoute(FavoriteRouteResponse route) {
+        if (route == null) return;
+
+        pickup = route.getPickup() != null
+                ? new LocationPoint(route.getPickup().getAddress(), route.getPickup().getLatitude(), route.getPickup().getLongitude())
+                : null;
+        dropoff = route.getDropoff() != null
+                ? new LocationPoint(route.getDropoff().getAddress(), route.getDropoff().getLatitude(), route.getDropoff().getLongitude())
+                : null;
+
+        stops.clear();
+        if (route.getStops() != null) {
+            for (LocationPoint stop : route.getStops()) {
+                if (stop != null && stop.getLatitude() != null && stop.getLongitude() != null) {
+                    stops.add(new LocationPoint(stop.getAddress(), stop.getLatitude(), stop.getLongitude()));
+                }
+            }
+        }
+
+        vehicleType = route.getVehicleType() != null ? route.getVehicleType() : "STANDARD";
+        babyTransport = route.getBabyTransport() != null && route.getBabyTransport();
+        petTransport = route.getPetTransport() != null && route.getPetTransport();
+
+        clearEstimate();
+    }
+
     public void reverseGeocode(double lat, double lon, GeocodingRepository.ReverseGeocodeCallback callback) {
         geocodingRepository.reverseGeocode(lat, lon, callback);
     }
@@ -332,6 +383,20 @@ public class PassengerHomeViewModel extends AndroidViewModel {
             next.formDisabled = s.formDisabled;
             state.setValue(next);
         }
+    }
+
+    public void setNoFavoritesError() {
+        PassengerHomeViewState s = state.getValue();
+        PassengerHomeViewState next = s != null ? PassengerHomeViewState.idle() : PassengerHomeViewState.idle();
+        if (s != null) {
+            next.estimate = s.estimate;
+            next.orderResult = s.orderResult;
+            next.activeRide = s.activeRide;
+            next.formDisabled = s.formDisabled;
+        }
+        next.error = true;
+        next.errorMessage = "You don't have any favorite routes yet. Complete a ride and add it to favorites from your ride history.";
+        state.setValue(next);
     }
 
     public void resetForm() {

@@ -24,6 +24,8 @@ public class DriverProfileResponse {
     private Double averageRating;
     private Integer totalRides;
     private Boolean isActive;
+    private Boolean blocked;
+    private String blockedNote;
 
     public String getId() { return id; }
     public String getEmail() { return email; }
@@ -48,4 +50,6 @@ public class DriverProfileResponse {
     public Double getAverageRating() { return averageRating; }
     public Integer getTotalRides() { return totalRides; }
     public Boolean getIsActive() { return isActive; }
+    public Boolean getBlocked() { return blocked; }
+    public String getBlockedNote() { return blockedNote; }
 }

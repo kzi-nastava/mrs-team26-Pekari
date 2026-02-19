@@ -13,6 +13,8 @@ public class PassengerProfileResponse {
     private String updatedAt;
     private Integer totalRides;
     private Double averageRating;
+    private Boolean blocked;
+    private String blockedNote;
 
     public String getId() { return id; }
     public String getEmail() { return email; }
@@ -26,4 +28,6 @@ public class PassengerProfileResponse {
     public String getUpdatedAt() { return updatedAt; }
     public Integer getTotalRides() { return totalRides; }
     public Double getAverageRating() { return averageRating; }
+    public Boolean getBlocked() { return blocked; }
+    public String getBlockedNote() { return blockedNote; }
 }

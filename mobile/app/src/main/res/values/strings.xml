@@ -109,6 +109,21 @@
     <string name="ride_tracking_ended_message">This ride has been completed or cancelled. Thank you for using BlackCar!</string>
     <string name="ride_tracking_btn_back_home">Back to Home</string>
 
+    <!-- User Management (Admin) -->
+    <string name="user_management_title">User Management</string>
+    <string name="user_management_subtitle">Block or unblock drivers and passengers. Blocked drivers are excluded from ride assignment; blocked passengers cannot order new rides.</string>
+    <string name="user_management_drivers">Drivers</string>
+    <string name="user_management_passengers">Passengers</string>
+    <string name="user_management_no_drivers">No drivers found.</string>
+    <string name="user_management_no_passengers">No passengers found.</string>
+    <string name="user_management_block">Block</string>
+    <string name="user_management_unblock">Unblock</string>
+    <string name="user_management_block_dialog_title">Block user</string>
+    <string name="user_management_block_dialog_note_hint">Reason / note (optional)</string>
+    <string name="user_management_block_dialog_confirm">Block user</string>
+    <string name="user_management_block_dialog_cancel">Cancel</string>
+    <string name="user_management_manage_users">Manage Users</string>
+
     <!-- Admin History Feature -->
     <string name="title_admin_history">All Rides</string>
     <string name="admin_history_title">All Rides</string>
@@ -153,6 +168,19 @@
     <string name="ride_cancel">Cancel Ride</string>
     <string name="ride_request_another">Request Another Ride</string>
     <string name="title_chat">Support Chat</string>
+
+    <!-- Favorite Routes -->
+    <string name="favorite_routes_title">Choose Favorite Route</string>
+    <string name="favorite_routes_close">Close</string>
+    <string name="favorite_routes_empty">No favorite routes yet</string>
+    <string name="favorite_routes_empty_hint">Complete a ride and add it to favorites from your ride history</string>
+    <string name="ride_order_choose_favorite">Choose Favorite Route</string>
+    <string name="favorite_routes_no_favorites_error">You don\'t have any favorite routes yet. Complete a ride and add it to favorites from your ride history.</string>
+
+    <!-- Favorite button (history) -->
+    <string name="favorite_add">Add to favorites</string>
+    <string name="favorite_remove">Remove from favorites</string>
+    <string name="favorite_missing_coords">Missing coordinates</string>
 
     <!-- Passenger Home -->
     <string name="passenger_btn_request_stop">Request Stop</string>

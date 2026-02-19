@@ -24,6 +24,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.blackcar.R;
+import com.example.blackcar.data.api.model.FavoriteRouteResponse;
 import com.example.blackcar.data.api.model.GeocodeResult;
 import com.example.blackcar.data.api.model.LocationPoint;
 import com.example.blackcar.data.repository.GeocodingRepository;
@@ -102,6 +103,16 @@ public class PassengerHomeFragment extends Fragment {
         startVehiclesPolling();
 
         viewModel.loadActiveRide();
+        viewModel.loadFavoriteRoutes(new com.example.blackcar.data.repository.FavoriteRoutesRepository.RepoCallback<java.util.List<FavoriteRouteResponse>>() {
+            @Override
+            public void onSuccess(java.util.List<FavoriteRouteResponse> data) {
+                // Favorites loaded, will be used when dialog opens
+            }
+            @Override
+            public void onError(String message) {
+                // Silently fail - user might not have any favorites yet
+            }
+        });
     }
 
     private void setupMap() {
@@ -387,6 +398,91 @@ public class PassengerHomeFragment extends Fragment {
         });
         binding.btnRequestAnother.setOnClickListener(v -> viewModel.resetForm());
         binding.fabChat.setOnClickListener(v -> Navigation.findNavController(v).navigate(R.id.action_home_to_chat));
+        binding.btnChooseFavorite.setOnClickListener(v -> onChooseFavoriteRoute());
+    }
+
+    private void onChooseFavoriteRoute() {
+        java.util.List<FavoriteRouteResponse> routes = viewModel.getFavoriteRoutes();
+        if (routes == null || routes.isEmpty()) {
+            viewModel.setNoFavoritesError();
+            return;
+        }
+        showFavoriteRoutesDialog();
+    }
+
+    private void showFavoriteRoutesDialog() {
+        android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(requireContext());
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_favorite_routes, null);
+        builder.setView(dialogView);
+
+        androidx.recyclerview.widget.RecyclerView recycler = dialogView.findViewById(R.id.recyclerFavoriteRoutes);
+        android.widget.TextView txtEmpty = dialogView.findViewById(R.id.txtEmpty);
+        android.widget.TextView txtEmptyHint = dialogView.findViewById(R.id.txtEmptyHint);
+        android.widget.ImageButton btnClose = dialogView.findViewById(R.id.btnClose);
+
+        android.app.AlertDialog dialog = builder.create();
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+        }
+
+        java.util.List<FavoriteRouteResponse> routes = viewModel.getFavoriteRoutes();
+        if (routes == null || routes.isEmpty()) {
+            recycler.setVisibility(android.view.View.GONE);
+            txtEmpty.setVisibility(android.view.View.VISIBLE);
+            txtEmptyHint.setVisibility(android.view.View.VISIBLE);
+        } else {
+            txtEmpty.setVisibility(android.view.View.GONE);
+            txtEmptyHint.setVisibility(android.view.View.GONE);
+            recycler.setVisibility(android.view.View.VISIBLE);
+            recycler.setLayoutManager(new androidx.recyclerview.widget.LinearLayoutManager(requireContext()));
+            FavoriteRoutesAdapter adapter = new FavoriteRoutesAdapter(route -> {
+                viewModel.selectFavoriteRoute(route);
+                dialog.dismiss();
+                applyFavoriteRouteToForm(route);
+            });
+            adapter.submitList(new java.util.ArrayList<>(routes));
+            recycler.setAdapter(adapter);
+        }
+
+        btnClose.setOnClickListener(v -> dialog.dismiss());
+
+        dialog.show();
+    }
+
+    private void applyFavoriteRouteToForm(FavoriteRouteResponse route) {
+        if (route == null || binding == null) return;
+
+        // Ensure form is visible (user might have had order result showing)
+        binding.layoutFormContainer.setVisibility(View.VISIBLE);
+
+        setPickupAddress(route.getPickup() != null ? route.getPickup().getAddress() : "");
+        setDropoffAddress(route.getDropoff() != null ? route.getDropoff().getAddress() : "");
+
+        // Sync stops - remove existing, add new
+        while (stopViews.size() > 0) {
+            View row = stopViews.get(0);
+            binding.containerStops.removeView(row);
+            stopViews.remove(0);
+        }
+        java.util.List<LocationPoint> stops = route.getStops();
+        if (stops != null) {
+            for (int i = 0; i < stops.size(); i++) {
+                addStop();
+                LocationPoint stop = stops.get(i);
+                if (stop != null) setStopAddress(i, stop.getAddress());
+            }
+        }
+
+        // Vehicle type
+        String vt = route.getVehicleType() != null ? route.getVehicleType() : "STANDARD";
+        if ("VAN".equals(vt)) binding.toggleVehicleType.check(R.id.btnVehicleVan);
+        else if ("LUX".equals(vt)) binding.toggleVehicleType.check(R.id.btnVehicleLux);
+        else binding.toggleVehicleType.check(R.id.btnVehicleStandard);
+
+        binding.switchBaby.setChecked(route.getBabyTransport() != null && route.getBabyTransport());
+        binding.switchPet.setChecked(route.getPetTransport() != null && route.getPetTransport());
+
+        updateMapMarkers();
     }
 
     private void addStop() {
