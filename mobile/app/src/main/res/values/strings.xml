@@ -109,6 +109,21 @@
     <string name="ride_tracking_ended_message">This ride has been completed or cancelled. Thank you for using BlackCar!</string>
     <string name="ride_tracking_btn_back_home">Back to Home</string>
 
+    <!-- User Management (Admin) -->
+    <string name="user_management_title">User Management</string>
+    <string name="user_management_subtitle">Block or unblock drivers and passengers. Blocked drivers are excluded from ride assignment; blocked passengers cannot order new rides.</string>
+    <string name="user_management_drivers">Drivers</string>
+    <string name="user_management_passengers">Passengers</string>
+    <string name="user_management_no_drivers">No drivers found.</string>
+    <string name="user_management_no_passengers">No passengers found.</string>
+    <string name="user_management_block">Block</string>
+    <string name="user_management_unblock">Unblock</string>
+    <string name="user_management_block_dialog_title">Block user</string>
+    <string name="user_management_block_dialog_note_hint">Reason / note (optional)</string>
+    <string name="user_management_block_dialog_confirm">Block user</string>
+    <string name="user_management_block_dialog_cancel">Cancel</string>
+    <string name="user_management_manage_users">Manage Users</string>
+
     <!-- Admin History Feature -->
     <string name="title_admin_history">All Rides</string>
     <string name="admin_history_title">All Rides</string>

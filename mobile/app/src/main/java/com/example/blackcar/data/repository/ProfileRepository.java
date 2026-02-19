@@ -54,7 +54,9 @@ public class ProfileRepository {
                                 body.getPhoneNumber(),
                                 body.getAddress(),
                                 "driver",
-                                body.getProfilePicture()
+                                body.getProfilePicture(),
+                                body.getBlocked(),
+                                body.getBlockedNote()
                         );
                         DriverInfoUIModel driverInfo = mapDriverInfo(body);
                         callback.onSuccess(new ProfilePayload(profile, driverInfo));
@@ -83,7 +85,9 @@ public class ProfileRepository {
                                 body.getPhoneNumber(),
                                 body.getAddress(),
                                 "admin",
-                                body.getProfilePicture()
+                                body.getProfilePicture(),
+                                body.getBlocked(),
+                                body.getBlockedNote()
                         );
                         callback.onSuccess(new ProfilePayload(profile, null));
                     } else {
@@ -111,7 +115,9 @@ public class ProfileRepository {
                                 body.getPhoneNumber(),
                                 body.getAddress(),
                                 "passenger",
-                                body.getProfilePicture()
+                                body.getProfilePicture(),
+                                body.getBlocked(),
+                                body.getBlockedNote()
                         );
                         callback.onSuccess(new ProfilePayload(profile, null));
                     } else {

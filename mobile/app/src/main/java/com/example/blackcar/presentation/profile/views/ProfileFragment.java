@@ -25,6 +25,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 
 import com.example.blackcar.R;
@@ -111,6 +112,11 @@ public class ProfileFragment extends Fragment {
         binding.btnChangePicture.setOnClickListener(v -> pickImageLauncher.launch("image/*"));
 
         binding.btnLogout.setOnClickListener(v -> viewModel.logout());
+
+        binding.btnUserManagement.setOnClickListener(v -> {
+            NavController nav = Navigation.findNavController(binding.getRoot());
+            nav.navigate(R.id.action_profile_to_user_management);
+        });
     }
 
     private void observeState() {
@@ -140,6 +146,8 @@ public class ProfileFragment extends Fragment {
             if (state.bannerMessage != null && !state.bannerMessage.trim().isEmpty()) {
                 binding.txtBanner.setVisibility(View.VISIBLE);
                 binding.txtBanner.setText(state.bannerMessage);
+                binding.txtBanner.setTextColor(requireContext().getColor(
+                        state.bannerDanger ? R.color.accent_danger : R.color.accent_success));
             } else {
                 binding.txtBanner.setVisibility(View.GONE);
             }
@@ -204,9 +212,11 @@ public class ProfileFragment extends Fragment {
     private void renderApprovals(ProfileUIModel profile, List<ApprovalRequestUIModel> requests) {
         if (profile == null || !"admin".equalsIgnoreCase(profile.role)) {
             binding.cardApprovals.setVisibility(View.GONE);
+            binding.cardUserManagement.setVisibility(View.GONE);
             return;
         }
 
+        binding.cardUserManagement.setVisibility(View.VISIBLE);
         binding.cardApprovals.setVisibility(View.VISIBLE);
 
         List<ApprovalRequestUIModel> pending = viewModel.getPendingApprovalRequestsOnly();

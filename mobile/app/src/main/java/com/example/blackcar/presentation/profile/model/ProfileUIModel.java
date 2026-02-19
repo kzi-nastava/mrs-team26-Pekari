@@ -14,6 +14,12 @@ public class ProfileUIModel {
     /** Local-only URI string, or null. */
     public final String profilePictureUri;
 
+    /** True if user has been blocked by admin. */
+    public final Boolean blocked;
+
+    /** Admin note explaining why user was blocked. */
+    public final String blockedNote;
+
     public ProfileUIModel(
             String id,
             String email,
@@ -23,7 +29,9 @@ public class ProfileUIModel {
             String phoneNumber,
             String address,
             String role,
-            String profilePictureUri
+            String profilePictureUri,
+            Boolean blocked,
+            String blockedNote
     ) {
         this.id = id;
         this.email = email;
@@ -34,6 +42,8 @@ public class ProfileUIModel {
         this.address = address;
         this.role = role;
         this.profilePictureUri = profilePictureUri;
+        this.blocked = blocked;
+        this.blockedNote = blockedNote;
     }
 
     public ProfileUIModel copyWith(
@@ -52,7 +62,9 @@ public class ProfileUIModel {
                 phoneNumber,
                 address,
                 role,
-                profilePictureUri
+                profilePictureUri,
+                blocked,
+                blockedNote
         );
     }
 }

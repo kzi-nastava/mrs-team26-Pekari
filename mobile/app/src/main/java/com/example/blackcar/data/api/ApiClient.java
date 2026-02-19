@@ -3,6 +3,7 @@ package com.example.blackcar.data.api;
 import android.content.Context;
 
 import com.example.blackcar.BuildConfig;
+import com.example.blackcar.data.api.service.AdminApiService;
 import com.example.blackcar.data.api.service.AuthApiService;
 import com.example.blackcar.data.api.service.ProfileApiService;
 import com.example.blackcar.data.api.service.RideApiService;
@@ -22,6 +23,7 @@ public class ApiClient {
     private static RideApiService rideApiService;
     private static DriversApiService driversApiService;
     private static ChatApiService chatApiService;
+    private static AdminApiService adminApiService;
     private static Context appContext;
     private static SimpleCookieJar cookieJar;
 
@@ -42,6 +44,7 @@ public class ApiClient {
         rideApiService = null;
         driversApiService = null;
         chatApiService = null;
+        adminApiService = null;
     }
 
     private static Retrofit getRetrofit() {
@@ -101,5 +104,12 @@ public class ApiClient {
             chatApiService = getRetrofit().create(ChatApiService.class);
         }
         return chatApiService;
+    }
+
+    public static AdminApiService getAdminService() {
+        if (adminApiService == null) {
+            adminApiService = getRetrofit().create(AdminApiService.class);
+        }
+        return adminApiService;
     }
 }
