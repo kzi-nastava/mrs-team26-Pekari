@@ -18,6 +18,7 @@ import com.example.blackcar.data.api.model.PassengerRideDetailResponse;
 import com.example.blackcar.data.api.model.PassengerRideHistoryResponse;
 import com.example.blackcar.data.api.model.RideEstimateResponse;
 import com.example.blackcar.data.api.model.RideHistoryFilterRequest;
+import com.example.blackcar.data.api.model.RideStatsResponse;
 import com.example.blackcar.data.api.model.StopRideEarlyRequest;
 import com.example.blackcar.data.api.model.RideLocationUpdateRequest;
 import com.example.blackcar.data.api.model.LocationPoint;
@@ -432,6 +433,68 @@ public class RideRepository {
                     @Override
                     public void onFailure(@NonNull Call<MessageResponse> call,
                                         @NonNull Throwable t) {
+                        callback.onError("Network error. Please check your internet connection.");
+                    }
+                });
+    }
+
+    // Ride stats methods
+    public void getDriverRideStats(String startDate, String endDate, RepoCallback<RideStatsResponse> callback) {
+        api.getDriverRideStats(startDate, endDate).enqueue(
+                new Callback<RideStatsResponse>() {
+                    @Override
+                    public void onResponse(@NonNull Call<RideStatsResponse> call,
+                                         @NonNull Response<RideStatsResponse> response) {
+                        if (response.isSuccessful() && response.body() != null) {
+                            callback.onSuccess(response.body());
+                        } else {
+                            callback.onError(parseErrorMessage(response, "Failed to load statistics"));
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(@NonNull Call<RideStatsResponse> call, @NonNull Throwable t) {
+                        callback.onError("Network error. Please check your internet connection.");
+                    }
+                });
+    }
+
+    public void getPassengerRideStats(String startDate, String endDate, RepoCallback<RideStatsResponse> callback) {
+        api.getPassengerRideStats(startDate, endDate).enqueue(
+                new Callback<RideStatsResponse>() {
+                    @Override
+                    public void onResponse(@NonNull Call<RideStatsResponse> call,
+                                         @NonNull Response<RideStatsResponse> response) {
+                        if (response.isSuccessful() && response.body() != null) {
+                            callback.onSuccess(response.body());
+                        } else {
+                            callback.onError(parseErrorMessage(response, "Failed to load statistics"));
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(@NonNull Call<RideStatsResponse> call, @NonNull Throwable t) {
+                        callback.onError("Network error. Please check your internet connection.");
+                    }
+                });
+    }
+
+    public void getAdminRideStats(String startDate, String endDate, String scope, Long userId,
+                                  RepoCallback<RideStatsResponse> callback) {
+        api.getAdminRideStats(startDate, endDate, scope, userId).enqueue(
+                new Callback<RideStatsResponse>() {
+                    @Override
+                    public void onResponse(@NonNull Call<RideStatsResponse> call,
+                                         @NonNull Response<RideStatsResponse> response) {
+                        if (response.isSuccessful() && response.body() != null) {
+                            callback.onSuccess(response.body());
+                        } else {
+                            callback.onError(parseErrorMessage(response, "Failed to load statistics"));
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(@NonNull Call<RideStatsResponse> call, @NonNull Throwable t) {
                         callback.onError("Network error. Please check your internet connection.");
                     }
                 });

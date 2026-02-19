@@ -162,6 +162,36 @@
     <string name="ride_estimate_distance">Distance</string>
     <string name="ride_estimate_duration">Duration</string>
 
+    <!-- Statistics -->
+    <string name="stats_title">Statistics</string>
+    <string name="stats_filter">Filter</string>
+    <string name="stats_reset">Reset</string>
+    <string name="stats_from">From</string>
+    <string name="stats_to">To</string>
+    <string name="stats_scope">Scope</string>
+    <string name="stats_scope_all_drivers">All drivers</string>
+    <string name="stats_scope_all_passengers">All passengers</string>
+    <string name="stats_scope_one_driver">One driver</string>
+    <string name="stats_scope_one_passenger">One passenger</string>
+    <string name="stats_select_driver">Select driver</string>
+    <string name="stats_select_passenger">Select passenger</string>
+    <string name="stats_total_rides">Total rides</string>
+    <string name="stats_total_distance">Total distance (km)</string>
+    <string name="stats_total_spent">Total spent (RSD)</string>
+    <string name="stats_total_earned">Total earned (RSD)</string>
+    <string name="stats_total_amount">Total amount (RSD)</string>
+    <string name="stats_avg_per_day">Avg: %s/day</string>
+    <string name="stats_rides_per_day">Rides per day</string>
+    <string name="stats_distance_per_day">Distance per day (km)</string>
+    <string name="stats_spent_per_day">Spent per day (RSD)</string>
+    <string name="stats_earned_per_day">Earned per day (RSD)</string>
+    <string name="stats_amount_per_day">Amount per day (RSD)</string>
+    <string name="stats_empty">Select a date range and click Filter to view statistics.</string>
+    <string name="stats_loading">Loading statistics…</string>
+    <string name="stats_select_user">Please select a %s</string>
+    <string name="tab_history">History</string>
+    <string name="tab_statistics">Statistics</string>
+
     <!-- Ride Details -->
     <string name="ride_details_title">Ride Details</string>
     <string name="ride_details_status">Status</string>

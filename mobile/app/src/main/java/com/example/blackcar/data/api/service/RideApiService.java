@@ -15,6 +15,7 @@ import com.example.blackcar.data.api.model.PassengerRideHistoryResponse;
 import com.example.blackcar.data.api.model.CancelRideRequest;
 import com.example.blackcar.data.api.model.RideEstimateResponse;
 import com.example.blackcar.data.api.model.RideHistoryFilterRequest;
+import com.example.blackcar.data.api.model.RideStatsResponse;
 
 import retrofit2.Call;
 import retrofit2.http.Body;
@@ -107,4 +108,25 @@ public interface RideApiService {
     // Admin panic mode endpoints
     @GET("rides/panic/active")
     Call<java.util.List<DriverRideHistoryResponse>> getActivePanicRides();
+
+    // Ride stats endpoints
+    @GET("rides/stats/driver")
+    Call<RideStatsResponse> getDriverRideStats(
+            @Query("startDate") String startDate,
+            @Query("endDate") String endDate
+    );
+
+    @GET("rides/stats/passenger")
+    Call<RideStatsResponse> getPassengerRideStats(
+            @Query("startDate") String startDate,
+            @Query("endDate") String endDate
+    );
+
+    @GET("rides/stats/admin")
+    Call<RideStatsResponse> getAdminRideStats(
+            @Query("startDate") String startDate,
+            @Query("endDate") String endDate,
+            @Query("scope") String scope,
+            @Query("userId") Long userId
+    );
 }
