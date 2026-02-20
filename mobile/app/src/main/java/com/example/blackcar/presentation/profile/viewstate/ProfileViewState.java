@@ -13,6 +13,8 @@ public class ProfileViewState {
 
     public final boolean isEditing;
     public final String bannerMessage;
+    /** When true, style banner as danger (e.g. for blocked users). */
+    public final boolean bannerDanger;
 
     public final ProfileUIModel profile;
     public final DriverInfoUIModel driverInfo;
@@ -24,6 +26,7 @@ public class ProfileViewState {
             String errorMessage,
             boolean isEditing,
             String bannerMessage,
+            boolean bannerDanger,
             ProfileUIModel profile,
             DriverInfoUIModel driverInfo,
             List<ApprovalRequestUIModel> approvalRequests
@@ -33,6 +36,7 @@ public class ProfileViewState {
         this.errorMessage = errorMessage;
         this.isEditing = isEditing;
         this.bannerMessage = bannerMessage;
+        this.bannerDanger = bannerDanger;
         this.profile = profile;
         this.driverInfo = driverInfo;
         this.approvalRequests = approvalRequests;

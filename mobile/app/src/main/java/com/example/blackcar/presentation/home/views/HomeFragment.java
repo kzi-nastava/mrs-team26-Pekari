@@ -7,10 +7,12 @@ import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
+import androidx.navigation.Navigation;
 
 import com.example.blackcar.R;
 import com.example.blackcar.data.session.SessionManager;
 import com.example.blackcar.databinding.FragmentHomeBinding;
+import com.example.blackcar.presentation.admin.views.UserManagementFragment;
 
 public class HomeFragment extends Fragment {
 
@@ -28,9 +30,14 @@ public class HomeFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
 
         String role = SessionManager.getRole();
-        Fragment child = (role != null && "passenger".equalsIgnoreCase(role))
-                ? new PassengerHomeFragment()
-                : new HomeDriverFragment();
+        Fragment child;
+        if (role != null && "admin".equalsIgnoreCase(role)) {
+            child = new UserManagementFragment();
+        } else if (role != null && "passenger".equalsIgnoreCase(role)) {
+            child = new PassengerHomeFragment();
+        } else {
+            child = new HomeDriverFragment();
+        }
 
         getChildFragmentManager().beginTransaction()
                 .replace(R.id.contentContainer, child)

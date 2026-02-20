@@ -37,6 +37,20 @@
                 android:ellipsize="end"
                 android:maxLines="2" />
 
+            <Button
+                android:id="@+id/btnFavorite"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginEnd="4dp"
+                android:minWidth="0dp"
+                android:minHeight="0dp"
+                android:padding="0dp"
+                android:text="☆"
+                android:textColor="@color/text_secondary"
+                android:textSize="20sp"
+                android:contentDescription="@string/favorite_add" />
+
             <TextView
                 android:id="@+id/txtPrice"
                 android:layout_width="wrap_content"
@@ -129,21 +143,6 @@
                 android:drawableStart="@android:drawable/ic_delete"
                 android:drawablePadding="6dp"
                 android:text="Canceled by passenger" />
-
-            <!-- Panic Indicator -->
-            <TextView
-                android:id="@+id/txtPanic"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="3dp"
-                android:visibility="gone"
-                android:textColor="@color/accent_danger"
-                android:textStyle="bold"
-                android:textSize="13sp"
-                android:gravity="center_vertical"
-                android:drawableStart="@android:drawable/ic_dialog_alert"
-                android:drawablePadding="6dp"
-                android:text="⚠ PANIC triggered" />
         </LinearLayout>
 
     </LinearLayout>

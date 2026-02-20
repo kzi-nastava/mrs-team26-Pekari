@@ -1,7 +1,8 @@
 import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RideApiService, FavoriteRoute, CreateFavoriteRouteRequest, LocationPoint, PassengerRideHistoryResponse } from '../../../core/services/ride-api.service';
+import { Router } from '@angular/router';
+import { RideApiService, FavoriteRoute, CreateFavoriteRouteRequest, LocationPoint, PassengerRideHistoryResponse, PassengerRideDetailResponse } from '../../../core/services/ride-api.service';
 import { PassengerRideDetailModalComponent } from './passenger-ride-detail-modal.component';
 
 @Component({
@@ -14,6 +15,7 @@ import { PassengerRideDetailModalComponent } from './passenger-ride-detail-modal
 export class PassengerHistoryComponent implements OnInit {
   private rides = inject(RideApiService);
   private cdr = inject(ChangeDetectorRef);
+  private router = inject(Router);
 
   ridesList: any[] = [];
   favoriteRouteIds: Set<number> = new Set();
@@ -382,5 +384,12 @@ export class PassengerHistoryComponent implements OnInit {
 
   skipRating(): void {
     this.closeRatingModal();
+  }
+
+  onOrderSameRide(rideDetail: PassengerRideDetailResponse): void {
+    this.closeModal();
+    this.router.navigate(['/passenger-home'], {
+      state: { rideConfig: rideDetail }
+    });
   }
 }

@@ -47,7 +47,9 @@
                     android:layout_marginBottom="12dp"
                     app:cardBackgroundColor="@color/card_surface"
                     app:cardCornerRadius="12dp"
-                    app:cardElevation="2dp">
+                    app:cardElevation="2dp"
+                    app:strokeColor="@color/divider"
+                    app:strokeWidth="1dp">
 
                     <LinearLayout
                         android:layout_width="match_parent"
@@ -55,310 +57,591 @@
                         android:orientation="vertical"
                         android:padding="16dp">
 
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/ride_order_pickup"
-                            android:textColor="@color/text_secondary"
-                            android:textSize="12sp"
-                            android:layout_marginBottom="4dp" />
-
-                        <include
-                            android:id="@+id/includePickup"
-                            layout="@layout/address_autocomplete"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content" />
-
+                        <!-- Form Container - Hidden when order result exists -->
                         <LinearLayout
-                            android:id="@+id/containerStops"
+                            android:id="@+id/layoutFormContainer"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:orientation="vertical"
-                            android:layout_marginTop="8dp" />
+                            android:orientation="vertical">
 
-                        <Button
-                            android:id="@+id/btnAddStop"
-                            style="@style/Widget.Material3.Button.TextButton"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/ride_order_add_stop"
-                            android:textColor="@color/text_primary"
-                            android:layout_marginTop="4dp" />
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/ride_order_title"
+                                android:textColor="@color/text_primary"
+                                android:textSize="16sp"
+                                android:textStyle="bold"
+                                android:layout_marginBottom="16dp" />
 
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/ride_order_dropoff"
-                            android:textColor="@color/text_secondary"
-                            android:textSize="12sp"
-                            android:layout_marginTop="12dp"
-                            android:layout_marginBottom="4dp" />
+                            <include
+                                android:id="@+id/includePickup"
+                                layout="@layout/address_autocomplete"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content" />
 
-                        <include
-                            android:id="@+id/includeDropoff"
-                            layout="@layout/address_autocomplete"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/ride_order_linked_passengers"
-                            android:textColor="@color/text_secondary"
-                            android:textSize="12sp"
-                            android:layout_marginTop="12dp"
-                            android:layout_marginBottom="4dp" />
-
-                        <com.google.android.material.textfield.TextInputLayout
-                            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            app:boxBackgroundColor="@color/card_surface">
-
-                            <com.google.android.material.textfield.TextInputEditText
-                                android:id="@+id/editPassengerEmails"
+                            <LinearLayout
+                                android:id="@+id/containerStops"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:hint="@string/ride_order_linked_passengers_hint"
-                                android:inputType="textEmailAddress"
-                                android:maxLines="1"
-                                android:textColor="@color/text_primary"
-                                android:textColorHint="@color/text_secondary" />
-                        </com.google.android.material.textfield.TextInputLayout>
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/ride_order_vehicle_type"
-                            android:textColor="@color/text_secondary"
-                            android:textSize="12sp"
-                            android:layout_marginTop="12dp"
-                            android:layout_marginBottom="8dp" />
-
-                        <com.google.android.material.button.MaterialButtonToggleGroup
-                            android:id="@+id/toggleVehicleType"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            app:singleSelection="true"
-                            app:selectionRequired="true">
+                                android:orientation="vertical"
+                                android:layout_marginTop="8dp" />
 
                             <Button
-                                android:id="@+id/btnVehicleStandard"
-                                style="@style/Widget.Material3.Button.OutlinedButton"
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_weight="1"
-                                android:text="@string/ride_order_vehicle_standard"
-                                android:textColor="@color/text_primary"
-                                android:checked="true" />
-
-                            <Button
-                                android:id="@+id/btnVehicleVan"
-                                style="@style/Widget.Material3.Button.OutlinedButton"
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_weight="1"
-                                android:text="@string/ride_order_vehicle_van"
-                                android:textColor="@color/text_primary" />
-
-                            <Button
-                                android:id="@+id/btnVehicleLux"
-                                style="@style/Widget.Material3.Button.OutlinedButton"
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_weight="1"
-                                android:text="@string/ride_order_vehicle_lux"
-                                android:textColor="@color/text_primary" />
-                        </com.google.android.material.button.MaterialButtonToggleGroup>
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/ride_order_schedule"
-                            android:textColor="@color/text_secondary"
-                            android:textSize="12sp"
-                            android:layout_marginTop="12dp"
-                            android:layout_marginBottom="4dp" />
-
-                        <Button
-                            android:id="@+id/btnSchedule"
-                            style="@style/Widget.Material3.Button.OutlinedButton"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:text="Now"
-                            android:textColor="@color/text_primary"
-                            tools:text="Today, 15:00" />
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:orientation="horizontal"
-                            android:layout_marginTop="12dp"
-                            android:gravity="center_vertical">
-
-                            <com.google.android.material.materialswitch.MaterialSwitch
-                                android:id="@+id/switchBaby"
+                                android:id="@+id/btnAddStop"
+                                style="@style/Widget.Material3.Button.TextButton"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="@string/ride_order_baby"
-                                android:textColor="@color/text_primary" />
+                                android:text="@string/ride_order_add_stop"
+                                android:textColor="@color/text_primary"
+                                android:layout_marginTop="4dp" />
 
-                            <com.google.android.material.materialswitch.MaterialSwitch
-                                android:id="@+id/switchPet"
+                            <include
+                                android:id="@+id/includeDropoff"
+                                android:layout_marginTop="12dp"
+                                layout="@layout/address_autocomplete"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content" />
+
+                            <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:layout_marginStart="24dp"
-                                android:text="@string/ride_order_pet"
+                                android:text="@string/ride_order_linked_passengers"
+                                android:textColor="@color/text_secondary"
+                                android:textSize="12sp"
+                                android:layout_marginTop="12dp"
+                                android:layout_marginBottom="4dp" />
+
+                            <com.google.android.material.textfield.TextInputLayout
+                                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                app:boxBackgroundColor="@color/card_surface">
+
+                                <com.google.android.material.textfield.TextInputEditText
+                                    android:id="@+id/editPassengerEmails"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:hint="@string/ride_order_linked_passengers_hint"
+                                    android:inputType="textEmailAddress"
+                                    android:maxLines="1"
+                                    android:textColor="@color/text_primary"
+                                    android:textColorHint="@color/text_secondary" />
+                            </com.google.android.material.textfield.TextInputLayout>
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/ride_order_vehicle_type"
+                                android:textColor="@color/text_secondary"
+                                android:textSize="12sp"
+                                android:layout_marginTop="12dp"
+                                android:layout_marginBottom="8dp" />
+
+                            <com.google.android.material.button.MaterialButtonToggleGroup
+                                android:id="@+id/toggleVehicleType"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                app:singleSelection="true"
+                                app:selectionRequired="true">
+
+                                <Button
+                                    android:id="@+id/btnVehicleStandard"
+                                    style="@style/Widget.Material3.Button.OutlinedButton"
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:text="@string/ride_order_vehicle_standard"
+                                    android:textColor="@color/text_primary"
+                                    android:checked="true" />
+
+                                <Button
+                                    android:id="@+id/btnVehicleVan"
+                                    style="@style/Widget.Material3.Button.OutlinedButton"
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:text="@string/ride_order_vehicle_van"
+                                    android:textColor="@color/text_primary" />
+
+                                <Button
+                                    android:id="@+id/btnVehicleLux"
+                                    style="@style/Widget.Material3.Button.OutlinedButton"
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:text="@string/ride_order_vehicle_lux"
+                                    android:textColor="@color/text_primary" />
+                            </com.google.android.material.button.MaterialButtonToggleGroup>
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/ride_order_schedule"
+                                android:textColor="@color/text_secondary"
+                                android:textSize="12sp"
+                                android:layout_marginTop="12dp"
+                                android:layout_marginBottom="4dp" />
+
+                            <Button
+                                android:id="@+id/btnSchedule"
+                                style="@style/Widget.Material3.Button.OutlinedButton"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="Now"
+                                android:textColor="@color/text_primary"
+                                tools:text="Today, 15:00" />
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal"
+                                android:layout_marginTop="12dp"
+                                android:gravity="center_vertical">
+
+                                <com.google.android.material.materialswitch.MaterialSwitch
+                                    android:id="@+id/switchBaby"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="@string/ride_order_baby"
+                                    android:textColor="@color/text_primary" />
+
+                                <com.google.android.material.materialswitch.MaterialSwitch
+                                    android:id="@+id/switchPet"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginStart="24dp"
+                                    android:text="@string/ride_order_pet"
+                                    android:textColor="@color/text_primary" />
+                            </LinearLayout>
+
+                            <Button
+                                android:id="@+id/btnRequestRide"
+                                android:layout_width="match_parent"
+                                android:layout_height="48dp"
+                                android:text="@string/ride_order_request"
+                                android:layout_marginTop="16dp"
+                                style="@style/Widget.Material3.Button"
                                 android:textColor="@color/text_primary" />
+
+                            <Button
+                                android:id="@+id/btnChooseFavorite"
+                                style="@style/Widget.Material3.Button.OutlinedButton"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="@string/ride_order_choose_favorite"
+                                android:textColor="@color/text_secondary"
+                                android:layout_marginTop="8dp" />
+
+                            <Button
+                                android:id="@+id/btnEstimate"
+                                style="@style/Widget.Material3.Button.TextButton"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="@string/ride_order_estimate"
+                                android:textColor="@color/text_secondary"
+                                android:layout_marginTop="4dp" />
+
                         </LinearLayout>
 
-                        <Button
-                            android:id="@+id/btnEstimate"
-                            style="@style/Widget.Material3.Button.TextButton"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/ride_order_estimate"
-                            android:textColor="@color/text_primary"
-                            android:layout_marginTop="8dp" />
-
-                        <Button
-                            android:id="@+id/btnRequestRide"
-                            android:layout_width="match_parent"
-                            android:layout_height="48dp"
-                            android:text="@string/ride_order_request"
-                            android:layout_marginTop="12dp"
-                            style="@style/Widget.Material3.Button"
-                            android:textColor="@color/text_primary" />
-
+                        <!-- Error Message -->
                         <TextView
                             android:id="@+id/txtError"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="8dp"
+                            android:padding="12dp"
+                            android:background="@drawable/bg_error_card"
                             android:textColor="@color/accent_danger"
-                            android:textSize="14sp"
+                            android:textSize="13sp"
+                            android:gravity="center"
                             android:visibility="gone" />
 
-                        <LinearLayout
+                        <!-- Estimate Modal - styled like web -->
+                        <com.google.android.material.card.MaterialCardView
                             android:id="@+id/layoutEstimate"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:orientation="vertical"
-                            android:padding="12dp"
-                            android:layout_marginTop="8dp"
-                            android:background="@color/card_surface"
+                            android:layout_marginTop="12dp"
+                            app:cardBackgroundColor="@android:color/transparent"
+                            app:cardCornerRadius="12dp"
+                            app:cardElevation="0dp"
+                            app:strokeColor="@color/divider"
+                            app:strokeWidth="1dp"
                             android:visibility="gone">
 
-                            <TextView
-                                android:layout_width="wrap_content"
+                            <LinearLayout
+                                android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:text="Price Estimate"
-                                android:textColor="@color/text_primary"
-                                android:textStyle="bold"
-                                android:textSize="14sp" />
-                            <TextView
-                                android:id="@+id/txtEstimatePrice"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:textColor="@color/accent_success"
-                                android:textSize="16sp"
-                                android:layout_marginTop="4dp"
-                                tools:text="500 RSD" />
-                            <TextView
-                                android:id="@+id/txtEstimateDistance"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:textColor="@color/text_secondary"
-                                android:textSize="13sp"
-                                tools:text="10 km" />
-                            <TextView
-                                android:id="@+id/txtEstimateDuration"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:textColor="@color/text_secondary"
-                                android:textSize="13sp"
-                                tools:text="20 min" />
-                        </LinearLayout>
+                                android:orientation="vertical"
+                                android:padding="16dp"
+                                android:background="@color/bg_modal">
 
-                        <LinearLayout
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="@string/ride_estimate_title"
+                                    android:textColor="@color/text_primary"
+                                    android:textStyle="bold"
+                                    android:textSize="13sp"
+                                    android:textAllCaps="true"
+                                    android:letterSpacing="0.05"
+                                    android:layout_marginBottom="12dp" />
+
+                                <!-- Estimated Price Row -->
+                                <LinearLayout
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:orientation="horizontal"
+                                    android:paddingVertical="8dp"
+                                    android:gravity="center_vertical">
+
+                                    <TextView
+                                        android:layout_width="0dp"
+                                        android:layout_height="wrap_content"
+                                        android:layout_weight="1"
+                                        android:text="@string/ride_estimate_price"
+                                        android:textColor="@color/text_secondary"
+                                        android:textSize="13sp" />
+
+                                    <TextView
+                                        android:id="@+id/txtEstimatePrice"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:textColor="@color/text_primary"
+                                        android:textStyle="bold"
+                                        android:textSize="14sp"
+                                        tools:text="500 RSD" />
+                                </LinearLayout>
+
+                                <View
+                                    android:layout_width="match_parent"
+                                    android:layout_height="1dp"
+                                    android:background="@color/divider" />
+
+                                <!-- Distance Row -->
+                                <LinearLayout
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:orientation="horizontal"
+                                    android:paddingVertical="8dp"
+                                    android:gravity="center_vertical">
+
+                                    <TextView
+                                        android:layout_width="0dp"
+                                        android:layout_height="wrap_content"
+                                        android:layout_weight="1"
+                                        android:text="@string/ride_estimate_distance"
+                                        android:textColor="@color/text_secondary"
+                                        android:textSize="13sp" />
+
+                                    <TextView
+                                        android:id="@+id/txtEstimateDistance"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:textColor="@color/text_primary"
+                                        android:textStyle="bold"
+                                        android:textSize="14sp"
+                                        tools:text="10 km" />
+                                </LinearLayout>
+
+                                <View
+                                    android:layout_width="match_parent"
+                                    android:layout_height="1dp"
+                                    android:background="@color/divider" />
+
+                                <!-- Duration Row -->
+                                <LinearLayout
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:orientation="horizontal"
+                                    android:paddingVertical="8dp"
+                                    android:gravity="center_vertical">
+
+                                    <TextView
+                                        android:layout_width="0dp"
+                                        android:layout_height="wrap_content"
+                                        android:layout_weight="1"
+                                        android:text="@string/ride_estimate_duration"
+                                        android:textColor="@color/text_secondary"
+                                        android:textSize="13sp" />
+
+                                    <TextView
+                                        android:id="@+id/txtEstimateDuration"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:textColor="@color/text_primary"
+                                        android:textStyle="bold"
+                                        android:textSize="14sp"
+                                        tools:text="20 min" />
+                                </LinearLayout>
+
+                            </LinearLayout>
+                        </com.google.android.material.card.MaterialCardView>
+
+                        <!-- Order Result Modal - styled like web -->
+                        <com.google.android.material.card.MaterialCardView
                             android:id="@+id/layoutOrderResult"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:orientation="vertical"
-                            android:padding="12dp"
-                            android:layout_marginTop="8dp"
-                            android:background="@color/card_surface"
+                            android:layout_marginTop="12dp"
+                            app:cardBackgroundColor="@android:color/transparent"
+                            app:cardCornerRadius="12dp"
+                            app:cardElevation="0dp"
+                            app:strokeColor="@color/divider"
+                            app:strokeWidth="1dp"
                             android:visibility="gone">
 
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Ride Details"
-                                android:textColor="@color/text_primary"
-                                android:textStyle="bold"
-                                android:textSize="14sp" />
-                            <TextView
-                                android:id="@+id/txtOrderStatus"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:textColor="@color/accent_success"
-                                android:textSize="14sp"
-                                android:layout_marginTop="4dp"
-                                tools:text="ACCEPTED" />
-                            <TextView
-                                android:id="@+id/txtOrderMessage"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:textColor="@color/text_secondary"
-                                android:textSize="13sp"
-                                android:layout_marginTop="2dp"
-                                tools:text="Driver assigned" />
-                            <TextView
-                                android:id="@+id/txtOrderRideId"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:textColor="@color/text_tertiary"
-                                android:textSize="12sp"
-                                android:layout_marginTop="4dp"
-                                tools:text="Ride ID: 123" />
-                            <TextView
-                                android:id="@+id/txtOrderDriver"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:textColor="@color/text_tertiary"
-                                android:textSize="12sp"
-                                tools:text="Driver: driver@example.com" />
-
-                            <Button
-                                android:id="@+id/btnCancelRide"
-                                style="@style/Widget.Material3.Button.OutlinedButton"
+                            <LinearLayout
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:text="Cancel Ride"
-                                android:layout_marginTop="12dp"
-                                android:visibility="gone" />
+                                android:orientation="vertical"
+                                android:padding="16dp"
+                                android:background="@color/bg_modal">
 
-                            <Button
-                                android:id="@+id/btnRequestAnother"
-                                style="@style/Widget.Material3.Button.TextButton"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:text="Request Another Ride"
-                                android:layout_marginTop="8dp"
-                                android:visibility="gone" />
-                        </LinearLayout>
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="@string/ride_details_title"
+                                    android:textColor="@color/text_primary"
+                                    android:textStyle="bold"
+                                    android:textSize="13sp"
+                                    android:textAllCaps="true"
+                                    android:letterSpacing="0.05"
+                                    android:layout_marginBottom="12dp" />
+
+                                <!-- Status Row -->
+                                <LinearLayout
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:orientation="horizontal"
+                                    android:paddingVertical="8dp"
+                                    android:gravity="center_vertical">
+
+                                    <TextView
+                                        android:layout_width="0dp"
+                                        android:layout_height="wrap_content"
+                                        android:layout_weight="1"
+                                        android:text="@string/ride_details_status"
+                                        android:textColor="@color/text_secondary"
+                                        android:textSize="13sp" />
+
+                                    <TextView
+                                        android:id="@+id/txtOrderStatus"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:textColor="@color/accent_success"
+                                        android:textStyle="bold"
+                                        android:textSize="14sp"
+                                        tools:text="ACCEPTED" />
+                                </LinearLayout>
+
+                                <View
+                                    android:layout_width="match_parent"
+                                    android:layout_height="1dp"
+                                    android:background="@color/divider" />
+
+                                <!-- Message -->
+                                <TextView
+                                    android:id="@+id/txtOrderMessage"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:paddingVertical="8dp"
+                                    android:textColor="@color/text_secondary"
+                                    android:textSize="13sp"
+                                    tools:text="Driver assigned" />
+
+                                <!-- Ride ID -->
+                                <TextView
+                                    android:id="@+id/txtOrderRideId"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:textColor="@color/text_tertiary"
+                                    android:textSize="12sp"
+                                    tools:text="Ride ID: 123" />
+
+                                <!-- Driver -->
+                                <TextView
+                                    android:id="@+id/txtOrderDriver"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:textColor="@color/text_tertiary"
+                                    android:textSize="12sp"
+                                    android:layout_marginTop="2dp"
+                                    tools:text="Driver: driver@example.com" />
+
+                                <!-- Live Tracking Info (ETA, Driver Name, Vehicle) -->
+                                <LinearLayout
+                                    android:id="@+id/layoutLiveTracking"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:orientation="vertical"
+                                    android:layout_marginTop="12dp"
+                                    android:visibility="gone">
+
+                                    <View
+                                        android:layout_width="match_parent"
+                                        android:layout_height="1dp"
+                                        android:background="@color/divider"
+                                        android:layout_marginBottom="12dp" />
+
+                                    <TextView
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="LIVE TRACKING"
+                                        android:textColor="@color/text_secondary"
+                                        android:textSize="11sp"
+                                        android:textStyle="bold"
+                                        android:textAllCaps="true"
+                                        android:layout_marginBottom="8dp" />
+
+                                    <!-- ETA Row -->
+                                    <LinearLayout
+                                        android:layout_width="match_parent"
+                                        android:layout_height="wrap_content"
+                                        android:orientation="horizontal"
+                                        android:gravity="center_vertical"
+                                        android:paddingVertical="4dp">
+
+                                        <TextView
+                                            android:layout_width="0dp"
+                                            android:layout_height="wrap_content"
+                                            android:layout_weight="1"
+                                            android:text="Estimated Arrival"
+                                            android:textColor="@color/text_secondary"
+                                            android:textSize="13sp" />
+
+                                        <TextView
+                                            android:id="@+id/txtLiveEta"
+                                            android:layout_width="wrap_content"
+                                            android:layout_height="wrap_content"
+                                            android:textColor="@color/accent_info"
+                                            android:textSize="16sp"
+                                            android:textStyle="bold"
+                                            tools:text="12 min" />
+                                    </LinearLayout>
+
+                                    <!-- Driver Name Row -->
+                                    <LinearLayout
+                                        android:id="@+id/layoutDriverName"
+                                        android:layout_width="match_parent"
+                                        android:layout_height="wrap_content"
+                                        android:orientation="horizontal"
+                                        android:gravity="center_vertical"
+                                        android:paddingVertical="4dp"
+                                        android:visibility="gone">
+
+                                        <TextView
+                                            android:layout_width="0dp"
+                                            android:layout_height="wrap_content"
+                                            android:layout_weight="1"
+                                            android:text="Driver"
+                                            android:textColor="@color/text_secondary"
+                                            android:textSize="13sp" />
+
+                                        <TextView
+                                            android:id="@+id/txtLiveDriverName"
+                                            android:layout_width="wrap_content"
+                                            android:layout_height="wrap_content"
+                                            android:textColor="@color/text_primary"
+                                            android:textSize="14sp"
+                                            android:textStyle="bold"
+                                            tools:text="John Doe" />
+                                    </LinearLayout>
+
+                                    <!-- Vehicle Info Row -->
+                                    <LinearLayout
+                                        android:id="@+id/layoutVehicleInfo"
+                                        android:layout_width="match_parent"
+                                        android:layout_height="wrap_content"
+                                        android:orientation="horizontal"
+                                        android:gravity="center_vertical"
+                                        android:paddingVertical="4dp"
+                                        android:visibility="gone">
+
+                                        <TextView
+                                            android:layout_width="0dp"
+                                            android:layout_height="wrap_content"
+                                            android:layout_weight="1"
+                                            android:text="Vehicle"
+                                            android:textColor="@color/text_secondary"
+                                            android:textSize="13sp" />
+
+                                        <TextView
+                                            android:id="@+id/txtLiveVehicleInfo"
+                                            android:layout_width="wrap_content"
+                                            android:layout_height="wrap_content"
+                                            android:textColor="@color/text_primary"
+                                            android:textSize="14sp"
+                                            tools:text="STANDARD (NS-123-AB)" />
+                                    </LinearLayout>
+
+                                </LinearLayout>
+
+                                <!-- Request Stop Button -->
+                                <Button
+                                    android:id="@+id/btnRequestStop"
+                                    style="@style/Widget.Material3.Button"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:text="@string/passenger_btn_request_stop"
+                                    android:backgroundTint="@color/btn_stop_early"
+                                    android:textColor="@color/white"
+                                    android:layout_marginTop="16dp"
+                                    android:visibility="gone" />
+
+                                <!-- Panic Button -->
+                                <Button
+                                    android:id="@+id/btnPanic"
+                                    style="@style/Widget.Material3.Button"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:text="@string/passenger_btn_panic"
+                                    android:backgroundTint="@color/btn_panic"
+                                    android:textColor="@color/white"
+                                    android:layout_marginTop="12dp"
+                                    android:visibility="gone" />
+
+                                <!-- Cancel Ride Button -->
+                                <Button
+                                    android:id="@+id/btnCancelRide"
+                                    style="@style/Widget.Material3.Button"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:text="@string/ride_cancel"
+                                    android:backgroundTint="@color/accent_danger"
+                                    android:textColor="@color/white"
+                                    android:layout_marginTop="16dp"
+                                    android:visibility="gone" />
+
+                                <!-- Request Another Button -->
+                                <Button
+                                    android:id="@+id/btnRequestAnother"
+                                    style="@style/Widget.Material3.Button.OutlinedButton"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:text="@string/ride_request_another"
+                                    android:textColor="@color/text_secondary"
+                                    android:layout_marginTop="8dp"
+                                    android:visibility="gone" />
+
+                            </LinearLayout>
+                        </com.google.android.material.card.MaterialCardView>
+
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
-                <Button
-                    android:id="@+id/btnViewHistory"
-                    style="@style/Widget.Material3.Button.TextButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="@string/title_passenger_history"
-                    android:textColor="@color/text_primary"
-                    android:layout_marginBottom="24dp" />
             </LinearLayout>
         </ScrollView>
     </LinearLayout>
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fabChat"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="72dp"
+        app:srcCompat="@android:drawable/stat_notify_chat"
+        app:tint="@color/text_primary"
+        app:backgroundTint="@color/accent_info" />
+
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

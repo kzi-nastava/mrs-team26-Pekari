@@ -18,6 +18,10 @@ import com.example.blackcar.data.api.model.PassengerRideDetailResponse;
 import com.example.blackcar.data.api.model.PassengerRideHistoryResponse;
 import com.example.blackcar.data.api.model.RideEstimateResponse;
 import com.example.blackcar.data.api.model.RideHistoryFilterRequest;
+import com.example.blackcar.data.api.model.RideStatsResponse;
+import com.example.blackcar.data.api.model.StopRideEarlyRequest;
+import com.example.blackcar.data.api.model.RideLocationUpdateRequest;
+import com.example.blackcar.data.api.model.LocationPoint;
 import com.example.blackcar.data.api.service.RideApiService;
 
 import retrofit2.Call;
@@ -182,6 +186,27 @@ public class RideRepository {
                 });
     }
 
+    public void getAllActiveRides(RepoCallback<java.util.List<AdminRideHistoryResponse>> callback) {
+        api.getAllActiveRides().enqueue(
+                new Callback<java.util.List<AdminRideHistoryResponse>>() {
+                    @Override
+                    public void onResponse(@NonNull Call<java.util.List<AdminRideHistoryResponse>> call,
+                                         @NonNull Response<java.util.List<AdminRideHistoryResponse>> response) {
+                        if (response.isSuccessful() && response.body() != null) {
+                            callback.onSuccess(response.body());
+                        } else {
+                            callback.onError(parseErrorMessage(response, "Failed to load active rides"));
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(@NonNull Call<java.util.List<AdminRideHistoryResponse>> call,
+                                        @NonNull Throwable t) {
+                        callback.onError("Network error. Please check your internet connection.");
+                    }
+                });
+    }
+
     public void estimateRide(EstimateRideRequest request, RepoCallback<RideEstimateResponse> callback) {
         api.estimateRide(request).enqueue(
                 new Callback<RideEstimateResponse>() {
@@ -257,6 +282,31 @@ public class RideRepository {
                 });
     }
 
+    public void getActiveRideForDriver(RepoCallback<ActiveRideResponse> callback) {
+        api.getActiveRideForDriver().enqueue(
+                new Callback<ActiveRideResponse>() {
+                    @Override
+                    public void onResponse(@NonNull Call<ActiveRideResponse> call,
+                                         @NonNull Response<ActiveRideResponse> response) {
+                        if (response.isSuccessful()) {
+                            callback.onSuccess(response.body());
+                        } else {
+                            if (response.code() == 404 || response.code() == 204) {
+                                callback.onSuccess(null);
+                            } else {
+                                callback.onError(parseErrorMessage(response, "Failed to load active ride"));
+                            }
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(@NonNull Call<ActiveRideResponse> call,
+                                        @NonNull Throwable t) {
+                        callback.onError("Network error. Please check your internet connection.");
+                    }
+                });
+    }
+
     public void cancelRide(Long rideId, String reason, RepoCallback<MessageResponse> callback) {
         api.cancelRide(rideId, new CancelRideRequest(reason)).enqueue(
                 new Callback<MessageResponse>() {
@@ -272,6 +322,227 @@ public class RideRepository {
 
                     @Override
                     public void onFailure(@NonNull Call<MessageResponse> call,
+                                        @NonNull Throwable t) {
+                        callback.onError("Network error. Please check your internet connection.");
+                    }
+                });
+    }
+
+    // Driver ride management methods
+    public void startRide(Long rideId, RepoCallback<MessageResponse> callback) {
+        api.startRide(rideId).enqueue(
+                new Callback<MessageResponse>() {
+                    @Override
+                    public void onResponse(@NonNull Call<MessageResponse> call,
+                                         @NonNull Response<MessageResponse> response) {
+                        if (response.isSuccessful()) {
+                            callback.onSuccess(response.body());
+                        } else {
+                            callback.onError(parseErrorMessage(response, "Failed to start ride"));
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(@NonNull Call<MessageResponse> call,
+                                        @NonNull Throwable t) {
+                        callback.onError("Network error. Please check your internet connection.");
+                    }
+                });
+    }
+
+    public void completeRide(Long rideId, RepoCallback<MessageResponse> callback) {
+        api.completeRide(rideId).enqueue(
+                new Callback<MessageResponse>() {
+                    @Override
+                    public void onResponse(@NonNull Call<MessageResponse> call,
+                                         @NonNull Response<MessageResponse> response) {
+                        if (response.isSuccessful()) {
+                            callback.onSuccess(response.body());
+                        } else {
+                            callback.onError(parseErrorMessage(response, "Failed to complete ride"));
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(@NonNull Call<MessageResponse> call,
+                                        @NonNull Throwable t) {
+                        callback.onError("Network error. Please check your internet connection.");
+                    }
+                });
+    }
+
+    public void stopRideEarly(Long rideId, LocationPoint stopLocation, RepoCallback<MessageResponse> callback) {
+        StopRideEarlyRequest request = new StopRideEarlyRequest(stopLocation);
+        api.stopRideEarly(rideId, request).enqueue(
+                new Callback<MessageResponse>() {
+                    @Override
+                    public void onResponse(@NonNull Call<MessageResponse> call,
+                                         @NonNull Response<MessageResponse> response) {
+                        if (response.isSuccessful()) {
+                            callback.onSuccess(response.body());
+                        } else {
+                            callback.onError(parseErrorMessage(response, "Failed to stop ride"));
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(@NonNull Call<MessageResponse> call,
+                                        @NonNull Throwable t) {
+                        callback.onError("Network error. Please check your internet connection.");
+                    }
+                });
+    }
+
+    public void activatePanic(Long rideId, RepoCallback<MessageResponse> callback) {
+        api.activatePanic(rideId).enqueue(
+                new Callback<MessageResponse>() {
+                    @Override
+                    public void onResponse(@NonNull Call<MessageResponse> call,
+                                         @NonNull Response<MessageResponse> response) {
+                        if (response.isSuccessful()) {
+                            callback.onSuccess(response.body());
+                        } else {
+                            callback.onError(parseErrorMessage(response, "Failed to activate panic"));
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(@NonNull Call<MessageResponse> call,
+                                        @NonNull Throwable t) {
+                        callback.onError("Network error. Please check your internet connection.");
+                    }
+                });
+    }
+
+    public void updateRideLocation(Long rideId, RideLocationUpdateRequest request, RepoCallback<MessageResponse> callback) {
+        api.updateRideLocation(rideId, request).enqueue(
+                new Callback<MessageResponse>() {
+                    @Override
+                    public void onResponse(@NonNull Call<MessageResponse> call,
+                                         @NonNull Response<MessageResponse> response) {
+                        if (response.isSuccessful()) {
+                            callback.onSuccess(response.body());
+                        } else {
+                            // Silently fail location updates - not critical
+                            callback.onError(parseErrorMessage(response, "Failed to update location"));
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(@NonNull Call<MessageResponse> call,
+                                        @NonNull Throwable t) {
+                        // Silently fail location updates - not critical
+                        callback.onError("Network error");
+                    }
+                });
+    }
+
+    // Passenger ride management methods
+    public void requestStopRide(Long rideId, RepoCallback<MessageResponse> callback) {
+        api.requestStopRide(rideId).enqueue(
+                new Callback<MessageResponse>() {
+                    @Override
+                    public void onResponse(@NonNull Call<MessageResponse> call,
+                                         @NonNull Response<MessageResponse> response) {
+                        if (response.isSuccessful()) {
+                            callback.onSuccess(response.body());
+                        } else {
+                            callback.onError(parseErrorMessage(response, "Failed to request stop"));
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(@NonNull Call<MessageResponse> call,
+                                        @NonNull Throwable t) {
+                        callback.onError("Network error. Please check your internet connection.");
+                    }
+                });
+    }
+
+    // Ride stats methods
+    public void getDriverRideStats(String startDate, String endDate, RepoCallback<RideStatsResponse> callback) {
+        api.getDriverRideStats(startDate, endDate).enqueue(
+                new Callback<RideStatsResponse>() {
+                    @Override
+                    public void onResponse(@NonNull Call<RideStatsResponse> call,
+                                         @NonNull Response<RideStatsResponse> response) {
+                        if (response.isSuccessful() && response.body() != null) {
+                            callback.onSuccess(response.body());
+                        } else {
+                            callback.onError(parseErrorMessage(response, "Failed to load statistics"));
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(@NonNull Call<RideStatsResponse> call, @NonNull Throwable t) {
+                        callback.onError("Network error. Please check your internet connection.");
+                    }
+                });
+    }
+
+    public void getPassengerRideStats(String startDate, String endDate, RepoCallback<RideStatsResponse> callback) {
+        api.getPassengerRideStats(startDate, endDate).enqueue(
+                new Callback<RideStatsResponse>() {
+                    @Override
+                    public void onResponse(@NonNull Call<RideStatsResponse> call,
+                                         @NonNull Response<RideStatsResponse> response) {
+                        if (response.isSuccessful() && response.body() != null) {
+                            callback.onSuccess(response.body());
+                        } else {
+                            callback.onError(parseErrorMessage(response, "Failed to load statistics"));
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(@NonNull Call<RideStatsResponse> call, @NonNull Throwable t) {
+                        callback.onError("Network error. Please check your internet connection.");
+                    }
+                });
+    }
+
+    public void getAdminRideStats(String startDate, String endDate, String scope, Long userId,
+                                  RepoCallback<RideStatsResponse> callback) {
+        api.getAdminRideStats(startDate, endDate, scope, userId).enqueue(
+                new Callback<RideStatsResponse>() {
+                    @Override
+                    public void onResponse(@NonNull Call<RideStatsResponse> call,
+                                         @NonNull Response<RideStatsResponse> response) {
+                        if (response.isSuccessful() && response.body() != null) {
+                            callback.onSuccess(response.body());
+                        } else {
+                            callback.onError(parseErrorMessage(response, "Failed to load statistics"));
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(@NonNull Call<RideStatsResponse> call, @NonNull Throwable t) {
+                        callback.onError("Network error. Please check your internet connection.");
+                    }
+                });
+    }
+
+    // Admin panic mode methods
+    public void getActivePanicRides(RepoCallback<java.util.List<DriverRideHistoryResponse>> callback) {
+        api.getActivePanicRides().enqueue(
+                new Callback<java.util.List<DriverRideHistoryResponse>>() {
+                    @Override
+                    public void onResponse(@NonNull Call<java.util.List<DriverRideHistoryResponse>> call,
+                                         @NonNull Response<java.util.List<DriverRideHistoryResponse>> response) {
+                        if (response.isSuccessful() && response.body() != null) {
+                            callback.onSuccess(response.body());
+                        } else {
+                            String message = "Failed to load panic rides";
+                            if (response.code() == 401) {
+                                message = "Unauthorized. Please login again.";
+                            } else if (response.code() == 403) {
+                                message = "Access denied. Admin role required.";
+                            }
+                            callback.onError(message);
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(@NonNull Call<java.util.List<DriverRideHistoryResponse>> call,
                                         @NonNull Throwable t) {
                         callback.onError("Network error. Please check your internet connection.");
                     }

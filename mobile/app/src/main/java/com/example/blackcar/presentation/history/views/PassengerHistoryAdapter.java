@@ -24,11 +24,17 @@ public class PassengerHistoryAdapter extends ListAdapter<RideUIModel, PassengerH
         void onRideClick(RideUIModel ride);
     }
 
-    private final OnRideClickListener listener;
+    public interface OnFavoriteClickListener {
+        void onFavoriteClick(RideUIModel ride);
+    }
 
-    public PassengerHistoryAdapter(OnRideClickListener listener) {
+    private final OnRideClickListener listener;
+    private final OnFavoriteClickListener favoriteListener;
+
+    public PassengerHistoryAdapter(OnRideClickListener listener, OnFavoriteClickListener favoriteListener) {
         super(DIFF);
         this.listener = listener;
+        this.favoriteListener = favoriteListener;
     }
 
     static DiffUtil.ItemCallback<RideUIModel> DIFF = new DiffUtil.ItemCallback<RideUIModel>() {
@@ -48,7 +54,7 @@ public class PassengerHistoryAdapter extends ListAdapter<RideUIModel, PassengerH
     public Holder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View v = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.item_passenger_history, parent, false);
-        return new Holder(v, listener);
+        return new Holder(v, listener, favoriteListener);
     }
 
     @Override
@@ -61,18 +67,23 @@ public class PassengerHistoryAdapter extends ListAdapter<RideUIModel, PassengerH
 
     static class Holder extends RecyclerView.ViewHolder {
 
-        TextView txtRoute, txtTime, txtPrice, txtCanceled, txtPanic, txtPassengers;
+        TextView txtRoute, txtTime, txtPrice, txtCanceled, txtPassengers;
         TextView txtDistance, txtVehicleType, txtStatus;
+        android.widget.Button btnFavorite;
         private RideUIModel currentRide;
+        private final OnRideClickListener listener;
+        private final OnFavoriteClickListener favoriteListener;
 
-        public Holder(@NonNull View itemView, OnRideClickListener listener) {
+        public Holder(@NonNull View itemView, OnRideClickListener listener, OnFavoriteClickListener favoriteListener) {
             super(itemView);
+            this.listener = listener;
+            this.favoriteListener = favoriteListener;
 
             txtRoute = itemView.findViewById(R.id.txtRoute);
+            btnFavorite = itemView.findViewById(R.id.btnFavorite);
             txtTime = itemView.findViewById(R.id.txtTime);
             txtPrice = itemView.findViewById(R.id.txtPrice);
             txtCanceled = itemView.findViewById(R.id.txtCanceled);
-            txtPanic = itemView.findViewById(R.id.txtPanic);
             txtPassengers = itemView.findViewById(R.id.txtPassengers);
             txtDistance = itemView.findViewById(R.id.txtDistance);
             txtVehicleType = itemView.findViewById(R.id.txtVehicleType);
@@ -83,6 +94,15 @@ public class PassengerHistoryAdapter extends ListAdapter<RideUIModel, PassengerH
                     listener.onRideClick(currentRide);
                 }
             });
+
+            if (btnFavorite != null) {
+                btnFavorite.setOnClickListener(v -> {
+                    v.performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS);
+                    if (favoriteListener != null && currentRide != null) {
+                        favoriteListener.onFavoriteClick(currentRide);
+                    }
+                });
+            }
         }
 
         public void bind(RideUIModel ride) {
@@ -116,9 +136,6 @@ public class PassengerHistoryAdapter extends ListAdapter<RideUIModel, PassengerH
                 txtCanceled.setVisibility(View.GONE);
             }
 
-            // Panic indicator
-            txtPanic.setVisibility(ride.panic ? View.VISIBLE : View.GONE);
-
             // Distance
             if (ride.distanceKm != null && ride.distanceKm > 0) {
                 txtDistance.setVisibility(View.VISIBLE);
@@ -149,6 +166,21 @@ public class PassengerHistoryAdapter extends ListAdapter<RideUIModel, PassengerH
                 }
             } else {
                 txtStatus.setVisibility(View.GONE);
+            }
+
+            // Favorite button - show ★ when favorited, ☆ when not
+            if (btnFavorite != null) {
+                boolean isFavorite = ride.favoriteRouteId != null;
+                btnFavorite.setText(isFavorite ? "★" : "☆");
+                btnFavorite.setTextColor(itemView.getContext().getColor(
+                        isFavorite ? R.color.accent_success : R.color.text_secondary));
+                // Disable if ride has no coordinates (can't add to favorites)
+                boolean canAdd = ride.pickup != null && ride.dropoff != null
+                        && ride.pickup.getLatitude() != null && ride.pickup.getLongitude() != null
+                        && ride.dropoff.getLatitude() != null && ride.dropoff.getLongitude() != null;
+                btnFavorite.setEnabled(canAdd || isFavorite);
+                btnFavorite.setContentDescription(itemView.getContext().getString(
+                        isFavorite ? R.string.favorite_remove : R.string.favorite_add));
             }
         }
 

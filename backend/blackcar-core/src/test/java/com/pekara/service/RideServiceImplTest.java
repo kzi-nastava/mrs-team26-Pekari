@@ -296,7 +296,7 @@ public class RideServiceImplTest {
 
         assertThatThrownBy(() -> rideService.completeRide(1L, "wrong_driver@test.com"))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("You are not the driver assigned to this ride");
+                .hasMessage("You are not the assigned driver for this ride");
 
         verify(rideRepository, never()).save(any());
     }

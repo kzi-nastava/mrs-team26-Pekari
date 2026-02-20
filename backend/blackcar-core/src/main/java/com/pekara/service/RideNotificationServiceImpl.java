@@ -1,22 +1,24 @@
 package com.pekara.service;
 
-import com.google.auth.oauth2.AccessToken;
-import com.google.auth.oauth2.GoogleCredentials;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
+import com.google.auth.oauth2.GoogleCredentials;
 import com.google.firebase.messaging.FirebaseMessaging;
+import com.google.firebase.messaging.Message;
+import com.google.firebase.messaging.Notification;
 import com.pekara.dto.response.UserNotificationDto;
+import com.pekara.model.User;
+import com.pekara.model.UserRole;
+import com.pekara.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
+import java.io.FileInputStream;
 import jakarta.annotation.PostConstruct;
 import java.io.IOException;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -29,6 +31,7 @@ public class RideNotificationServiceImpl implements RideNotificationService {
 
     private final MailService mailService;
     private final SimpMessagingTemplate messagingTemplate;
+    private final UserRepository userRepository;
 
     @Value("${firebase.projectId:}")
     private String firebaseProjectId;
@@ -36,10 +39,11 @@ public class RideNotificationServiceImpl implements RideNotificationService {
     @Value("${firebase.databaseUrl:}")
     private String firebaseDatabaseUrl;
 
+    @Value("${firebase.serviceAccountPath:}")
+    private String firebaseServiceAccountPath;
+
     // --- Firebase/FCM configuration ---
-    private static final String FCM_BASE_URL = "https://fcm.googleapis.com";
-    // Use HTTP v1 endpoint: /v1/projects/{projectId}/messages:send
-    private static final String FCM_SEND_ENDPOINT_TEMPLATE = "/v1/projects/%s/messages:send";
+    private static final String ADMINS_TOPIC = "admins";
 
     private volatile boolean firebaseInitialized = false;
 
@@ -232,7 +236,20 @@ public class RideNotificationServiceImpl implements RideNotificationService {
                     log.warn("Firebase Project ID not set, skipping initialization");
                     return;
                 }
-                GoogleCredentials credentials = GoogleCredentials.getApplicationDefault();
+                GoogleCredentials credentials;
+                if (firebaseServiceAccountPath != null && !firebaseServiceAccountPath.isBlank()) {
+                    try {
+                        credentials = GoogleCredentials.fromStream(new FileInputStream(firebaseServiceAccountPath));
+                        log.info("Firebase loaded credentials from specified path: {}", firebaseServiceAccountPath);
+                    } catch (IOException ex) {
+                        log.warn("Failed to load Firebase credentials from {}, attempting application default: {}", 
+                                firebaseServiceAccountPath, ex.getMessage());
+                        credentials = GoogleCredentials.getApplicationDefault();
+                    }
+                } else {
+                    credentials = GoogleCredentials.getApplicationDefault();
+                }
+
                 FirebaseOptions.Builder builder = FirebaseOptions.builder().setCredentials(credentials);
                 if (firebaseDatabaseUrl != null && !firebaseDatabaseUrl.isBlank()) {
                     builder.setDatabaseUrl(firebaseDatabaseUrl);
@@ -255,97 +272,124 @@ public class RideNotificationServiceImpl implements RideNotificationService {
 
     private void sendFcmNotificationToUser(String email, String title, String body, Map<String, String> data) throws IOException {
         if (email == null || email.isBlank()) return;
-        String topic = toUserTopic(email);
-        String endpoint = buildFcmSendEndpoint();
-        if (endpoint == null) {
-            log.debug("FCM endpoint not configured, skipping");
-            return;
-        }
-        HttpURLConnection conn = createFcmConnection(endpoint);
-
-        StringBuilder json = new StringBuilder();
-        json.append('{')
-                .append("\"message\":{")
-                .append("\"topic\":\"").append(topic).append("\",")
-                .append("\"notification\":{")
-                .append("\"title\":\"").append(escapeJson(title)).append("\",")
-                .append("\"body\":\"").append(escapeJson(body)).append("\"},");
-        if (data != null && !data.isEmpty()) {
-            json.append("\"data\":{");
-            boolean first = true;
-            for (Map.Entry<String, String> e : data.entrySet()) {
-                if (!first) json.append(',');
-                first = false;
-                json.append("\"").append(escapeJson(e.getKey())).append("\":\"")
-                        .append(escapeJson(Objects.toString(e.getValue(), ""))).append("\"");
-            }
-            json.append('}');
-        } else {
-            // remove trailing comma added after notification
-            if (json.charAt(json.length() - 1) == ',') {
-                json.setLength(json.length() - 1);
-            }
-        }
-        json.append('}').append('}');
-
-        byte[] bytes = json.toString().getBytes(StandardCharsets.UTF_8);
-        conn.setDoOutput(true);
-        conn.getOutputStream().write(bytes);
-
-        int code = conn.getResponseCode();
-        if (code / 100 != 2) {
-            log.warn("FCM send failed for {} with HTTP {}", email, code);
-        } else {
-            log.debug("FCM sent to {} on topic {}", email, topic);
-        }
-        conn.disconnect();
-    }
-
-    private HttpURLConnection createFcmConnection(String endpoint) throws IOException {
-        URL url = new URL(FCM_BASE_URL + endpoint);
-        HttpURLConnection httpURLConnection = (HttpURLConnection) url.openConnection();
-        httpURLConnection.setRequestMethod("POST");
-        httpURLConnection.setRequestProperty("Authorization", "Bearer " + getServiceAccountAccessToken());
-        httpURLConnection.setRequestProperty("Content-Type", "application/json; UTF-8");
-        return httpURLConnection;
-    }
-
-    private String getServiceAccountAccessToken() throws IOException {
-        GoogleCredentials credentials = GoogleCredentials.getApplicationDefault()
-                .createScoped("https://www.googleapis.com/auth/firebase.messaging");
-        credentials.refreshIfExpired();
-        AccessToken token = credentials.getAccessToken();
-        if (token == null) {
-            credentials.refresh();
-            token = credentials.getAccessToken();
-        }
-        return token != null ? token.getTokenValue() : null;
-    }
-
-    private String buildFcmSendEndpoint() {
-        if (firebaseProjectId == null || firebaseProjectId.isBlank()) {
-            log.warn("Firebase Project ID not set; cannot send FCM");
-            return null;
-        }
-        return String.format(FCM_SEND_ENDPOINT_TEMPLATE, firebaseProjectId);
-    }
-
-    @Override
-    public void registerClientToken(String email, String fcmToken) {
-        if (email == null || email.isBlank() || fcmToken == null || fcmToken.isBlank()) {
-            return;
-        }
         try {
             initFirebaseIfPossible();
             if (!firebaseInitialized) {
-                log.debug("Firebase not initialized; skipping token registration");
+                log.info("Firebase not initialized; skipping send");
                 return;
             }
-            String topic = toUserTopic(email);
-            FirebaseMessaging.getInstance().subscribeToTopic(java.util.List.of(fcmToken), topic);
-            log.info("Subscribed client token to topic {} for user {}", topic, email);
+
+            // Prefer sending to a specific device token if available
+            String token = null;
+            try {
+                User user = userRepository.findByEmail(email).orElse(null);
+                if (user != null) {
+                    token = user.getDeviceToken();
+                }
+            } catch (Exception ex) {
+                log.warn("Unable to fetch user/device token for {}: {}", email, ex.getMessage());
+            }
+
+            Message.Builder builder = Message.builder();
+            if (token != null && !token.isBlank()) {
+                builder.setToken(token);
+            } else {
+                log.info("No device token for {}; cannot send FCM (topics disabled)", email);
+                return;
+            }
+
+            // Notification section
+            if (title != null || body != null) {
+                Notification.Builder n = Notification.builder();
+                if (title != null) n.setTitle(title);
+                if (body != null) n.setBody(body);
+                builder.setNotification(n.build());
+            }
+
+            if (data != null && !data.isEmpty()) {
+                builder.putAllData(data);
+            }
+
+            FirebaseMessaging.getInstance().send(builder.build());
+            log.info("FCM sent to {} using token", email);
         } catch (Exception e) {
-            log.warn("Failed to subscribe token for {}: {}", email, e.getMessage());
+            log.warn("Failed to send FCM to {}: {}", email, e.getMessage());
+        }
+    }
+
+
+    @Override
+    public void registerClientToken(String email, String fcmToken) {
+        log.info("[DEBUG_LOG] registerClientToken called for email: {}, token starts with: {}", 
+                email, (fcmToken != null && fcmToken.length() > 10 ? fcmToken.substring(0, 10) : fcmToken));
+        
+        if (email == null || email.isBlank() || fcmToken == null || fcmToken.isBlank()) {
+            log.warn("[DEBUG_LOG] Cannot register FCM token: email or token is blank. Email: {}, Token present: {}", 
+                    email, fcmToken != null);
+            return;
+        }
+        try {
+            // Persist token to user profile
+            userRepository.findByEmail(email).ifPresentOrElse(user -> {
+                try {
+                    user.setDeviceToken(fcmToken);
+                    userRepository.save(user);
+                    log.info("[DEBUG_LOG] Successfully saved device token for user {}", email);
+                } catch (Exception ex) {
+                    log.error("[DEBUG_LOG] Failed to save device token for {}: {}", email, ex.getMessage(), ex);
+                }
+            }, () -> {
+                log.warn("[DEBUG_LOG] User {} not found in database, cannot save FCM token", email);
+            });
+        } catch (Exception e) {
+            log.error("[DEBUG_LOG] Unexpected error during FCM token registration for {}: {}", email, e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public void unsubscribeFromAdminTopic(String fcmToken) {
+        // No-op: topics disabled
+    }
+
+    @Override
+    public void sendPanicNotificationToAdmins(Long rideId, String panickedBy, String activatorEmail) {
+        try {
+            initFirebaseIfPossible();
+            if (!firebaseInitialized) {
+                log.debug("Firebase not initialized; skipping panic notification");
+                return;
+            }
+
+            String title = "🚨 PANIC BUTTON ACTIVATED";
+            String body = String.format("Ride #%d - Panic activated by %s (%s)", rideId, panickedBy, activatorEmail);
+
+            // Find all admins and send to their tokens
+            List<User> admins = userRepository.findByRole(UserRole.ADMIN);
+            for (User admin : admins) {
+                String token = admin.getDeviceToken();
+                if (token != null && !token.isBlank()) {
+                    try {
+                        Message message = Message.builder()
+                                .setToken(token)
+                                .setNotification(Notification.builder()
+                                        .setTitle(title)
+                                        .setBody(body)
+                                        .build())
+                                .putData("rideId", String.valueOf(rideId))
+                                .putData("panickedBy", panickedBy)
+                                .putData("activatorEmail", activatorEmail)
+                                .putData("type", "PANIC")
+                                .build();
+
+                        FirebaseMessaging.getInstance().send(message);
+                    } catch (Exception e) {
+                        log.warn("Failed to send panic FCM to admin {}: {}", admin.getEmail(), e.getMessage());
+                    }
+                }
+            }
+            log.info("Panic notifications sent to available admin tokens for ride {}", rideId);
+        } catch (Exception e) {
+            log.error("Failed to send panic notifications to admins: {}", e.getMessage(), e);
         }
     }
 
@@ -365,10 +409,4 @@ public class RideNotificationServiceImpl implements RideNotificationService {
         return null;
     }
 
-    private static String escapeJson(String s) {
-        if (s == null) return "";
-        return s.replace("\\", "\\\\")
-                .replace("\"", "\\\"")
-                .replace("\n", "\\n");
-    }
 }

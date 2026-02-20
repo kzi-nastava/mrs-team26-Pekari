@@ -14,15 +14,22 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
+
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 
 import com.example.blackcar.R;
+import com.example.blackcar.data.session.SessionManager;
 import com.example.blackcar.databinding.FragmentProfileBinding;
 import com.example.blackcar.presentation.ViewModelFactory;
 import com.example.blackcar.presentation.profile.model.ApprovalRequestUIModel;
@@ -30,6 +37,7 @@ import com.example.blackcar.presentation.profile.model.DriverInfoUIModel;
 import com.example.blackcar.presentation.profile.model.ProfileUIModel;
 import com.example.blackcar.presentation.profile.model.VehicleUIModel;
 import com.example.blackcar.presentation.profile.viewmodel.ProfileViewModel;
+import com.example.blackcar.presentation.home.MainActivity;
 
 import java.util.List;
 
@@ -58,7 +66,12 @@ public class ProfileFragment extends Fragment {
                 new ActivityResultContracts.GetContent(),
                 uri -> {
                     if (uri != null) {
-                        viewModel.updateLocalProfilePicture(uri.toString());
+                        String localPath = copyImageToInternalStorage(uri);
+                        if (localPath != null) {
+                            viewModel.updateLocalProfilePicture(localPath);
+                        } else {
+                            Toast.makeText(requireContext(), "Failed to save image", Toast.LENGTH_SHORT).show();
+                        }
                     }
                 }
         );
@@ -101,6 +114,21 @@ public class ProfileFragment extends Fragment {
         binding.btnChangePicture.setOnClickListener(v -> pickImageLauncher.launch("image/*"));
 
         binding.btnLogout.setOnClickListener(v -> viewModel.logout());
+
+        binding.btnUserManagement.setOnClickListener(v -> {
+            NavController nav = Navigation.findNavController(binding.getRoot());
+            nav.navigate(R.id.action_profile_to_user_management);
+        });
+
+        binding.btnAddDriver.setOnClickListener(v -> {
+            NavController nav = Navigation.findNavController(binding.getRoot());
+            nav.navigate(R.id.action_profile_to_add_driver);
+        });
+
+        binding.btnPricingManagement.setOnClickListener(v -> {
+            NavController nav = Navigation.findNavController(binding.getRoot());
+            nav.navigate(R.id.action_profile_to_pricing_management);
+        });
     }
 
     private void observeState() {
@@ -130,8 +158,25 @@ public class ProfileFragment extends Fragment {
             if (state.bannerMessage != null && !state.bannerMessage.trim().isEmpty()) {
                 binding.txtBanner.setVisibility(View.VISIBLE);
                 binding.txtBanner.setText(state.bannerMessage);
+                int textColor = requireContext().getColor(
+                        state.bannerDanger ? R.color.accent_danger : R.color.accent_success);
+                binding.txtBanner.setTextColor(textColor);
+                binding.txtBanner.setBackgroundColor(requireContext().getColor(
+                        state.bannerDanger ? R.color.bg_error : R.color.card_surface));
+                if (state.bannerDanger) {
+                    SessionManager.setBlocked(true);
+                    if (requireActivity() instanceof MainActivity) {
+                        ((MainActivity) requireActivity()).refreshProfileTabDangerState();
+                    }
+                }
             } else {
                 binding.txtBanner.setVisibility(View.GONE);
+                if (state.profile != null && !Boolean.TRUE.equals(state.profile.blocked)) {
+                    SessionManager.setBlocked(false);
+                    if (requireActivity() instanceof MainActivity) {
+                        ((MainActivity) requireActivity()).refreshProfileTabDangerState();
+                    }
+                }
             }
 
             renderProfile(state.profile);
@@ -194,9 +239,11 @@ public class ProfileFragment extends Fragment {
     private void renderApprovals(ProfileUIModel profile, List<ApprovalRequestUIModel> requests) {
         if (profile == null || !"admin".equalsIgnoreCase(profile.role)) {
             binding.cardApprovals.setVisibility(View.GONE);
+            binding.cardAdminManagement.setVisibility(View.GONE);
             return;
         }
 
+        binding.cardAdminManagement.setVisibility(View.VISIBLE);
         binding.cardApprovals.setVisibility(View.VISIBLE);
 
         List<ApprovalRequestUIModel> pending = viewModel.getPendingApprovalRequestsOnly();
@@ -374,8 +421,33 @@ public class ProfileFragment extends Fragment {
         }
 
         String trimmed = picture.trim();
-        if (trimmed.startsWith("content://") || trimmed.startsWith("file://") || trimmed.startsWith("android.resource://")) {
+
+        // Handle local file paths (from our internal storage)
+        if (trimmed.startsWith("/")) {
+            File file = new File(trimmed);
+            if (file.exists()) {
+                binding.imgProfile.setImageURI(Uri.fromFile(file));
+                return;
+            } else {
+                binding.imgProfile.setImageResource(R.drawable.baseline_person_24);
+                return;
+            }
+        }
+
+        // Handle file:// URIs
+        if (trimmed.startsWith("file://")) {
             binding.imgProfile.setImageURI(Uri.parse(trimmed));
+            return;
+        }
+
+        // Handle content:// URIs with try-catch for security exceptions
+        if (trimmed.startsWith("content://") || trimmed.startsWith("android.resource://")) {
+            try {
+                binding.imgProfile.setImageURI(Uri.parse(trimmed));
+            } catch (SecurityException e) {
+                // Permission expired for picker URI, show default
+                binding.imgProfile.setImageResource(R.drawable.baseline_person_24);
+            }
             return;
         }
 
@@ -399,6 +471,38 @@ public class ProfileFragment extends Fragment {
             byte[] decoded = android.util.Base64.decode(data, android.util.Base64.DEFAULT);
             return BitmapFactory.decodeByteArray(decoded, 0, decoded.length);
         } catch (IllegalArgumentException ex) {
+            return null;
+        }
+    }
+
+    private String copyImageToInternalStorage(Uri uri) {
+        try {
+            InputStream inputStream = requireContext().getContentResolver().openInputStream(uri);
+            if (inputStream == null) {
+                return null;
+            }
+
+            File imagesDir = new File(requireContext().getFilesDir(), "profile_images");
+            if (!imagesDir.exists()) {
+                imagesDir.mkdirs();
+            }
+
+            String fileName = "profile_" + System.currentTimeMillis() + ".jpg";
+            File outputFile = new File(imagesDir, fileName);
+
+            OutputStream outputStream = new FileOutputStream(outputFile);
+            byte[] buffer = new byte[4096];
+            int bytesRead;
+            while ((bytesRead = inputStream.read(buffer)) != -1) {
+                outputStream.write(buffer, 0, bytesRead);
+            }
+
+            inputStream.close();
+            outputStream.close();
+
+            return outputFile.getAbsolutePath();
+        } catch (Exception e) {
+            e.printStackTrace();
             return null;
         }
     }

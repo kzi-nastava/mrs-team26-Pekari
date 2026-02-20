@@ -21,6 +21,7 @@ import com.example.blackcar.R;
 import com.example.blackcar.data.api.model.AdminRideDetailResponse;
 import com.example.blackcar.data.api.model.LocationPoint;
 import com.example.blackcar.databinding.FragmentAdminRideDetailBinding;
+import com.example.blackcar.presentation.ViewModelFactory;
 import com.example.blackcar.presentation.history.util.MapHelper;
 import com.example.blackcar.presentation.history.viewmodel.AdminRideDetailViewModel;
 
@@ -30,6 +31,7 @@ import org.osmdroid.config.Configuration;
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
+import org.osmdroid.views.overlay.Marker;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -46,6 +48,7 @@ public class AdminRideDetailFragment extends DialogFragment {
     private Long rideId;
     private MapView mapView;
     private MapHelper mapHelper;
+    private Marker driverMarker;
 
     public static AdminRideDetailFragment newInstance(Long rideId) {
         AdminRideDetailFragment fragment = new AdminRideDetailFragment();
@@ -80,7 +83,8 @@ public class AdminRideDetailFragment extends DialogFragment {
         // Initialize OSMDroid configuration
         Configuration.getInstance().load(requireContext(), PreferenceManager.getDefaultSharedPreferences(requireContext()));
 
-        viewModel = new ViewModelProvider(this).get(AdminRideDetailViewModel.class);
+        ViewModelFactory factory = new ViewModelFactory(requireContext());
+        viewModel = new ViewModelProvider(this, factory).get(AdminRideDetailViewModel.class);
 
         setupMap();
         setupUI();
@@ -120,6 +124,41 @@ public class AdminRideDetailFragment extends DialogFragment {
                 displayRideDetail(state.rideDetail);
             }
         });
+
+        viewModel.getTrackingState().observe(getViewLifecycleOwner(), tracking -> {
+            if (tracking != null) {
+                updateLiveTracking(tracking);
+            }
+        });
+    }
+
+    private void updateLiveTracking(com.example.blackcar.data.api.model.WebRideTrackingResponse tracking) {
+        if (mapHelper == null) return;
+
+        Double lat = tracking.getVehicleLatitude();
+        Double lon = tracking.getVehicleLongitude();
+
+        if (lat == null || lon == null) return;
+
+        GeoPoint pos = new GeoPoint(lat, lon);
+
+        if (driverMarker == null) {
+            driverMarker = mapHelper.addCarMarker(lat, lon, "Driver");
+        } else {
+            driverMarker.setPosition(pos);
+            mapHelper.ensureMarkerOnMap(driverMarker);
+        }
+
+        // Update status UI if it's in the tracking response
+        String status = tracking.getRideStatus() != null ? tracking.getRideStatus() : tracking.getStatus();
+        if (status != null) {
+            binding.txtDetailStatus.setText(status);
+            if ("IN_PROGRESS".equals(status)) {
+                binding.txtDetailStatus.setTextColor(requireContext().getColor(R.color.accent_info));
+            }
+        }
+
+        mapView.invalidate();
     }
 
     private void displayRideDetail(AdminRideDetailResponse detail) {
@@ -489,7 +528,9 @@ public class AdminRideDetailFragment extends DialogFragment {
         super.onDestroyView();
         if (mapView != null) {
             mapView.onDetach();
+            mapView = null;
         }
+        mapHelper = null;
         binding = null;
     }
 }

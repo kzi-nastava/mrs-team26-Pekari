@@ -807,7 +807,12 @@ public class RideServiceImpl implements RideService {
 
         log.warn("PANIC ACTIVATED - Ride ID: {}, Activated by: {}, User: {}", rideId, panickedBy, userEmail);
 
-        // TODO: Send notifications to admin/support team
+        // Send panic notification to all admins
+        try {
+            rideNotificationService.sendPanicNotificationToAdmins(rideId, panickedBy, userEmail);
+        } catch (Exception e) {
+            log.error("Failed to send panic notification to admins: {}", e.getMessage(), e);
+        }
     }
 
     @Override

@@ -211,5 +211,12 @@
       <p class="error-message">{{ error }}</p>
       <button class="retry-btn" (click)="loadRideDetail()">Retry</button>
     </div>
+
+    <!-- Modal Footer with Actions -->
+    <div class="modal-footer" *ngIf="!loading && rideDetail && canOrderSameRide()">
+      <button class="action-btn primary-btn" (click)="onOrderSameRide()">
+        Order Same Ride
+      </button>
+    </div>
   </div>
 </div>

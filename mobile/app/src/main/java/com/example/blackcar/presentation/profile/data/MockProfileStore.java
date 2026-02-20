@@ -41,6 +41,8 @@ public final class MockProfileStore {
                 "+381 64 000 000",
                 "123 Main Street, City",
                 "driver",
+                null,
+                false,
                 null
         );
 
@@ -104,17 +106,22 @@ public final class MockProfileStore {
         for (int i = 0; i < approvalRequests.size(); i++) {
             ApprovalRequestUIModel r = approvalRequests.get(i);
             if (r.id.equals(requestId) && "pending".equalsIgnoreCase(r.status)) {
-                // Apply changes to the user's profile
+                // Apply changes to the user's profile (preserve blocked state from current)
+                ProfileUIModel previous = currentProfile;
+                Boolean keepBlocked = previous.blocked;
+                String keepBlockedNote = previous.blockedNote;
                 currentProfile = new ProfileUIModel(
-                        currentProfile.id,
-                        currentProfile.email,
-                        currentProfile.username,
+                        previous.id,
+                        previous.email,
+                        previous.username,
                         r.changes.firstName,
                         r.changes.lastName,
                         r.changes.phoneNumber,
                         r.changes.address,
-                        currentProfile.role,
-                        r.changes.profilePictureUri
+                        previous.role,
+                        r.changes.profilePictureUri,
+                        keepBlocked,
+                        keepBlockedNote
                 );
                 approvalRequests.set(i, r.copyWithStatus("approved", null));
                 return true;

@@ -383,7 +383,9 @@ public class RideDetailFragment extends DialogFragment {
         super.onDestroyView();
         if (mapView != null) {
             mapView.onDetach();
+            mapView = null;
         }
+        mapHelper = null;
         binding = null;
     }
 }

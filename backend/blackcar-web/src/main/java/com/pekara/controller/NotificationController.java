@@ -25,7 +25,7 @@ public class NotificationController {
     @Data
     public static class RegisterTokenRequest {
         @NotBlank
-        private String token;
+        private String fcmToken;
     }
 
     @Operation(summary = "Register FCM token for the current user and subscribe it to per-user topic")
@@ -33,8 +33,17 @@ public class NotificationController {
     @PostMapping("/register-token")
     public ResponseEntity<Void> registerToken(@AuthenticationPrincipal String email,
                                               @Valid @RequestBody RegisterTokenRequest request) {
-        log.debug("Registering FCM token for {}", email);
-        rideNotificationService.registerClientToken(email, request.getToken());
+        log.info("[DEBUG_LOG] registerToken endpoint hit for {}", email);
+        rideNotificationService.registerClientToken(email, request.getFcmToken());
+        return ResponseEntity.ok().build();
+    }
+
+    @Operation(summary = "Unsubscribe FCM token from admin topic (called on logout)")
+    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping("/unsubscribe-admin")
+    public ResponseEntity<Void> unsubscribeAdminToken(@Valid @RequestBody RegisterTokenRequest request) {
+        log.debug("Unsubscribing token from admin topic");
+        rideNotificationService.unsubscribeFromAdminTopic(request.getFcmToken());
         return ResponseEntity.ok().build();
     }
 }

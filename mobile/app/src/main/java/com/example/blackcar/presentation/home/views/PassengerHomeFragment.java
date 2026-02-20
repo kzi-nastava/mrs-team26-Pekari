@@ -24,6 +24,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.blackcar.R;
+import com.example.blackcar.data.api.model.FavoriteRouteResponse;
 import com.example.blackcar.data.api.model.GeocodeResult;
 import com.example.blackcar.data.api.model.LocationPoint;
 import com.example.blackcar.data.repository.GeocodingRepository;
@@ -31,6 +32,8 @@ import com.example.blackcar.databinding.FragmentPassengerHomeBinding;
 import com.example.blackcar.presentation.ViewModelFactory;
 import com.example.blackcar.presentation.home.viewmodel.PassengerHomeViewModel;
 import com.example.blackcar.presentation.history.util.MapHelper;
+import com.example.blackcar.data.repository.DriversRepository;
+import com.example.blackcar.data.api.model.OnlineDriverWithVehicleResponse;
 import com.google.android.material.button.MaterialButtonToggleGroup;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
@@ -39,6 +42,7 @@ import org.osmdroid.config.Configuration;
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
+import org.osmdroid.views.overlay.Marker;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -46,8 +50,11 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
+import android.util.Log;
+
 public class PassengerHomeFragment extends Fragment {
 
+    private static final String TAG = "PassengerHomeFragment";
     private FragmentPassengerHomeBinding binding;
     private PassengerHomeViewModel viewModel;
     private MapHelper mapHelper;
@@ -55,8 +62,19 @@ public class PassengerHomeFragment extends Fragment {
     private Runnable debounceRunnable;
     private static final int DEBOUNCE_MS = 300;
 
+    // --- Real-time vehicles ---
+    private final DriversRepository driversRepository = new DriversRepository();
+    private final Handler vehiclesHandler = new Handler(Looper.getMainLooper());
+    private Runnable vehiclesRunnable;
+    private static final int VEHICLES_POLL_MS = 5000;
+    private List<OnlineDriverWithVehicleResponse> lastVehicles = new ArrayList<>();
+
     private final List<View> stopViews = new ArrayList<>();
     private FocusedField focusedField = FocusedField.NONE;
+    private int focusedStopIndex = -1; // Track which stop is focused for map click
+
+    // --- Live ride tracking ---
+    private Marker driverMarker;
 
     private enum FocusedField { NONE, PICKUP, DROPOFF, STOP }
 
@@ -85,7 +103,20 @@ public class PassengerHomeFragment extends Fragment {
         setupButtons();
         observeState();
 
+        // Start polling vehicles on map
+        startVehiclesPolling();
+
         viewModel.loadActiveRide();
+        viewModel.loadFavoriteRoutes(new com.example.blackcar.data.repository.FavoriteRoutesRepository.RepoCallback<java.util.List<FavoriteRouteResponse>>() {
+            @Override
+            public void onSuccess(java.util.List<FavoriteRouteResponse> data) {
+                // Favorites loaded, will be used when dialog opens
+            }
+            @Override
+            public void onError(String message) {
+                // Silently fail - user might not have any favorites yet
+            }
+        });
     }
 
     private void setupMap() {
@@ -97,37 +128,127 @@ public class PassengerHomeFragment extends Fragment {
 
         mapHelper = new MapHelper(requireContext(), mapView);
         mapHelper.setOnMapClickListener((lat, lon) -> {
-            // Allow map tap to set location: use focused field if any, otherwise default to pickup (starting location)
-            FocusedField target = focusedField != FocusedField.NONE ? focusedField : FocusedField.PICKUP;
+            // Determine target field - use focused field if any, otherwise auto-detect like web frontend
+            FocusedField target = focusedField;
+            final int targetStopIndex = focusedStopIndex;
+
+            if (target == FocusedField.NONE) {
+                // Auto-detect: if pickup is empty, set pickup; else if dropoff is empty, set dropoff
+                if (viewModel.getPickup() == null || viewModel.getPickup().getLatitude() == null) {
+                    target = FocusedField.PICKUP;
+                } else if (viewModel.getDropoff() == null || viewModel.getDropoff().getLatitude() == null) {
+                    target = FocusedField.DROPOFF;
+                } else {
+                    target = FocusedField.DROPOFF; // Default to dropoff if both filled
+                }
+            }
+
+            final FocusedField finalTarget = target;
             viewModel.reverseGeocode(lat, lon, new com.example.blackcar.data.repository.GeocodingRepository.ReverseGeocodeCallback() {
                 @Override
                 public void onSuccess(GeocodeResult result) {
                     LocationPoint lp = new LocationPoint(result.getDisplayName(), result.getLatitude(), result.getLongitude());
-                    if (target == FocusedField.PICKUP) {
-                        viewModel.setPickup(lp);
-                        setPickupAddress(result.getDisplayName());
-                    } else if (target == FocusedField.DROPOFF) {
-                        viewModel.setDropoff(lp);
-                        setDropoffAddress(result.getDisplayName());
-                    }
-                    updateMapMarkers();
+                    applyLocationToField(finalTarget, targetStopIndex, lp, result.getDisplayName());
                 }
 
                 @Override
                 public void onError(String message) {
-                    LocationPoint lp = new LocationPoint(lat + ", " + lon, lat, lon);
-                    if (target == FocusedField.PICKUP) {
-                        viewModel.setPickup(lp);
-                        setPickupAddress(lp.getAddress());
-                    } else if (target == FocusedField.DROPOFF) {
-                        viewModel.setDropoff(lp);
-                        setDropoffAddress(lp.getAddress());
-                    }
-                    updateMapMarkers();
+                    String fallbackAddress = lat + ", " + lon;
+                    LocationPoint lp = new LocationPoint(fallbackAddress, lat, lon);
+                    applyLocationToField(finalTarget, targetStopIndex, lp, fallbackAddress);
                 }
             });
         });
         mapHelper.setupMapTapOverlay();
+    }
+
+    private void startVehiclesPolling() {
+        Log.d(TAG, "Starting vehicles polling");
+        stopVehiclesPolling();
+        vehiclesRunnable = new Runnable() {
+            @Override
+            public void run() {
+                Log.v(TAG, "Polling vehicles...");
+                driversRepository.fetchOnlineWithVehicles(0, 100, new DriversRepository.ResultCallback() {
+                    @Override
+                    public void onSuccess(List<OnlineDriverWithVehicleResponse> data) {
+                        Log.v(TAG, "Received " + (data != null ? data.size() : 0) + " vehicles");
+                        lastVehicles = data != null ? data : new ArrayList<>();
+                        renderVehicles();
+                    }
+                    @Override
+                    public void onError(String message) {
+                        Log.w(TAG, "Vehicles polling error: " + message);
+                        // Ignore transient errors; try again next tick
+                    }
+                });
+                vehiclesHandler.postDelayed(this, VEHICLES_POLL_MS);
+            }
+        };
+        vehiclesHandler.post(vehiclesRunnable);
+    }
+
+    private void stopVehiclesPolling() {
+        Log.d(TAG, "Stopping vehicles polling");
+        if (vehiclesRunnable != null) {
+            vehiclesHandler.removeCallbacks(vehiclesRunnable);
+            vehiclesRunnable = null;
+        }
+        if (mapHelper != null) {
+            mapHelper.clearVehicleMarkers();
+        }
+    }
+
+    private void renderVehicles() {
+        if (mapHelper == null) {
+            Log.w(TAG, "mapHelper is null, cannot render vehicles");
+            return;
+        }
+        mapHelper.clearVehicleMarkers();
+        if (lastVehicles == null) return;
+        Log.v(TAG, "Rendering " + lastVehicles.size() + " vehicles on map");
+        for (OnlineDriverWithVehicleResponse v : lastVehicles) {
+            if (v == null || v.driverState == null) continue;
+            Double lat = v.driverState.latitude;
+            Double lon = v.driverState.longitude;
+            Boolean busy = v.driverState.busy;
+            if (lat == null || lon == null) continue;
+            String title = (v.vehicleRegistration != null && !v.vehicleRegistration.isEmpty())
+                    ? v.vehicleRegistration
+                    : (v.vehicleType != null ? v.vehicleType : "Vehicle");
+            mapHelper.addVehicleMarker(lat, lon, title, Boolean.TRUE.equals(busy));
+        }
+    }
+
+    private void applyLocationToField(FocusedField target, int stopIndex, LocationPoint lp, String address) {
+        if (target == FocusedField.PICKUP) {
+            viewModel.setPickup(lp);
+            setPickupAddress(address);
+        } else if (target == FocusedField.DROPOFF) {
+            viewModel.setDropoff(lp);
+            setDropoffAddress(address);
+        } else if (target == FocusedField.STOP && stopIndex >= 0) {
+            // Update the stop in ViewModel
+            List<LocationPoint> stops = new ArrayList<>(viewModel.getStops());
+            while (stops.size() <= stopIndex) stops.add(null);
+            stops.set(stopIndex, lp);
+            viewModel.setStops(stops);
+            // Update the stop's EditText
+            setStopAddress(stopIndex, address);
+        }
+        updateMapMarkers();
+    }
+
+    private void setStopAddress(int index, String address) {
+        if (index >= 0 && index < stopViews.size()) {
+            View stopRow = stopViews.get(index);
+            // stopRow is the LinearLayout containing the address_autocomplete and remove button
+            View autocompleteView = ((ViewGroup) stopRow).getChildAt(0);
+            TextInputEditText edit = autocompleteView.findViewById(R.id.editAddress);
+            if (edit != null) {
+                edit.setText(address);
+            }
+        }
     }
 
     private void setupAddressInputs() {
@@ -261,6 +382,18 @@ public class PassengerHomeFragment extends Fragment {
             viewModel.setPassengerEmails(emails);
             viewModel.orderRide();
         });
+        binding.btnRequestStop.setOnClickListener(v -> {
+            if (viewModel.getState().getValue() != null && viewModel.getState().getValue().orderResult != null) {
+                Long rideId = viewModel.getState().getValue().orderResult.getRideId();
+                if (rideId != null) viewModel.requestStopRide(rideId);
+            }
+        });
+        binding.btnPanic.setOnClickListener(v -> {
+            if (viewModel.getState().getValue() != null && viewModel.getState().getValue().orderResult != null) {
+                Long rideId = viewModel.getState().getValue().orderResult.getRideId();
+                if (rideId != null) viewModel.activatePanic(rideId);
+            }
+        });
         binding.btnCancelRide.setOnClickListener(v -> {
             if (viewModel.getState().getValue() != null && viewModel.getState().getValue().orderResult != null) {
                 Long rideId = viewModel.getState().getValue().orderResult.getRideId();
@@ -268,8 +401,92 @@ public class PassengerHomeFragment extends Fragment {
             }
         });
         binding.btnRequestAnother.setOnClickListener(v -> viewModel.resetForm());
-        binding.btnViewHistory.setOnClickListener(v ->
-                Navigation.findNavController(v).navigate(R.id.passengerHistoryFragment));
+        binding.fabChat.setOnClickListener(v -> Navigation.findNavController(v).navigate(R.id.action_home_to_chat));
+        binding.btnChooseFavorite.setOnClickListener(v -> onChooseFavoriteRoute());
+    }
+
+    private void onChooseFavoriteRoute() {
+        java.util.List<FavoriteRouteResponse> routes = viewModel.getFavoriteRoutes();
+        if (routes == null || routes.isEmpty()) {
+            viewModel.setNoFavoritesError();
+            return;
+        }
+        showFavoriteRoutesDialog();
+    }
+
+    private void showFavoriteRoutesDialog() {
+        android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(requireContext());
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_favorite_routes, null);
+        builder.setView(dialogView);
+
+        androidx.recyclerview.widget.RecyclerView recycler = dialogView.findViewById(R.id.recyclerFavoriteRoutes);
+        android.widget.TextView txtEmpty = dialogView.findViewById(R.id.txtEmpty);
+        android.widget.TextView txtEmptyHint = dialogView.findViewById(R.id.txtEmptyHint);
+        android.widget.ImageButton btnClose = dialogView.findViewById(R.id.btnClose);
+
+        android.app.AlertDialog dialog = builder.create();
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+        }
+
+        java.util.List<FavoriteRouteResponse> routes = viewModel.getFavoriteRoutes();
+        if (routes == null || routes.isEmpty()) {
+            recycler.setVisibility(android.view.View.GONE);
+            txtEmpty.setVisibility(android.view.View.VISIBLE);
+            txtEmptyHint.setVisibility(android.view.View.VISIBLE);
+        } else {
+            txtEmpty.setVisibility(android.view.View.GONE);
+            txtEmptyHint.setVisibility(android.view.View.GONE);
+            recycler.setVisibility(android.view.View.VISIBLE);
+            recycler.setLayoutManager(new androidx.recyclerview.widget.LinearLayoutManager(requireContext()));
+            FavoriteRoutesAdapter adapter = new FavoriteRoutesAdapter(route -> {
+                viewModel.selectFavoriteRoute(route);
+                dialog.dismiss();
+                applyFavoriteRouteToForm(route);
+            });
+            adapter.submitList(new java.util.ArrayList<>(routes));
+            recycler.setAdapter(adapter);
+        }
+
+        btnClose.setOnClickListener(v -> dialog.dismiss());
+
+        dialog.show();
+    }
+
+    private void applyFavoriteRouteToForm(FavoriteRouteResponse route) {
+        if (route == null || binding == null) return;
+
+        // Ensure form is visible (user might have had order result showing)
+        binding.layoutFormContainer.setVisibility(View.VISIBLE);
+
+        setPickupAddress(route.getPickup() != null ? route.getPickup().getAddress() : "");
+        setDropoffAddress(route.getDropoff() != null ? route.getDropoff().getAddress() : "");
+
+        // Sync stops - remove existing, add new
+        while (stopViews.size() > 0) {
+            View row = stopViews.get(0);
+            binding.containerStops.removeView(row);
+            stopViews.remove(0);
+        }
+        java.util.List<LocationPoint> stops = route.getStops();
+        if (stops != null) {
+            for (int i = 0; i < stops.size(); i++) {
+                addStop();
+                LocationPoint stop = stops.get(i);
+                if (stop != null) setStopAddress(i, stop.getAddress());
+            }
+        }
+
+        // Vehicle type
+        String vt = route.getVehicleType() != null ? route.getVehicleType() : "STANDARD";
+        if ("VAN".equals(vt)) binding.toggleVehicleType.check(R.id.btnVehicleVan);
+        else if ("LUX".equals(vt)) binding.toggleVehicleType.check(R.id.btnVehicleLux);
+        else binding.toggleVehicleType.check(R.id.btnVehicleStandard);
+
+        binding.switchBaby.setChecked(route.getBabyTransport() != null && route.getBabyTransport());
+        binding.switchPet.setChecked(route.getPetTransport() != null && route.getPetTransport());
+
+        updateMapMarkers();
     }
 
     private void addStop() {
@@ -341,7 +558,13 @@ public class PassengerHomeFragment extends Fragment {
             public void afterTextChanged(Editable s) {}
         });
         edit.setOnFocusChangeListener((v, hasFocus) -> {
-            if (!hasFocus) recycler.setVisibility(View.GONE);
+            if (hasFocus) {
+                // Set focused field to STOP with the correct index for map click support
+                focusedField = FocusedField.STOP;
+                focusedStopIndex = index;
+            } else {
+                recycler.setVisibility(View.GONE);
+            }
         });
     }
 
@@ -369,35 +592,166 @@ public class PassengerHomeFragment extends Fragment {
         if (points.size() >= 2) {
             mapHelper.fitBounds(points);
         }
+        // Re-render vehicles after map overlays were cleared
+        renderVehicles();
     }
 
     private void observeState() {
         viewModel.getState().observe(getViewLifecycleOwner(), state -> {
-            binding.txtError.setVisibility(state.error ? View.VISIBLE : View.GONE);
+            boolean hasOrderResult = state.orderResult != null;
+
+            // Show error only when no order result
+            binding.txtError.setVisibility(state.error && !hasOrderResult ? View.VISIBLE : View.GONE);
             if (state.error) binding.txtError.setText(state.errorMessage);
 
-            binding.layoutEstimate.setVisibility(state.estimate != null ? View.VISIBLE : View.GONE);
+            // Hide form container when order result exists (matches web behavior)
+            binding.layoutFormContainer.setVisibility(hasOrderResult ? View.GONE : View.VISIBLE);
+
+            // Show estimate only when there's no order result (matches web behavior)
+            binding.layoutEstimate.setVisibility(state.estimate != null && !hasOrderResult ? View.VISIBLE : View.GONE);
             if (state.estimate != null) {
                 binding.txtEstimatePrice.setText(PassengerHomeViewModel.formatPrice(state.estimate.getEstimatedPrice()));
                 binding.txtEstimateDistance.setText(PassengerHomeViewModel.formatDistance(state.estimate.getDistanceKm()));
                 binding.txtEstimateDuration.setText(PassengerHomeViewModel.formatDuration(state.estimate.getEstimatedDurationMinutes()));
             }
 
-            binding.layoutOrderResult.setVisibility(state.orderResult != null ? View.VISIBLE : View.GONE);
-            if (state.orderResult != null) {
-                binding.txtOrderStatus.setText(state.orderResult.getStatus());
+            // Show order result modal
+            binding.layoutOrderResult.setVisibility(hasOrderResult ? View.VISIBLE : View.GONE);
+            if (hasOrderResult) {
+                String status = state.orderResult.getStatus();
+                binding.txtOrderStatus.setText(status);
+
+                // Set status color based on status
+                int statusColor;
+                if ("CANCELLED".equals(status) || "REJECTED".equals(status)) {
+                    statusColor = getResources().getColor(R.color.accent_danger, null);
+                } else if ("ACCEPTED".equals(status) || "PENDING".equals(status) || "SCHEDULED".equals(status)) {
+                    statusColor = getResources().getColor(R.color.accent_success, null);
+                } else {
+                    statusColor = getResources().getColor(R.color.text_primary, null);
+                }
+                binding.txtOrderStatus.setTextColor(statusColor);
+
                 binding.txtOrderMessage.setText(state.orderResult.getMessage());
                 binding.txtOrderRideId.setText("Ride ID: " + state.orderResult.getRideId());
                 binding.txtOrderDriver.setText(state.orderResult.getAssignedDriverEmail() != null
                         ? "Driver: " + state.orderResult.getAssignedDriverEmail() : "");
-                boolean canCancel = "ACCEPTED".equals(state.orderResult.getStatus()) || "SCHEDULED".equals(state.orderResult.getStatus());
+                binding.txtOrderDriver.setVisibility(state.orderResult.getAssignedDriverEmail() != null ? View.VISIBLE : View.GONE);
+
+                // Show request stop button only during IN_PROGRESS and not already requested
+                boolean canRequestStop = PassengerHomeViewModel.canRequestStop(status) && !state.stopRequested;
+                binding.btnRequestStop.setVisibility(canRequestStop ? View.VISIBLE : View.GONE);
+
+                // Show panic button during IN_PROGRESS or STOP_REQUESTED
+                boolean canPanic = PassengerHomeViewModel.canActivatePanic(status);
+                binding.btnPanic.setVisibility(canPanic ? View.VISIBLE : View.GONE);
+                binding.btnPanic.setEnabled(!state.panicActivated);
+                if (state.panicActivated) {
+                    binding.btnPanic.setText(R.string.passenger_panic_activated);
+                    binding.btnPanic.setBackgroundTintList(getResources().getColorStateList(R.color.btn_panic_disabled, null));
+                } else {
+                    binding.btnPanic.setText(R.string.passenger_btn_panic);
+                    binding.btnPanic.setBackgroundTintList(getResources().getColorStateList(R.color.btn_panic, null));
+                }
+
+                // Show cancel button only for active rides that can be cancelled (but not during IN_PROGRESS or STOP_REQUESTED)
+                boolean canCancel = ("ACCEPTED".equals(status) || "SCHEDULED".equals(status) || "PENDING".equals(status))
+                        && !"IN_PROGRESS".equals(status) && !"STOP_REQUESTED".equals(status);
                 binding.btnCancelRide.setVisibility(canCancel ? View.VISIBLE : View.GONE);
-                binding.btnRequestAnother.setVisibility("CANCELLED".equals(state.orderResult.getStatus()) || "REJECTED".equals(state.orderResult.getStatus()) ? View.VISIBLE : View.GONE);
+
+                // Show "Request Another" button when ride is finished/cancelled
+                boolean rideEnded = "CANCELLED".equals(status) || "REJECTED".equals(status) || "COMPLETED".equals(status);
+                binding.btnRequestAnother.setVisibility(rideEnded ? View.VISIBLE : View.GONE);
+
+                // Handle live tracking display
+                boolean showLiveTracking = ("IN_PROGRESS".equals(status) || "STOP_REQUESTED".equals(status)) && state.liveTracking != null;
+                binding.layoutLiveTracking.setVisibility(showLiveTracking ? View.VISIBLE : View.GONE);
+
+                if (showLiveTracking) {
+                    updateLiveTrackingUI(state.liveTracking, state.activeRide);
+                }
             }
 
             setFormEnabled(!state.formDisabled);
             updateMapMarkers();
+
+            // Update driver marker on map
+            updateDriverMarker(state);
         });
+    }
+
+    private void updateLiveTrackingUI(com.example.blackcar.data.api.model.WebRideTrackingResponse tracking,
+                                      com.example.blackcar.data.api.model.ActiveRideResponse activeRide) {
+        if (tracking == null) return;
+
+        // Update ETA
+        if (tracking.getEstimatedTimeToDestinationMinutes() != null) {
+            binding.txtLiveEta.setText(tracking.getEstimatedTimeToDestinationMinutes() + " min");
+        } else {
+            binding.txtLiveEta.setText("--");
+        }
+
+        // Update driver name if available from activeRide
+        if (activeRide != null && activeRide.getDriver() != null && activeRide.getDriver().getName() != null) {
+            binding.txtLiveDriverName.setText(activeRide.getDriver().getName());
+            binding.layoutDriverName.setVisibility(View.VISIBLE);
+        } else {
+            binding.layoutDriverName.setVisibility(View.GONE);
+        }
+
+        // Update vehicle info - use tracking data first, fallback to activeRide
+        if (tracking.getVehicle() != null) {
+            String vehicleInfo = tracking.getVehicle().getType();
+            if (tracking.getVehicle().getLicensePlate() != null) {
+                vehicleInfo += " (" + tracking.getVehicle().getLicensePlate() + ")";
+            }
+            binding.txtLiveVehicleInfo.setText(vehicleInfo);
+            binding.layoutVehicleInfo.setVisibility(View.VISIBLE);
+        } else if (activeRide != null && activeRide.getDriver() != null) {
+            // Fallback to driver's vehicle info from activeRide
+            String vehicleInfo = activeRide.getDriver().getVehicleType();
+            if (activeRide.getDriver().getLicensePlate() != null) {
+                vehicleInfo += " (" + activeRide.getDriver().getLicensePlate() + ")";
+            }
+            binding.txtLiveVehicleInfo.setText(vehicleInfo);
+            binding.layoutVehicleInfo.setVisibility(View.VISIBLE);
+        } else {
+            binding.layoutVehicleInfo.setVisibility(View.GONE);
+        }
+    }
+
+    private void updateDriverMarker(com.example.blackcar.presentation.home.viewstate.PassengerHomeViewState state) {
+        if (state == null || state.liveTracking == null) {
+            // Remove driver marker if no tracking data
+            if (driverMarker != null) {
+                MapView mapView = (MapView) binding.includeMap.getRoot();
+                mapView.getOverlayManager().remove(driverMarker);
+                driverMarker = null;
+                mapView.invalidate();
+            }
+            return;
+        }
+
+        Double lat = state.liveTracking.getVehicleLatitude();
+        Double lon = state.liveTracking.getVehicleLongitude();
+
+        if (lat == null || lon == null) return;
+
+        GeoPoint pos = new GeoPoint(lat, lon);
+
+        if (driverMarker == null) {
+            // Create new driver marker
+            driverMarker = mapHelper.addCarMarker(lat, lon, "Your Driver");
+            Log.d(TAG, "Created driver marker at: " + lat + ", " + lon);
+        } else {
+            // Update existing marker position
+            driverMarker.setPosition(pos);
+            mapHelper.ensureMarkerOnMap(driverMarker);
+            Log.d(TAG, "Updated driver marker to: " + lat + ", " + lon);
+        }
+
+        MapView mapView = (MapView) binding.includeMap.getRoot();
+        mapView.invalidate();
     }
 
     private void setFormEnabled(boolean enabled) {
@@ -419,11 +773,44 @@ public class PassengerHomeFragment extends Fragment {
     }
 
     @Override
+    public void onResume() {
+        super.onResume();
+        if (binding != null && binding.includeMap != null) {
+            MapView mapView = (MapView) binding.includeMap.getRoot();
+            if (mapView != null) {
+                mapView.onResume();
+            }
+        }
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        if (binding != null && binding.includeMap != null) {
+            MapView mapView = (MapView) binding.includeMap.getRoot();
+            if (mapView != null) {
+                mapView.onPause();
+            }
+        }
+    }
+
+    @Override
     public void onDestroyView() {
         super.onDestroyView();
         if (mapHelper != null) {
             mapHelper.removeMapTapOverlay();
         }
+        stopVehiclesPolling();
+        
+        // Safety null check for mapView which is accessed via includeMap binding
+        if (binding != null && binding.includeMap != null) {
+            MapView mapView = (MapView) binding.includeMap.getRoot();
+            if (mapView != null) {
+                mapView.onDetach();
+            }
+        }
+        
+        mapHelper = null;
         binding = null;
     }
 }

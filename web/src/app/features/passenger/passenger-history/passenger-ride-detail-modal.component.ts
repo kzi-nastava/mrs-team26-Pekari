@@ -15,6 +15,7 @@ import { Subscription } from 'rxjs';
 export class PassengerRideDetailModalComponent implements OnInit, OnDestroy {
   @Input() rideId!: number;
   @Output() close = new EventEmitter<void>();
+  @Output() orderSameRide = new EventEmitter<PassengerRideDetailResponse>();
 
   private rideService = inject(RideApiService);
   private wsService = inject(WebSocketService);
@@ -182,5 +183,16 @@ export class PassengerRideDetailModalComponent implements OnInit, OnDestroy {
     if (this.rideDetail.panicActivated) return 'PANIC ACTIVATED';
     if (this.rideDetail.cancelled) return `Cancelled by ${this.rideDetail.cancelledBy || 'unknown'}`;
     return this.rideDetail.status;
+  }
+
+  canOrderSameRide(): boolean {
+    if (!this.rideDetail) return false;
+    return this.rideDetail.status === 'COMPLETED' || this.rideDetail.cancelled;
+  }
+
+  onOrderSameRide(): void {
+    if (this.rideDetail) {
+      this.orderSameRide.emit(this.rideDetail);
+    }
   }
 }

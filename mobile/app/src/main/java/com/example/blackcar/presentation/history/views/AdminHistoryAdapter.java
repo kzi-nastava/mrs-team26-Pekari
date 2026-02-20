@@ -112,8 +112,10 @@ public class AdminHistoryAdapter extends ListAdapter<AdminRideUIModel, AdminHist
                     txtStatus.setTextColor(itemView.getContext().getColor(R.color.accent_danger));
                 } else if ("COMPLETED".equals(ride.status)) {
                     txtStatus.setTextColor(itemView.getContext().getColor(R.color.accent_success));
-                } else if ("IN_PROGRESS".equals(ride.status)) {
+                } else if ("IN_PROGRESS".equals(ride.status) || "STOP_REQUESTED".equals(ride.status)) {
                     txtStatus.setTextColor(itemView.getContext().getColor(R.color.accent_info));
+                } else if ("ACCEPTED".equals(ride.status) || "SCHEDULED".equals(ride.status)) {
+                    txtStatus.setTextColor(itemView.getContext().getColor(R.color.status_accepted));
                 } else {
                     txtStatus.setTextColor(itemView.getContext().getColor(R.color.text_tertiary));
                 }

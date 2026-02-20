@@ -53,6 +53,7 @@ public class ProfileViewModel extends ViewModel {
                 null,
                 false,
                 null,
+                false,
                 cachedProfile,
                 cachedDriverInfo,
                 approvalStore.getApprovalRequests()
@@ -64,7 +65,12 @@ public class ProfileViewModel extends ViewModel {
                 cachedProfile = data.profile;
                 cachedDriverInfo = data.driverInfo;
                 String banner = null;
-                if (cachedProfile != null && "driver".equalsIgnoreCase(cachedProfile.role)) {
+                if (cachedProfile != null && Boolean.TRUE.equals(cachedProfile.blocked)) {
+                    String reason = cachedProfile.blockedNote != null && !cachedProfile.blockedNote.trim().isEmpty()
+                            ? cachedProfile.blockedNote.trim()
+                            : "No reason provided. Contact support.";
+                    banner = "You've been blocked by the admin. The reason: " + reason;
+                } else if (cachedProfile != null && "driver".equalsIgnoreCase(cachedProfile.role)) {
                     ApprovalRequestUIModel approved = approvalStore.getLatestApprovedRequestForUser(cachedProfile.id);
                     if (approved != null && approved.changes != null) {
                         cachedProfile = approved.changes;
@@ -74,12 +80,14 @@ public class ProfileViewModel extends ViewModel {
                     }
                 }
 
+                boolean isBlocked = cachedProfile != null && Boolean.TRUE.equals(cachedProfile.blocked);
                 state.postValue(new ProfileViewState(
                         false,
                         false,
                         null,
                         false,
                         banner,
+                        isBlocked,
                         cachedProfile,
                         cachedDriverInfo,
                         approvalStore.getApprovalRequests()
@@ -94,6 +102,7 @@ public class ProfileViewModel extends ViewModel {
                         message,
                         false,
                         null,
+                        false,
                         cachedProfile,
                         cachedDriverInfo,
                         approvalStore.getApprovalRequests()
@@ -115,6 +124,7 @@ public class ProfileViewModel extends ViewModel {
                 current.errorMessage,
                 editing,
                 current.bannerMessage,
+                current.bannerDanger,
                 current.profile,
                 current.driverInfo,
                 current.approvalRequests
@@ -143,6 +153,7 @@ public class ProfileViewModel extends ViewModel {
                 current.errorMessage,
                 current.isEditing,
                 current.bannerMessage,
+                current.bannerDanger,
                 updated,
                 current.driverInfo,
                 current.approvalRequests
@@ -171,6 +182,7 @@ public class ProfileViewModel extends ViewModel {
                     null,
                     false,
                     banner,
+                    false,
                     current.profile,
                     current.driverInfo,
                     approvalStore.getApprovalRequests()
@@ -189,6 +201,7 @@ public class ProfileViewModel extends ViewModel {
                         null,
                         false,
                         null,
+                        false,
                         proposed,
                         current.driverInfo,
                         approvalStore.getApprovalRequests()
@@ -271,6 +284,7 @@ public class ProfileViewModel extends ViewModel {
                 current.errorMessage,
                 current.isEditing,
                 current.bannerMessage,
+                current.bannerDanger,
                 current.profile,
                 current.driverInfo,
                 approvalStore.getApprovalRequests()

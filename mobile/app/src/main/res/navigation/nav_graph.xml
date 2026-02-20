@@ -69,28 +69,89 @@
             app:exitAnim="@android:anim/slide_out_right"
             app:popEnterAnim="@android:anim/slide_in_left"
             app:popExitAnim="@android:anim/slide_out_right" />
+
+        <action
+            android:id="@+id/action_home_to_add_driver"
+            app:destination="@id/addDriverFragment"
+            app:enterAnim="@android:anim/slide_in_left"
+            app:exitAnim="@android:anim/slide_out_right"
+            app:popEnterAnim="@android:anim/slide_in_left"
+            app:popExitAnim="@android:anim/slide_out_right" />
+
+        <action
+            android:id="@+id/action_home_to_user_management"
+            app:destination="@id/userManagementFragment"
+            app:enterAnim="@android:anim/slide_in_left"
+            app:exitAnim="@android:anim/slide_out_right"
+            app:popEnterAnim="@android:anim/slide_in_left"
+            app:popExitAnim="@android:anim/slide_out_right" />
+
+        <action
+            android:id="@+id/action_home_to_chat"
+            app:destination="@id/chatFragment"
+            app:enterAnim="@android:anim/slide_in_left"
+            app:exitAnim="@android:anim/slide_out_right"
+            app:popEnterAnim="@android:anim/slide_in_left"
+            app:popExitAnim="@android:anim/slide_out_right" />
+
+        <action
+            android:id="@+id/action_home_to_rideTracking"
+            app:destination="@id/rideTrackingFragment" />
+
+        <action
+            android:id="@+id/action_home_to_pricing_management"
+            app:destination="@id/pricingManagementFragment"
+            app:enterAnim="@android:anim/slide_in_left"
+            app:exitAnim="@android:anim/slide_out_right"
+            app:popEnterAnim="@android:anim/slide_in_left"
+            app:popExitAnim="@android:anim/slide_out_right" />
     </fragment>
 
-    <!-- Driver History Fragment -->
+    <!-- Ride Tracking Fragment -->
+    <fragment
+        android:id="@+id/rideTrackingFragment"
+        android:name="com.example.blackcar.presentation.home.views.RideTrackingFragment"
+        android:label="Ride Tracking"
+        tools:layout="@layout/fragment_ride_tracking">
+        <argument
+            android:name="rideId"
+            app:argType="long" />
+    </fragment>
+
+    <!-- Add Driver Fragment (Admin only) -->
+    <fragment
+        android:id="@+id/addDriverFragment"
+        android:name="com.example.blackcar.presentation.admin.views.AddDriverFragment"
+        android:label="@string/title_add_driver"
+        tools:layout="@layout/fragment_add_driver" />
+
+    <!-- User Management Fragment (Admin only) -->
+    <fragment
+        android:id="@+id/userManagementFragment"
+        android:name="com.example.blackcar.presentation.admin.views.UserManagementFragment"
+        android:label="@string/user_management_title"
+        tools:layout="@layout/fragment_user_management" />
+
+    <!-- Driver History Fragment (with History | Statistics tabs) -->
     <fragment
         android:id="@+id/driverHistoryFragment"
-        android:name="com.example.blackcar.presentation.history.views.DriverHistoryFragment"
+        android:name="com.example.blackcar.presentation.history.views.DriverHistoryHostFragment"
         android:label="@string/title_driver_history"
-        tools:layout="@layout/fragment_driver_history" />
+        tools:layout="@layout/fragment_driver_history_host" />
 
-    <!-- Passenger History Fragment -->
+    <!-- Passenger History Fragment (with History | Statistics tabs) -->
     <fragment
         android:id="@+id/passengerHistoryFragment"
-        android:name="com.example.blackcar.presentation.history.views.PassengerHistoryFragment"
+        android:name="com.example.blackcar.presentation.history.views.PassengerHistoryHostFragment"
         android:label="@string/title_passenger_history"
-        tools:layout="@layout/fragment_passenger_history" />
+        tools:layout="@layout/fragment_passenger_history_host" />
 
-    <!-- Admin History Fragment -->
+    <!-- Admin History Fragment (with History | Statistics tabs) -->
     <fragment
         android:id="@+id/adminHistoryFragment"
-        android:name="com.example.blackcar.presentation.history.views.AdminHistoryFragment"
+        android:name="com.example.blackcar.presentation.history.views.AdminHistoryHostFragment"
         android:label="@string/title_admin_history"
-        tools:layout="@layout/fragment_admin_history" />
+        tools:layout="@layout/fragment_admin_history_host" />
 
     <!-- Profile Fragment -->
     <fragment
@@ -103,6 +164,48 @@
             app:destination="@id/loginFragment"
             app:popUpTo="@id/nav_graph"
             app:popUpToInclusive="true" />
+        <action
+            android:id="@+id/action_profile_to_user_management"
+            app:enterAnim="@android:anim/slide_in_left"
+            app:exitAnim="@android:anim/slide_out_right"
+            app:popEnterAnim="@android:anim/slide_in_left"
+            app:popExitAnim="@android:anim/slide_out_right"
+            app:destination="@id/userManagementFragment" />
+        <action
+            android:id="@+id/action_profile_to_add_driver"
+            app:destination="@id/addDriverFragment"
+            app:enterAnim="@android:anim/slide_in_left"
+            app:exitAnim="@android:anim/slide_out_right"
+            app:popEnterAnim="@android:anim/slide_in_left"
+            app:popExitAnim="@android:anim/slide_out_right" />
+        <action
+            android:id="@+id/action_profile_to_pricing_management"
+            app:destination="@id/pricingManagementFragment"
+            app:enterAnim="@android:anim/slide_in_left"
+            app:exitAnim="@android:anim/slide_out_right"
+            app:popEnterAnim="@android:anim/slide_in_left"
+            app:popExitAnim="@android:anim/slide_out_right" />
     </fragment>
+
+    <!-- Chat Fragment -->
+    <fragment
+        android:id="@+id/chatFragment"
+        android:name="com.example.blackcar.presentation.chat.ChatFragment"
+        android:label="@string/title_chat"
+        tools:layout="@layout/fragment_chat" />
+
+    <!-- Panic Panel Fragment (Admin only) -->
+    <fragment
+        android:id="@+id/panicPanelFragment"
+        android:name="com.example.blackcar.presentation.admin.views.PanicPanelFragment"
+        android:label="@string/title_panic_panel"
+        tools:layout="@layout/fragment_panic_panel" />
+
+    <!-- Pricing Management Fragment (Admin only) -->
+    <fragment
+        android:id="@+id/pricingManagementFragment"
+        android:name="com.example.blackcar.presentation.admin.views.PricingManagementFragment"
+        android:label="Ride Pricing"
+        tools:layout="@layout/fragment_pricing_management" />
 
 </navigation>

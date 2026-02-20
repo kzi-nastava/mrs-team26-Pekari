@@ -28,6 +28,7 @@ public class MapHelper {
 
     private final Context context;
     private final MapView mapView;
+    private final List<Marker> vehicleMarkers = new ArrayList<>();
 
     public interface OnMapClickListener {
         void onMapClick(double latitude, double longitude);
@@ -99,22 +100,43 @@ public class MapHelper {
     }
 
     /**
+     * Add a marker for a vehicle (green if available, red if busy)
+     */
+    public Marker addVehicleMarker(double latitude, double longitude, String title, boolean isBusy) {
+        MarkerType type = isBusy ? MarkerType.VEHICLE_BUSY : MarkerType.VEHICLE_AVAILABLE;
+        Marker marker = addMarker(latitude, longitude, title, type);
+        if (marker != null) {
+            vehicleMarkers.add(marker);
+        }
+        return marker;
+    }
+
+    /**
      * Add a generic marker with custom type
      */
     private Marker addMarker(double latitude, double longitude, String title, MarkerType type) {
-        Marker marker = new Marker(mapView);
-        marker.setPosition(new GeoPoint(latitude, longitude));
-        marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
-        marker.setTitle(title);
-
-        // Set marker icon based on type
-        Drawable icon = getMarkerIcon(type);
-        if (icon != null) {
-            marker.setIcon(icon);
+        if (mapView == null || mapView.getRepository() == null) {
+            return null;
         }
 
-        mapView.getOverlayManager().add(marker);
-        return marker;
+        try {
+            Marker marker = new Marker(mapView);
+            marker.setPosition(new GeoPoint(latitude, longitude));
+            marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
+            marker.setTitle(title);
+
+            // Set marker icon based on type
+            Drawable icon = getMarkerIcon(type);
+            if (icon != null) {
+                marker.setIcon(icon);
+            }
+
+            mapView.getOverlayManager().add(marker);
+            return marker;
+        } catch (Exception e) {
+            android.util.Log.e("MapHelper", "Error creating marker: " + e.getMessage());
+            return null;
+        }
     }
 
     /**
@@ -185,6 +207,17 @@ public class MapHelper {
             case STOP:
                 drawableId = R.drawable.marker_stop;
                 break;
+            case VEHICLE_AVAILABLE:
+                // Reuse pickup (green) icon for available vehicles
+                drawableId = R.drawable.marker_pickup;
+                break;
+            case VEHICLE_BUSY:
+                // Reuse dropoff (red) icon for occupied vehicles
+                drawableId = R.drawable.marker_dropoff;
+                break;
+            case CAR:
+                drawableId = R.drawable.ic_car;
+                break;
             default:
                 drawableId = R.drawable.marker_pickup;
         }
@@ -238,6 +271,31 @@ public class MapHelper {
     public enum MarkerType {
         PICKUP,
         DROPOFF,
-        STOP
+        STOP,
+        VEHICLE_AVAILABLE,
+        VEHICLE_BUSY,
+        CAR
+    }
+
+    // ---- Vehicle markers helpers ----
+    public void clearVehicleMarkers() {
+        for (Marker m : vehicleMarkers) {
+            mapView.getOverlayManager().remove(m);
+        }
+        vehicleMarkers.clear();
+        mapView.invalidate();
+    }
+
+    public Marker addCarMarker(double latitude, double longitude, String title) {
+        return addMarker(latitude, longitude, title, MarkerType.CAR);
+    }
+
+    /**
+     * Ensure a marker is on the map. Re-adds it if it was removed (e.g. by clearMap).
+     */
+    public void ensureMarkerOnMap(Marker marker) {
+        if (marker != null && mapView != null && !mapView.getOverlayManager().contains(marker)) {
+            mapView.getOverlayManager().add(marker);
+        }
     }
 }

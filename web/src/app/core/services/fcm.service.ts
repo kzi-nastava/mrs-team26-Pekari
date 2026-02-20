@@ -25,7 +25,7 @@ export class FcmService {
     }
 
     try {
-      // Dynamic import Firebase only when needed
+      // Dynamic import Firebase only when needed (Angular/esbuild may not resolve subpath exports)
       const firebaseApp = await import('firebase/app');
       const firebaseMessaging = await import('firebase/messaging');
       initializeApp = firebaseApp.initializeApp;

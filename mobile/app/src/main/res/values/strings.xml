@@ -9,6 +9,40 @@
     <string name="title_login">Login</string>
     <string name="title_forgot_password">Forgot Password</string>
     <string name="title_register">Register</string>
+    <string name="title_add_driver">Add Driver</string>
+
+    <!-- Add Driver (Admin) -->
+    <string name="add_driver_title">Add Driver</string>
+    <string name="add_driver_subtitle">Register a new driver. An activation link will be sent to their email.</string>
+    <string name="add_driver_section_driver">Driver information</string>
+    <string name="add_driver_section_vehicle">Vehicle</string>
+    <string name="add_driver_first_name">First name</string>
+    <string name="add_driver_first_name_hint">John</string>
+    <string name="add_driver_last_name">Last name</string>
+    <string name="add_driver_last_name_hint">Doe</string>
+    <string name="add_driver_email">Email</string>
+    <string name="add_driver_email_hint">driver@email.com</string>
+    <string name="add_driver_address">Address</string>
+    <string name="add_driver_address_hint">Street, City</string>
+    <string name="add_driver_phone">Phone number</string>
+    <string name="add_driver_phone_hint">+381 6x xxx xxxx</string>
+    <string name="add_driver_vehicle_model">Vehicle model</string>
+    <string name="add_driver_vehicle_model_hint">e.g. Toyota Corolla</string>
+    <string name="add_driver_vehicle_type">Vehicle type</string>
+    <string name="add_driver_license_plate">License plate</string>
+    <string name="add_driver_license_plate_hint">AB-123-CD</string>
+    <string name="add_driver_seats">Number of seats</string>
+    <string name="add_driver_seats_hint">1–8</string>
+    <string name="add_driver_baby_friendly">Baby transport</string>
+    <string name="add_driver_pet_friendly">Pet transport</string>
+    <string name="add_driver_submit">Register driver</string>
+    <string name="add_driver_vehicle_type_standard">Standard</string>
+    <string name="add_driver_vehicle_type_van">Van</string>
+    <string name="add_driver_vehicle_type_lux">Luxury</string>
+    <string name="add_driver_validation_required">Please fill all required fields</string>
+    <string name="add_driver_validation_email">Enter a valid email</string>
+    <string name="add_driver_validation_phone">Phone must be 10–15 digits</string>
+    <string name="add_driver_validation_seats">Seats must be between 1 and 8</string>
 
     <!-- Profile Feature -->
     <string name="profile_title">Profile Information</string>
@@ -69,6 +103,28 @@
     <string name="passenger_history_panic_triggered">⚠ PANIC triggered</string>
     <string name="passenger_history_price_format">%.2f RSD</string>
     <string name="passenger_history_date_picker_title">Filter by date</string>
+    
+    <!-- Ride Tracking -->
+    <string name="ride_tracking_ended_title">Ride Ended</string>
+    <string name="ride_tracking_ended_message">This ride has been completed or cancelled. Thank you for using BlackCar!</string>
+    <string name="ride_tracking_btn_back_home">Back to Home</string>
+
+    <!-- User Management (Admin) -->
+    <string name="user_management_title">User Management</string>
+    <string name="user_management_subtitle">Block or unblock drivers and passengers. Blocked drivers are excluded from ride assignment; blocked passengers cannot order new rides.</string>
+    <string name="user_management_drivers">Drivers</string>
+    <string name="user_management_passengers">Passengers</string>
+    <string name="user_management_no_drivers">No drivers found.</string>
+    <string name="user_management_no_passengers">No passengers found.</string>
+    <string name="user_management_block">Block</string>
+    <string name="user_management_unblock">Unblock</string>
+    <string name="user_management_block_dialog_title">Block user</string>
+    <string name="user_management_block_dialog_note_hint">Reason / note (optional)</string>
+    <string name="user_management_block_dialog_confirm">Block user</string>
+    <string name="user_management_block_dialog_cancel">Cancel</string>
+    <string name="user_management_manage_users">Manage Users</string>
+    <string name="admin_management_title">Admin Management</string>
+    <string name="admin_management_pricing">Ride Pricing</string>
 
     <!-- Admin History Feature -->
     <string name="title_admin_history">All Rides</string>
@@ -85,6 +141,7 @@
 
     <!-- Ride Ordering -->
     <string name="address_autocomplete_hint">Address</string>
+    <string name="ride_order_title">Request Ride</string>
     <string name="ride_order_pickup">Pickup location</string>
     <string name="ride_order_dropoff">Final destination</string>
     <string name="ride_order_stop">Stop %d</string>
@@ -100,6 +157,124 @@
     <string name="ride_order_vehicle_standard">Standard</string>
     <string name="ride_order_vehicle_van">Van</string>
     <string name="ride_order_vehicle_lux">Lux</string>
+
+    <!-- Ride Estimate -->
+    <string name="ride_estimate_title">Price Estimate</string>
+    <string name="ride_estimate_price">Estimated price</string>
+    <string name="ride_estimate_distance">Distance</string>
+    <string name="ride_estimate_duration">Duration</string>
+
+    <!-- Statistics -->
+    <string name="stats_title">Statistics</string>
+    <string name="stats_filter">Filter</string>
+    <string name="stats_reset">Reset</string>
+    <string name="stats_from">From</string>
+    <string name="stats_to">To</string>
+    <string name="stats_scope">Scope</string>
+    <string name="stats_scope_all_drivers">All drivers</string>
+    <string name="stats_scope_all_passengers">All passengers</string>
+    <string name="stats_scope_one_driver">One driver</string>
+    <string name="stats_scope_one_passenger">One passenger</string>
+    <string name="stats_select_driver">Select driver</string>
+    <string name="stats_select_passenger">Select passenger</string>
+    <string name="stats_total_rides">Total rides</string>
+    <string name="stats_total_distance">Total distance (km)</string>
+    <string name="stats_total_spent">Total spent (RSD)</string>
+    <string name="stats_total_earned">Total earned (RSD)</string>
+    <string name="stats_total_amount">Total amount (RSD)</string>
+    <string name="stats_avg_per_day">Avg: %s/day</string>
+    <string name="stats_rides_per_day">Rides per day</string>
+    <string name="stats_distance_per_day">Distance per day (km)</string>
+    <string name="stats_spent_per_day">Spent per day (RSD)</string>
+    <string name="stats_earned_per_day">Earned per day (RSD)</string>
+    <string name="stats_amount_per_day">Amount per day (RSD)</string>
+    <string name="stats_empty">Select a date range and click Filter to view statistics.</string>
+    <string name="stats_loading">Loading statistics…</string>
+    <string name="stats_select_user">Please select a %s</string>
+    <string name="tab_history">History</string>
+    <string name="tab_statistics">Statistics</string>
+
+    <!-- Ride Details -->
+    <string name="ride_details_title">Ride Details</string>
+    <string name="ride_details_status">Status</string>
+    <string name="ride_cancel">Cancel Ride</string>
+    <string name="ride_request_another">Request Another Ride</string>
+    <string name="title_chat">Support Chat</string>
+
+    <!-- Favorite Routes -->
+    <string name="favorite_routes_title">Choose Favorite Route</string>
+    <string name="favorite_routes_close">Close</string>
+    <string name="favorite_routes_empty">No favorite routes yet</string>
+    <string name="favorite_routes_empty_hint">Complete a ride and add it to favorites from your ride history</string>
+    <string name="ride_order_choose_favorite">Choose Favorite Route</string>
+    <string name="favorite_routes_no_favorites_error">You don\'t have any favorite routes yet. Complete a ride and add it to favorites from your ride history.</string>
+
+    <!-- Favorite button (history) -->
+    <string name="favorite_add">Add to favorites</string>
+    <string name="favorite_remove">Remove from favorites</string>
+    <string name="favorite_missing_coords">Missing coordinates</string>
+
+    <!-- Passenger Home -->
+    <string name="passenger_btn_request_stop">Request Stop</string>
+    <string name="passenger_stop_requested_message">Stop requested. Driver will stop at the nearest safe location.</string>
+    <string name="passenger_btn_panic">🚨 PANIC</string>
+    <string name="passenger_panic_activated">🚨 PANIC ACTIVATED</string>
+
+    <!-- Panic Panel (Admin) -->
+    <string name="panic_panel_title">🚨 Panic Alert Dashboard</string>
+    <string name="panic_refresh">Refresh</string>
+    <string name="panic_retry">Retry</string>
+    <string name="panic_error_loading">Failed to load panic rides. Please try again.</string>
+    <string name="panic_empty_icon">✓</string>
+    <string name="panic_all_clear">All Clear</string>
+    <string name="panic_no_active_alerts">No active panic alerts at this time.</string>
+    <string name="panic_alert_single">Active Panic Alert</string>
+    <string name="panic_alert_multiple">Active Panic Alerts</string>
+    <string name="panic_new_alert_single">🚨 1 new panic alert detected!</string>
+    <string name="panic_new_alert_multiple">🚨 %d new panic alerts detected!</string>
+    <string name="panic_icon">🚨</string>
+    <string name="panic_route_info">Route Information</string>
+    <string name="panic_pickup_icon">🟢</string>
+    <string name="panic_dropoff_icon">🔴</string>
+    <string name="panic_pickup">Pickup:</string>
+    <string name="panic_dropoff">Dropoff:</string>
+    <string name="panic_ride_details">Ride Details</string>
+    <string name="panic_start_time">Start Time:</string>
+    <string name="panic_activated_by">🚨 Panic Activated By:</string>
+    <string name="panic_cancelled_by">Cancelled By:</string>
+    <string name="panic_passengers">Passengers</string>
+    <string name="panic_emergency_notice">⚠️ Emergency support required. Contact driver and passengers immediately.</string>
+    <string name="title_panic_panel">Panic Alerts</string>
+
+    <!-- Driver Home -->
+    <string name="driver_home_title">Driver Dashboard</string>
+    <string name="driver_no_active_ride">No Active Ride</string>
+    <string name="driver_no_active_ride_subtitle">New ride requests will appear here</string>
+    <string name="driver_loading_ride">Loading active ride…</string>
+    <string name="driver_active_ride">Active Ride #%d</string>
+    <string name="driver_route_info">Route Information</string>
+    <string name="driver_ride_details">Ride Details</string>
+    <string name="driver_passengers">Passengers (%d)</string>
+    <string name="driver_btn_start">Start Ride</string>
+    <string name="driver_btn_complete">Complete Ride</string>
+    <string name="driver_btn_stop_early">Stop Ride Early</string>
+    <string name="driver_btn_panic">PANIC</string>
+    <string name="driver_panic_activated">PANIC ACTIVATED</string>
+    <string name="driver_btn_cancel">Cancel Ride</string>
+    <string name="driver_btn_retry">Retry</string>
+    <string name="driver_stop_requested_title">⚠️ Stop Requested</string>
+    <string name="driver_stop_requested_message">Passenger has requested to stop the ride early. Please stop at the nearest safe location and click \"Stop Ride Early\" button.</string>
+    <string name="driver_pickup">Pickup</string>
+    <string name="driver_dropoff">Dropoff</string>
+    <string name="driver_stop">Stop %d</string>
+    <string name="driver_vehicle_type">Vehicle Type</string>
+    <string name="driver_distance">Distance</string>
+    <string name="driver_duration">Est. Duration</string>
+    <string name="driver_price">Est. Price</string>
+    <string name="driver_baby_transport">Baby Transport</string>
+    <string name="driver_pet_transport">Pet Transport</string>
+    <string name="driver_scheduled_at">Scheduled For</string>
+    <string name="driver_started_at">Started At</string>
 
     <string name="lorem_ipsum">
         Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam in scelerisque sem. Mauris

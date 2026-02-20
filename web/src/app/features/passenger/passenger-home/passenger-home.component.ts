@@ -1,9 +1,10 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, OnInit, inject, ChangeDetectorRef, ViewChild, ViewChildren, QueryList, ElementRef } from '@angular/core';
 import { FormArray, FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { filter, take } from 'rxjs/operators';
-import { RideApiService, OrderRideResponse, RideEstimateResponse, LocationPoint, FavoriteRoute } from '../../../core/services/ride-api.service';
+import { RideApiService, OrderRideResponse, RideEstimateResponse, LocationPoint, FavoriteRoute, PassengerRideDetailResponse } from '../../../core/services/ride-api.service';
 import { GeocodingService } from '../../../core/services/geocoding.service';
 import { WebSocketService, RideTrackingUpdate } from '../../../core/services/websocket.service';
 import { AddressAutocompleteComponent, AddressSelection } from '../../../shared/components/address-autocomplete/address-autocomplete.component';
@@ -29,6 +30,7 @@ export class PassengerHomeComponent implements OnInit, OnDestroy {
   private geocoding = inject(GeocodingService);
   private wsService = inject(WebSocketService);
   private cdr = inject(ChangeDetectorRef);
+  private router = inject(Router);
 
   private focusedInput: FocusedInput = null;
   private trackingSubscription?: Subscription;
@@ -143,6 +145,9 @@ export class PassengerHomeComponent implements OnInit, OnDestroy {
 
     // Load favorite routes
     this.loadFavoriteRoutes();
+
+    // Check for ride configuration from navigation state (Order Same Ride)
+    this.checkNavigationState();
   }
 
   private checkForActiveRide(): void {
@@ -175,6 +180,87 @@ export class PassengerHomeComponent implements OnInit, OnDestroy {
         }
       }
     });
+  }
+
+  private checkNavigationState(): void {
+    const navigation = this.router.getCurrentNavigation();
+    const state = navigation?.extras?.state || history.state;
+
+    if (state?.rideConfig) {
+      const rideConfig = state.rideConfig as PassengerRideDetailResponse;
+      this.prefillFromRideConfig(rideConfig);
+    }
+  }
+
+  private prefillFromRideConfig(config: PassengerRideDetailResponse): void {
+    // Clear existing stops
+    while (this.stops.length > 0) {
+      this.stops.removeAt(0);
+    }
+
+    // Set pickup
+    if (config.pickup) {
+      this.form.patchValue({
+        pickup: {
+          address: config.pickup.address || config.pickupAddress || '',
+          latitude: config.pickup.latitude || 0,
+          longitude: config.pickup.longitude || 0
+        }
+      });
+    }
+
+    // Set stops
+    if (config.stops && config.stops.length > 0) {
+      config.stops.forEach(stop => {
+        this.stops.push(
+          this.fb.group({
+            address: [stop.address, Validators.required],
+            latitude: [stop.latitude, Validators.required],
+            longitude: [stop.longitude, Validators.required]
+          })
+        );
+      });
+    }
+
+    // Set dropoff
+    if (config.dropoff) {
+      this.form.patchValue({
+        dropoff: {
+          address: config.dropoff.address || config.dropoffAddress || '',
+          latitude: config.dropoff.latitude || 0,
+          longitude: config.dropoff.longitude || 0
+        }
+      });
+    }
+
+    // Set vehicle type and options
+    this.form.patchValue({
+      vehicleType: config.vehicleType || 'STANDARD',
+      babyTransport: config.babyTransport || false,
+      petTransport: config.petTransport || false
+    });
+
+    // Update autocomplete components after view init
+    setTimeout(() => {
+      if (this.pickupAutocomplete && config.pickup) {
+        this.pickupAutocomplete.setAddress(config.pickup.address || config.pickupAddress || '');
+      }
+      if (this.dropoffAutocomplete && config.dropoff) {
+        this.dropoffAutocomplete.setAddress(config.dropoff.address || config.dropoffAddress || '');
+      }
+
+      // Update stop autocompletes
+      if (this.stopAutocompletes && config.stops) {
+        config.stops.forEach((stop, index) => {
+          const autocomplete = this.stopAutocompletes?.toArray()[index];
+          if (autocomplete) {
+            autocomplete.setAddress(stop.address);
+          }
+        });
+      }
+
+      this.cdr.detectChanges();
+    }, 0);
   }
 
   private startPolling(): void {
@@ -841,6 +927,7 @@ export class PassengerHomeComponent implements OnInit, OnDestroy {
   resetForm(): void {
     this.stopTracking();
     this.stopPolling();
+    this.resetFormFields();
     this.isRideActive = false;
     this.rideStatus = undefined;
     this.orderResult = undefined;
@@ -851,6 +938,35 @@ export class PassengerHomeComponent implements OnInit, OnDestroy {
     this.reportText = '';
     this.reportSuccess = undefined;
     this.cdr.detectChanges();
+  }
+
+  private resetFormFields(): void {
+    // Clear all stops
+    while (this.stops.length > 0) {
+      this.stops.removeAt(0);
+    }
+
+    // Reset form to initial state
+    this.form.patchValue({
+      pickup: { address: '', latitude: null, longitude: null },
+      dropoff: { address: '', latitude: null, longitude: null },
+      passengerEmails: '',
+      vehicleType: 'STANDARD',
+      babyTransport: false,
+      petTransport: false,
+      scheduledAt: this.scheduledMin
+    });
+
+    // Clear autocomplete components
+    if (this.pickupAutocomplete) {
+      this.pickupAutocomplete.setAddress('');
+    }
+    if (this.dropoffAutocomplete) {
+      this.dropoffAutocomplete.setAddress('');
+    }
+
+    this.estimate = undefined;
+    this.error = undefined;
   }
 
   toggleReportForm(): void {

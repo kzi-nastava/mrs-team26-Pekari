@@ -6,13 +6,20 @@ import androidx.lifecycle.ViewModel;
 
 import com.example.blackcar.data.api.model.ActiveRideResponse;
 import com.example.blackcar.data.api.model.EstimateRideRequest;
+import com.example.blackcar.data.api.model.FavoriteRouteResponse;
 import com.example.blackcar.data.api.model.LocationPoint;
 import com.example.blackcar.data.api.model.OrderRideRequest;
 import com.example.blackcar.data.api.model.OrderRideResponse;
 import com.example.blackcar.data.api.model.RideEstimateResponse;
+import com.example.blackcar.presentation.home.viewstate.PassengerHomeViewState;
+import com.example.blackcar.data.repository.FavoriteRoutesRepository;
 import com.example.blackcar.data.repository.GeocodingRepository;
 import com.example.blackcar.data.repository.RideRepository;
-import com.example.blackcar.presentation.home.viewstate.PassengerHomeViewState;
+import android.app.Application;
+import androidx.lifecycle.AndroidViewModel;
+import com.example.blackcar.data.api.ChatRealtimeService;
+import com.example.blackcar.data.api.model.WebRideTrackingResponse;
+import com.example.blackcar.data.session.SessionManager;
 
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
@@ -22,10 +29,14 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
-public class PassengerHomeViewModel extends ViewModel {
+public class PassengerHomeViewModel extends AndroidViewModel {
 
     private final RideRepository rideRepository = new RideRepository();
+    private final FavoriteRoutesRepository favoriteRoutesRepository = new FavoriteRoutesRepository();
+
+    private final List<FavoriteRouteResponse> favoriteRoutes = new ArrayList<>();
     private final GeocodingRepository geocodingRepository = new GeocodingRepository();
+    private final ChatRealtimeService chatRealtimeService;
 
     private final MutableLiveData<PassengerHomeViewState> state = new MutableLiveData<>(PassengerHomeViewState.idle());
 
@@ -37,6 +48,48 @@ public class PassengerHomeViewModel extends ViewModel {
     private boolean petTransport;
     private Date scheduledAt;
     private List<String> passengerEmails = new ArrayList<>();
+
+    private Long currentSubscribedRideId = null;
+
+    public PassengerHomeViewModel(Application application) {
+        super(application);
+        chatRealtimeService = new ChatRealtimeService(application);
+        chatRealtimeService.connect();
+    }
+
+    private void subscribeToRideTracking(Long rideId) {
+        if (rideId == null || rideId.equals(currentSubscribedRideId)) return;
+
+        currentSubscribedRideId = rideId;
+        chatRealtimeService.subscribeToRideTracking(rideId, tracking -> {
+            if (tracking != null) {
+                // Update live tracking data (driver position, ETA, etc.)
+                PassengerHomeViewState currentState = state.getValue();
+                if (currentState != null) {
+                    PassengerHomeViewState newState = PassengerHomeViewState.idle();
+                    newState.orderResult = currentState.orderResult;
+                    newState.activeRide = currentState.activeRide;
+                    newState.formDisabled = currentState.formDisabled;
+                    newState.stopRequested = currentState.stopRequested;
+                    newState.panicActivated = currentState.panicActivated;
+                    newState.liveTracking = tracking;
+                    state.postValue(newState);
+                }
+
+                String status = tracking.getRideStatus() != null ? tracking.getRideStatus() : tracking.getStatus();
+                if ("COMPLETED".equals(status) || "CANCELLED".equals(status)) {
+                    // Refresh active ride when ride ends
+                    loadActiveRide();
+                }
+            }
+        });
+    }
+
+    @Override
+    protected void onCleared() {
+        super.onCleared();
+        chatRealtimeService.disconnect();
+    }
 
     public LiveData<PassengerHomeViewState> getState() {
         return state;
@@ -95,8 +148,10 @@ public class PassengerHomeViewModel extends ViewModel {
             public void onSuccess(ActiveRideResponse data) {
                 if (data != null) {
                     state.postValue(PassengerHomeViewState.withActiveRide(data));
+                    subscribeToRideTracking(data.getRideId());
                 } else {
                     state.postValue(PassengerHomeViewState.idle());
+                    currentSubscribedRideId = null;
                 }
             }
 
@@ -179,8 +234,11 @@ public class PassengerHomeViewModel extends ViewModel {
         rideRepository.orderRide(req, new RideRepository.RepoCallback<OrderRideResponse>() {
             @Override
             public void onSuccess(OrderRideResponse data) {
-                boolean formDisabled = "ACCEPTED".equals(data.getStatus()) || "SCHEDULED".equals(data.getStatus());
-                state.postValue(PassengerHomeViewState.withOrderResult(data, formDisabled));
+                boolean formDisabled = "ACCEPTED".equals(data.getStatus()) || "SCHEDULED".equals(data.getStatus()) || "PENDING".equals(data.getStatus());
+                // Clear estimate when order is placed (matches web behavior)
+                PassengerHomeViewState newState = PassengerHomeViewState.withOrderResult(data, formDisabled);
+                newState.estimate = null;
+                state.postValue(newState);
             }
 
             @Override
@@ -213,8 +271,115 @@ public class PassengerHomeViewModel extends ViewModel {
         });
     }
 
+    public void requestStopRide(Long rideId) {
+        PassengerHomeViewState current = state.getValue();
+        if (current == null || current.activeRide == null) return;
+
+        state.setValue(PassengerHomeViewState.loading());
+
+        rideRepository.requestStopRide(rideId, new RideRepository.RepoCallback<com.example.blackcar.data.api.model.MessageResponse>() {
+            @Override
+            public void onSuccess(com.example.blackcar.data.api.model.MessageResponse data) {
+                // Update state to show stop requested
+                PassengerHomeViewState s = PassengerHomeViewState.withActiveRide(current.activeRide);
+                s.stopRequested = true;
+                if (s.orderResult != null) {
+                    s.orderResult.setStatus("STOP_REQUESTED");
+                    s.orderResult.setMessage("Stop requested. Driver will stop at the nearest safe location.");
+                }
+                state.postValue(s);
+            }
+
+            @Override
+            public void onError(String message) {
+                state.postValue(PassengerHomeViewState.error(message));
+            }
+        });
+    }
+
+    public void activatePanic(Long rideId) {
+        PassengerHomeViewState current = state.getValue();
+        if (current == null || current.activeRide == null) return;
+
+        state.setValue(PassengerHomeViewState.loading());
+
+        rideRepository.activatePanic(rideId, new RideRepository.RepoCallback<com.example.blackcar.data.api.model.MessageResponse>() {
+            @Override
+            public void onSuccess(com.example.blackcar.data.api.model.MessageResponse data) {
+                // Update state to show panic activated
+                PassengerHomeViewState s = PassengerHomeViewState.withActiveRide(current.activeRide);
+                s.panicActivated = true;
+                s.stopRequested = current.stopRequested;
+                if (s.orderResult != null) {
+                    s.orderResult.setStatus(current.orderResult.getStatus());
+                    s.orderResult.setMessage(current.orderResult.getMessage());
+                }
+                state.postValue(s);
+            }
+
+            @Override
+            public void onError(String message) {
+                state.postValue(PassengerHomeViewState.error(message));
+            }
+        });
+    }
+
+    public static boolean canRequestStop(String status) {
+        return "IN_PROGRESS".equals(status);
+    }
+
+    public static boolean canActivatePanic(String status) {
+        return "IN_PROGRESS".equals(status) || "STOP_REQUESTED".equals(status);
+    }
+
     public void searchAddress(String query, GeocodingRepository.GeocodeCallback callback) {
         geocodingRepository.searchAddress(query, callback);
+    }
+
+    public void loadFavoriteRoutes(FavoriteRoutesRepository.RepoCallback<List<FavoriteRouteResponse>> callback) {
+        favoriteRoutesRepository.getFavoriteRoutes(new FavoriteRoutesRepository.RepoCallback<List<FavoriteRouteResponse>>() {
+            @Override
+            public void onSuccess(List<FavoriteRouteResponse> data) {
+                favoriteRoutes.clear();
+                if (data != null) favoriteRoutes.addAll(data);
+                callback.onSuccess(data);
+            }
+
+            @Override
+            public void onError(String message) {
+                callback.onError(message);
+            }
+        });
+    }
+
+    public List<FavoriteRouteResponse> getFavoriteRoutes() {
+        return new ArrayList<>(favoriteRoutes);
+    }
+
+    public void selectFavoriteRoute(FavoriteRouteResponse route) {
+        if (route == null) return;
+
+        pickup = route.getPickup() != null
+                ? new LocationPoint(route.getPickup().getAddress(), route.getPickup().getLatitude(), route.getPickup().getLongitude())
+                : null;
+        dropoff = route.getDropoff() != null
+                ? new LocationPoint(route.getDropoff().getAddress(), route.getDropoff().getLatitude(), route.getDropoff().getLongitude())
+                : null;
+
+        stops.clear();
+        if (route.getStops() != null) {
+            for (LocationPoint stop : route.getStops()) {
+                if (stop != null && stop.getLatitude() != null && stop.getLongitude() != null) {
+                    stops.add(new LocationPoint(stop.getAddress(), stop.getLatitude(), stop.getLongitude()));
+                }
+            }
+        }
+
+        vehicleType = route.getVehicleType() != null ? route.getVehicleType() : "STANDARD";
+        babyTransport = route.getBabyTransport() != null && route.getBabyTransport();
+        petTransport = route.getPetTransport() != null && route.getPetTransport();
+
+        clearEstimate();
     }
 
     public void reverseGeocode(double lat, double lon, GeocodingRepository.ReverseGeocodeCallback callback) {
@@ -231,6 +396,20 @@ public class PassengerHomeViewModel extends ViewModel {
             next.formDisabled = s.formDisabled;
             state.setValue(next);
         }
+    }
+
+    public void setNoFavoritesError() {
+        PassengerHomeViewState s = state.getValue();
+        PassengerHomeViewState next = s != null ? PassengerHomeViewState.idle() : PassengerHomeViewState.idle();
+        if (s != null) {
+            next.estimate = s.estimate;
+            next.orderResult = s.orderResult;
+            next.activeRide = s.activeRide;
+            next.formDisabled = s.formDisabled;
+        }
+        next.error = true;
+        next.errorMessage = "You don't have any favorite routes yet. Complete a ride and add it to favorites from your ride history.";
+        state.setValue(next);
     }
 
     public void resetForm() {
